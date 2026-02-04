@@ -14,6 +14,7 @@ export interface Reward {
   price: number;
   icon: string;
   color: string;
+  type: 'need' | 'want';
 }
 
 export interface UserStats {
@@ -25,11 +26,25 @@ export interface UserStats {
   name: string;
 }
 
-export type TabType = 'home' | 'school' | 'earn' | 'save' | 'shop';
+export type TabType = 'home' | 'school' | 'earn' | 'save' | 'shop' | 'analysis';
 
 export interface Lesson {
   concept: string;
   question: string;
   options: string[];
   correctIndex: number;
+}
+
+export interface UserBehavior {
+  purchases: Array<{
+    rewardId: string;
+    rewardName: string;
+    type: 'need' | 'want';
+    price: number;
+    timestamp: number;
+  }>;
+  savingsDeposits: number;
+  completedMissions: number;
+  totalEarned: number;
+  totalSpent: number;
 }

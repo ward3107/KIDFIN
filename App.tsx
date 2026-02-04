@@ -18,7 +18,7 @@ import {
   Calendar,
   Bike
 } from 'lucide-react';
-import { TabType, Mission, UserStats, Lesson, Reward } from './types';
+import { TabType, Mission, UserStats, Lesson, Reward, UserBehavior } from './types';
 import { INITIAL_MISSIONS, REWARDS } from './constants';
 import { Button, Card, Badge } from './components/UI';
 import { getDailyTip, generateMagicMission, generateLesson } from './services/geminiService';
@@ -31,7 +31,7 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('home');
   const [stats, setStats] = useState<UserStats>({
     coins: 450,
-    level: 4,
+    level: 1,
     xp: 65,
     savings: 820,
     knowledgePoints: 0,
@@ -46,6 +46,15 @@ const App: React.FC = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [dailyTasksGenerated, setDailyTasksGenerated] = useState(0);
   const [purchaseNotification, setPurchaseNotification] = useState<Reward | null>(null);
+
+  // Track user behavior for analysis
+  const [userBehavior, setUserBehavior] = useState<UserBehavior>({
+    purchases: [],
+    savingsDeposits: 0,
+    completedMissions: 0,
+    totalEarned: 0,
+    totalSpent: 0,
+  });
 
   // Academy States
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
@@ -142,9 +151,26 @@ const App: React.FC = () => {
   const handlePurchase = (reward: Reward) => {
     if (stats.coins >= reward.price) {
       setStats(prev => ({ ...prev, coins: prev.coins - reward.price }));
+
+      // Track purchase for analysis
+      setUserBehavior(prev => ({
+        ...prev,
+        purchases: [
+          ...prev.purchases,
+          {
+            rewardId: reward.id,
+            rewardName: reward.name,
+            type: reward.type,
+            price: reward.price,
+            timestamp: Date.now(),
+          }
+        ],
+        totalSpent: prev.totalSpent + reward.price,
+      }));
+
       setPurchaseNotification(reward);
       triggerConfetti();
-      
+
       // Auto-hide notification after 3 seconds
       setTimeout(() => {
         setPurchaseNotification(null);
@@ -195,10 +221,10 @@ const App: React.FC = () => {
       {/* Daily Tip */}
       <Card className="bg-blue-50 border-blue-100">
         <div className="flex gap-4">
-          <div className="text-3xl bg-white w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm shrink-0">💡</div>
+          <div className="text-3xl bg-white w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm shrink-0">🐿️</div>
           <div className="flex-1">
             <div className="flex justify-between items-center mb-1">
-              <h3 className="font-bold text-blue-900 text-sm">טיפ מהשועל</h3>
+              <h3 className="font-bold text-blue-900 text-sm">טיפ מהסנאי</h3>
               <button onClick={fetchTip} disabled={isTipLoading} className="text-blue-600">
                 {isTipLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
               </button>
@@ -487,9 +513,20 @@ const App: React.FC = () => {
           <span className="font-black text-orange-600 text-xs">{stats.coins}</span>
         </div>
       </div>
+      <div className="flex gap-2 mb-3 justify-center">
+        <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full border border-green-200">
+          <span className="w-2 h-2 rounded-full bg-green-500"></span>
+          <span className="text-[9px] font-bold text-green-700">צורך</span>
+        </div>
+        <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-full border border-yellow-200">
+          <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
+          <span className="text-[9px] font-bold text-yellow-700">רצון</span>
+        </div>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         {REWARDS.map((reward) => (
-          <div key={reward.id} className={`${reward.color} p-4 rounded-[2rem] border border-slate-100 flex flex-col items-center gap-2 group hover:shadow-md transition-all`}>
+          <div key={reward.id} className={`${reward.color} p-4 rounded-[2rem] border border-slate-100 flex flex-col items-center gap-2 group hover:shadow-md transition-all relative`}>
+            <div className={`absolute top-2 right-2 w-2 h-2 rounded-full ${reward.type === 'need' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
             <div className="text-4xl group-hover:scale-110 transition-transform">{reward.icon}</div>
             <div className="text-center">
               <div className="font-black text-slate-800 text-[11px] leading-tight mb-0.5">{reward.name}</div>
@@ -497,7 +534,7 @@ const App: React.FC = () => {
                 <DollarSign size={10} strokeWidth={3}/> {reward.price}
               </div>
             </div>
-            <button 
+            <button
               onClick={() => handlePurchase(reward)}
               disabled={stats.coins < reward.price}
               className={`w-full font-black text-[9px] py-2 rounded-xl mt-1 transition-all ${
@@ -511,6 +548,318 @@ const App: React.FC = () => {
       </div>
     </div>
   );
+
+  const renderAnalysis = () => {
+    // Calculate insights from user behavior
+    const needPurchases = userBehavior.purchases.filter(p => p.type === 'need').length;
+    const wantPurchases = userBehavior.purchases.filter(p => p.type === 'want').length;
+    const totalPurchases = userBehavior.purchases.length;
+
+    const spendingRatio = totalPurchases > 0 ? (needPurchases / totalPurchases) * 100 : 0;
+
+    // Generate insights based on behavior
+    const insights = {
+      strengths: [] as string[],
+      weaknesses: [] as string[],
+      tips: [] as string[],
+    };
+
+    if (spendingRatio >= 70) {
+      insights.strengths.push('💪 מצוין! מתמקד בצרכים ולא ברצונות');
+    } else if (spendingRatio >= 50) {
+      insights.strengths.push('👍 איזון טוב בין צרכים לרצונות');
+    } else if (totalPurchases > 0) {
+      insights.weaknesses.push('⚠️ קונה הרבה רצונות, לא רק צרכים');
+      insights.tips.push('💡 נסה לחשוב לפני קנייה - האם זה צורך או רצון?');
+    }
+
+    if (userBehavior.totalSpent < 500 && totalPurchases > 3) {
+      insights.strengths.push('💰 שולט בהוצאות - מוציא בצמצום');
+    } else if (userBehavior.totalSpent > 1500) {
+      insights.weaknesses.push('💸 מוציא הרבה כסף');
+      insights.tips.push('💡 כדאי להגדיל חיסכון לפני קניות גדולות');
+    }
+
+    if (stats.savings > 1000) {
+      insights.strengths.push('🏦 חיסכון מרשים!');
+    } else if (stats.savings < 300) {
+      insights.weaknesses.push('📉 חיסכון נמוך מדי');
+      insights.tips.push('💡 שמור לפחות 20% מכל הכנסה');
+    }
+
+    if (totalPurchases === 0) {
+      insights.tips.push('🎯 התחל לקנות כדי לראות את הניתוח שלך!');
+    }
+
+    return (
+      <div className="space-y-4 animate-fadeIn">
+        <h2 className="text-xl font-black text-slate-800 mb-4">ניתוח התנהגות פיננסית</h2>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-2xl text-white">
+            <div className="text-[10px] opacity-80">סה"כ קניות</div>
+            <div className="text-2xl font-black">{totalPurchases}</div>
+          </div>
+          <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-2xl text-white">
+            <div className="text-[10px] opacity-80">צרכים נקנו</div>
+            <div className="text-2xl font-black">{needPurchases}</div>
+          </div>
+          <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-3 rounded-2xl text-white">
+            <div className="text-[10px] opacity-80">רצונות נקנו</div>
+            <div className="text-2xl font-black">{wantPurchases}</div>
+          </div>
+          <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-3 rounded-2xl text-white">
+            <div className="text-[10px] opacity-80">סה"כ הוצאה</div>
+            <div className="text-2xl font-black">{userBehavior.totalSpent}</div>
+          </div>
+        </div>
+
+        {/* Savings Section */}
+        <div className="bg-gradient-to-br from-emerald-50 to-teal-50 p-4 rounded-2xl border-2 border-emerald-200">
+          <div className="flex items-center justify-between mb-3">
+            <div className="font-black text-emerald-800 text-sm flex items-center gap-2">
+              <PiggyBank size={18} />
+              החיסכון שלך
+            </div>
+            <div className="text-2xl font-black text-emerald-600">{stats.savings} 💰</div>
+          </div>
+
+          {/* Savings Progress */}
+          <div className="mb-3">
+            <div className="flex justify-between text-[10px] text-emerald-700 mb-1">
+              <span>התקדמות למטרה</span>
+              <span>{Math.min(100, Math.round((stats.savings / 2000) * 100))}%</span>
+            </div>
+            <div className="w-full bg-emerald-200 h-2 rounded-full overflow-hidden">
+              <div
+                className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full transition-all duration-500"
+                style={{ width: `${Math.min(100, (stats.savings / 2000) * 100)}%` }}
+              ></div>
+            </div>
+          </div>
+
+          {/* What can you do with savings */}
+          <div className="bg-white/70 p-3 rounded-xl">
+            <div className="font-bold text-emerald-800 text-xs mb-2">💡 מה אפשר לעשות עם חיסכון?</div>
+            <div className="space-y-1">
+              <div className="flex items-start gap-2 text-[10px] text-emerald-700">
+                <span>🎯</span>
+                <span><strong>מטרה גדולה:</strong> לקנות משהו שחלמת עליו</span>
+              </div>
+              <div className="flex items-start gap-2 text-[10px] text-emerald-700">
+                <span>🆘</span>
+                <span><strong>חירום:</strong> למקרה שצריך כסף בדחיפות</span>
+              </div>
+              <div className="flex items-start gap-2 text-[10px] text-emerald-700">
+                <span>📈</span>
+                <span><strong>השקעה:</strong> הכסף גדל עם הזמן!</span>
+              </div>
+              <div className="flex items-start gap-2 text-[10px] text-emerald-700">
+                <span>🎓</span>
+                <span><strong>לימודים:</strong> להשקיע בעתיד שלך</span>
+              </div>
+              <div className="flex items-start gap-2 text-[10px] text-emerald-700">
+                <span>🎁</span>
+                <span><strong>נדיבות:</strong> לעזור לאחרים</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Savings Tip */}
+          <div className="mt-3 p-2 bg-emerald-100 rounded-lg">
+            <div className="text-[10px] text-emerald-800 flex items-start gap-2">
+              <span className="text-lg">💡</span>
+              <span><strong>טיפ:</strong> מומלץ לשמור לפחות 20% מכל הכנסה לחיסכון!</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Spending Ratio Bar */}
+        {totalPurchases > 0 && (
+          <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div className="text-sm font-bold text-slate-800 mb-2">יחס צרכים לרצונות</div>
+            <div className="w-full bg-slate-200 h-4 rounded-full overflow-hidden flex">
+              <div
+                className="bg-green-500 h-full transition-all duration-500 flex items-center justify-center text-[8px] text-white font-black"
+                style={{ width: `${spendingRatio}%` }}
+              >
+                {spendingRatio > 15 && `צרכים ${Math.round(spendingRatio)}%`}
+              </div>
+              <div
+                className="bg-yellow-500 h-full transition-all duration-500 flex items-center justify-center text-[8px] text-white font-black"
+                style={{ width: `${100 - spendingRatio}%` }}
+              >
+                {100 - spendingRatio > 15 && `רצונות ${Math.round(100 - spendingRatio)}%`}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Educational Section: Needs vs Wants */}
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-4 rounded-2xl border-2 border-purple-200">
+          <div className="font-black text-purple-800 text-sm mb-3 flex items-center gap-2">
+            <span className="text-xl">🎓</span>
+            להבין את ההבדל: צרכים vs רצונות
+          </div>
+
+          {/* What is a Need */}
+          <div className="bg-green-100 p-3 rounded-xl mb-3">
+            <div className="font-bold text-green-800 text-xs mb-2 flex items-center gap-2">
+              <span>🟢</span>
+              <strong>מה זה צורך (NEED)?</strong>
+            </div>
+            <div className="text-[10px] text-green-700 mb-2">
+              צורך זה משהו ש<strong>אי אפשר בלעדיו</strong> - דברים שחייבים כדי לחיות בריא ומסודר!
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              <div className="bg-white/70 p-2 rounded-lg text-center">
+                <div className="text-lg">🍎</div>
+                <div className="text-[9px] font-bold text-green-800">אוכל</div>
+              </div>
+              <div className="bg-white/70 p-2 rounded-lg text-center">
+                <div className="text-lg">👕</div>
+                <div className="text-[9px] font-bold text-green-800">בגדים</div>
+              </div>
+              <div className="bg-white/70 p-2 rounded-lg text-center">
+                <div className="text-lg">🏠</div>
+                <div className="text-[9px] font-bold text-green-800">בית</div>
+              </div>
+              <div className="bg-white/70 p-2 rounded-lg text-center">
+                <div className="text-lg">📚</div>
+                <div className="text-[9px] font-bold text-green-800">לימודים</div>
+              </div>
+            </div>
+          </div>
+
+          {/* What is a Want */}
+          <div className="bg-yellow-100 p-3 rounded-xl mb-3">
+            <div className="font-bold text-yellow-800 text-xs mb-2 flex items-center gap-2">
+              <span>🟡</span>
+              <strong>מה זה רצון (WANT)?</strong>
+            </div>
+            <div className="text-[10px] text-yellow-700 mb-2">
+              רצון זה משהו ש<strong>כיף לנו</strong> אבל אפשר לחיות בלעדיו. זה דברים שנחמד לקנות, אבל לא חייבים!
+            </div>
+            <div className="grid grid-cols-2 gap-1">
+              <div className="bg-white/70 p-2 rounded-lg text-center">
+                <div className="text-lg">🎮</div>
+                <div className="text-[9px] font-bold text-yellow-800">משחקים</div>
+              </div>
+              <div className="bg-white/70 p-2 rounded-lg text-center">
+                <div className="text-lg">🍦</div>
+                <div className="text-[9px] font-bold text-yellow-800">גלידה</div>
+              </div>
+              <div className="bg-white/70 p-2 rounded-lg text-center">
+                <div className="text-lg">🎸</div>
+                <div className="text-[9px] font-bold text-yellow-800">צעצועים</div>
+              </div>
+              <div className="bg-white/70 p-2 rounded-lg text-center">
+                <div className="text-lg">🍕</div>
+                <div className="text-[9px] font-bold text-yellow-800">ממתקים</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Why it matters */}
+          <div className="bg-blue-100 p-3 rounded-xl mb-3">
+            <div className="font-bold text-blue-800 text-xs mb-2">💡 למה זה חשוב להבין?</div>
+            <div className="space-y-1 text-[10px] text-blue-700">
+              <div>✓ כשמבינים את ההבדל, אפשר <strong>לחסוך יותר כסף</strong></div>
+              <div>✓ לומדים <strong>איך לתעדף</strong> - מה לקנות קודם</div>
+              <div>✓ מתחילים לחשוב <strong>לפני קנייה</strong></div>
+              <div>✓ הופכים להיות <strong>צרכנים חכמים</strong></div>
+            </div>
+          </div>
+
+          {/* How to decide */}
+          <div className="bg-purple-100 p-3 rounded-xl">
+            <div className="font-bold text-purple-800 text-xs mb-2">🤔 איך להחליט? שאל את עצמך:</div>
+            <div className="space-y-1 text-[10px] text-purple-700">
+              <div className="flex items-start gap-2">
+                <span className="font-black">1.</span>
+                <span><strong>האם אני יכול לחיות בלעדי זה?</strong> אם כן = רצון</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-black">2.</span>
+                <span><strong>האם זה משהו שאני חייב לבריאות שלי?</strong> אם כן = צורך</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-black">3.</span>
+                <span><strong>האם אני יכול לחכות איתו?</strong> אם כן = רצון</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="font-black">4.</span>
+                <span><strong>כמה דברים דומים יש לי כבר?</strong> הרבה? אולי זה רצון</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Kid-friendly tip */}
+          <div className="mt-3 p-2 bg-gradient-to-r from-pink-100 to-purple-100 rounded-lg">
+            <div className="text-[10px] text-purple-800 flex items-start gap-2">
+              <span className="text-lg">🐿️</span>
+              <span><strong>טיפ מהסנאי:</strong> חשוב על זה כמו על מגש באוכל - קודם מגישים את הירקות (צרכים), ורק אז יש מקום לקינוח (רצונות)!</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Strengths */}
+        {insights.strengths.length > 0 && (
+          <div className="bg-green-50 p-4 rounded-2xl border-2 border-green-200">
+            <div className="font-black text-green-800 text-sm mb-2 flex items-center gap-2">
+              <Trophy size={16} />
+              חוזקות שלך
+            </div>
+            <div className="space-y-1">
+              {insights.strengths.map((strength, idx) => (
+                <div key={idx} className="text-xs text-green-700 font-bold">{strength}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Weaknesses */}
+        {insights.weaknesses.length > 0 && (
+          <div className="bg-red-50 p-4 rounded-2xl border-2 border-red-200">
+            <div className="font-black text-red-800 text-sm mb-2 flex items-center gap-2">
+              <AlertCircle size={16} />
+              דברים לשיפור
+            </div>
+            <div className="space-y-1">
+              {insights.weaknesses.map((weakness, idx) => (
+                <div key={idx} className="text-xs text-red-700 font-bold">{weakness}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tips */}
+        {insights.tips.length > 0 && (
+          <div className="bg-blue-50 p-4 rounded-2xl border-2 border-blue-200">
+            <div className="font-black text-blue-800 text-sm mb-2 flex items-center gap-2">
+              <Sparkles size={16} />
+              טיפים לשיפור
+            </div>
+            <div className="space-y-1">
+              {insights.tips.map((tip, idx) => (
+                <div key={idx} className="text-xs text-blue-700 font-bold">{tip}</div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {totalPurchases === 0 && (
+          <div className="bg-slate-50 p-8 rounded-2xl text-center border border-slate-200">
+            <div className="text-4xl mb-3">📊</div>
+            <div className="text-sm font-bold text-slate-800 mb-1">עדיין אין נתונים</div>
+            <div className="text-xs text-slate-600">בצע קניות ומשימות כדי לראות את הניתוח שלך</div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="w-full h-[100dvh] bg-slate-100 flex items-center justify-center p-2 md:p-4 font-rubik overflow-hidden" dir="rtl">
@@ -537,11 +886,9 @@ const App: React.FC = () => {
         {/* Header */}
         <div className="pt-8 md:pt-10 pb-3 md:pb-4 px-5 md:px-6 bg-white border-b border-slate-50 flex justify-between items-center z-20">
           <div className="flex items-center gap-1">
-            <span className="text-indigo-600 font-black text-lg md:text-xl italic">FIN</span>
-            <span className="text-slate-800 font-black text-lg md:text-xl italic underline decoration-yellow-400">KID</span>
-          </div>
-          <div className="bg-orange-100 text-orange-600 px-2.5 py-0.5 rounded-full font-black text-xs flex items-center gap-1 border border-orange-200/50">
-            <DollarSign size={12} strokeWidth={3} /> {stats.coins}
+            <span className="text-slate-800 font-black text-lg md:text-xl italic">Dream</span>
+            <span className="text-indigo-600 font-black text-lg md:text-xl italic"> 4 </span>
+            <span className="text-slate-800 font-black text-lg md:text-xl italic underline decoration-yellow-400">Save</span>
           </div>
         </div>
 
@@ -560,6 +907,7 @@ const App: React.FC = () => {
           {activeTab === 'earn' && renderEarn()}
           {activeTab === 'save' && renderSave()}
           {activeTab === 'shop' && renderShop()}
+          {activeTab === 'analysis' && renderAnalysis()}
         </div>
 
         {/* Navigation */}
@@ -569,6 +917,7 @@ const App: React.FC = () => {
           <NavButton icon={CheckCircle} label="אתגרים" active={activeTab === 'earn'} onClick={() => setActiveTab('earn')} />
           <NavButton icon={PiggyBank} label="חיסכון" active={activeTab === 'save'} onClick={() => setActiveTab('save')} />
           <NavButton icon={ShoppingBag} label="חנות" active={activeTab === 'shop'} onClick={() => setActiveTab('shop')} />
+          <NavButton icon={TrendingUp} label="ניתוח" active={activeTab === 'analysis'} onClick={() => setActiveTab('analysis')} />
         </div>
       </div>
 

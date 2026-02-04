@@ -3,7 +3,7 @@ import { Lesson } from "../types";
 
 const getAiClient = () => {
   if (!process.env.API_KEY || process.env.API_KEY === '') {
-    throw new Error("API Key is missing");
+    return null;
   }
   return new GoogleGenAI({ apiKey: process.env.API_KEY });
 };
@@ -53,6 +53,18 @@ let lessonIndex = 0;
 export const getDailyTip = async (): Promise<string> => {
   try {
     const ai = getAiClient();
+    if (!ai) {
+      // Return fallback tips
+      const fallbackTips = [
+        "תמיד כדאי לשמור קצת מטבעות ליום סגריר! 🐿️",
+        "חיסכון של 10 שקלים כל שבוע = יותר מ-500 שקל בשנה! 💰",
+        "לפני קנייה - שאל את עצמך: צורך או רצון? 🤔",
+        "השווה מחירים לפני שקונים - תופתע כמה תחסוך! 📊",
+        "כסף שחוסכים היום, שווה יותר מחר! 📈",
+        "קנייה חכמה זו לא רק הכי זול - גם הכי איכותי! 🏆",
+      ];
+      return fallbackTips[Math.floor(Math.random() * fallbackTips.length)];
+    }
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: "תן לי טיפ אחד קצר, מצחיק ומלמד על כסף לילד ישראלי בן 10. בעברית. מקסימום 20 מילים.",
@@ -82,6 +94,12 @@ let missionIndex = 0;
 export const generateMagicMission = async (): Promise<{ title: string; reward: number; icon: string } | null> => {
   try {
     const ai = getAiClient();
+    if (!ai) {
+      // Return fallback mission when AI is not available
+      const fallbackMission = FALLBACK_MISSIONS[missionIndex % FALLBACK_MISSIONS.length];
+      missionIndex++;
+      return fallbackMission;
+    }
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `צור "אתגר פיננסי" אחד לילד בבית. האתגר חייב להיות קשור לכסף, צרכנות, או חיסכון.
@@ -125,6 +143,12 @@ export const generateMagicMission = async (): Promise<{ title: string; reward: n
 export const generateLesson = async (): Promise<Lesson | null> => {
   try {
     const ai = getAiClient();
+    if (!ai) {
+      // Return fallback lesson when AI is not available
+      const fallbackLesson = FALLBACK_LESSONS[lessonIndex % FALLBACK_LESSONS.length];
+      lessonIndex++;
+      return fallbackLesson;
+    }
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: `תסביר מושג כלכלי בסיסי אחד (כמו ריבית, אינפלציה, תקציב, מניה, חוב) בשפה פשוטה וכיפית לילד.
