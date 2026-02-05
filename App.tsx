@@ -22,39 +22,76 @@ import { TabType, Mission, UserStats, Lesson, Reward, UserBehavior } from './typ
 import { INITIAL_MISSIONS, REWARDS } from './constants';
 import { Button, Card, Badge } from './components/UI';
 import { getDailyTip, generateMagicMission, generateLesson } from './services/geminiService';
-import { AreaChart, Area, ResponsiveContainer } from 'recharts';
 
 const MAX_DAILY_TASKS = 3;
 const BIKE_GOAL = 1200;
 
+// LocalStorage keys
+const STORAGE_KEYS = {
+  STATS: 'save4dream_stats',
+  MISSIONS: 'save4dream_missions',
+  DAILY_TASKS: 'save4dream_daily_tasks',
+  USER_BEHAVIOR: 'save4dream_user_behavior',
+};
+
+// Load from localStorage (using type assertion for JSX compatibility)
+function loadFromStorage<T>(key: string, defaultValue: T): T {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch (error) {
+    console.error(`Error loading ${key}:`, error);
+    return defaultValue;
+  }
+}
+
+// Save to localStorage (using type assertion for JSX compatibility)
+function saveToStorage<T>(key: string, value: T): void {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error(`Error saving ${key}:`, error);
+  }
+}
+
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('home');
-  const [stats, setStats] = useState<UserStats>({
-    coins: 450,
-    level: 1,
-    xp: 65,
-    savings: 820,
-    knowledgePoints: 0,
-    name: "אופיר",
-  });
-  
-  const [missions, setMissions] = useState<Mission[]>(INITIAL_MISSIONS);
+
+  // Initialize state from localStorage or defaults
+  const [stats, setStats] = useState<UserStats>(() =>
+    loadFromStorage<UserStats>(STORAGE_KEYS.STATS, {
+      coins: 450,
+      level: 1,
+      xp: 65,
+      savings: 820,
+      knowledgePoints: 0,
+      name: "אופיר",
+    })
+  );
+
+  const [missions, setMissions] = useState<Mission[]>(() =>
+    loadFromStorage<Mission[]>(STORAGE_KEYS.MISSIONS, INITIAL_MISSIONS)
+  );
   const [dailyTip, setDailyTip] = useState<string>("טוען טיפ חכם בשבילך...");
   const [isTipLoading, setIsTipLoading] = useState(false);
   const [isMissionLoading, setIsMissionLoading] = useState(false);
   const [isLessonLoading, setIsLessonLoading] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [dailyTasksGenerated, setDailyTasksGenerated] = useState(0);
+  const [dailyTasksGenerated, setDailyTasksGenerated] = useState<number>(() =>
+    loadFromStorage<number>(STORAGE_KEYS.DAILY_TASKS, 0)
+  );
   const [purchaseNotification, setPurchaseNotification] = useState<Reward | null>(null);
 
   // Track user behavior for analysis
-  const [userBehavior, setUserBehavior] = useState<UserBehavior>({
-    purchases: [],
-    savingsDeposits: 0,
-    completedMissions: 0,
-    totalEarned: 0,
-    totalSpent: 0,
-  });
+  const [userBehavior, setUserBehavior] = useState<UserBehavior>(() =>
+    loadFromStorage<UserBehavior>(STORAGE_KEYS.USER_BEHAVIOR, {
+      purchases: [],
+      savingsDeposits: 0,
+      completedMissions: 0,
+      totalEarned: 0,
+      totalSpent: 0,
+    })
+  );
 
   // Academy States
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
@@ -63,6 +100,42 @@ const App: React.FC = () => {
   useEffect(() => {
     fetchTip();
   }, []);
+
+  // Auto-hide confetti after 2 seconds with cleanup
+  useEffect(() => {
+    if (showConfetti) {
+      const timer = setTimeout(() => setShowConfetti(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [showConfetti]);
+
+  // Auto-hide purchase notification after 3 seconds with cleanup
+  useEffect(() => {
+    if (purchaseNotification) {
+      const timer = setTimeout(() => setPurchaseNotification(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [purchaseNotification]);
+
+  // Save stats to localStorage whenever they change
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.STATS, stats);
+  }, [stats]);
+
+  // Save missions to localStorage whenever they change
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.MISSIONS, missions);
+  }, [missions]);
+
+  // Save daily tasks count to localStorage whenever it changes
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.DAILY_TASKS, dailyTasksGenerated);
+  }, [dailyTasksGenerated]);
+
+  // Save user behavior to localStorage whenever it changes
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.USER_BEHAVIOR, userBehavior);
+  }, [userBehavior]);
 
   const fetchTip = async () => {
     setIsTipLoading(true);
@@ -132,7 +205,6 @@ const App: React.FC = () => {
 
   const triggerConfetti = () => {
     setShowConfetti(true);
-    setTimeout(() => setShowConfetti(false), 2000);
   };
 
   const handleDeposit = () => {
@@ -170,11 +242,6 @@ const App: React.FC = () => {
 
       setPurchaseNotification(reward);
       triggerConfetti();
-
-      // Auto-hide notification after 3 seconds
-      setTimeout(() => {
-        setPurchaseNotification(null);
-      }, 3000);
     }
   };
 
