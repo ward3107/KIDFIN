@@ -1,20 +1,45 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Save4Dream 💰
 
-# Run and deploy your AI Studio app
+A gamified financial education app for children, teaching saving habits and smart money choices through interactive lessons and challenges.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/drive/1cJhY2dOjK3OSTGgnntVKQ1zNpSP1Amwv
+- **Home Dashboard** - Track progress, coins, level, and savings goals
+- **Financial Academy** - Learn economic concepts through interactive lessons
+- **Daily Challenges** - Complete financial missions to earn rewards
+- **Savings Bank** - Deposit coins and watch savings grow
+- **Rewards Shop** - Spend earned coins on virtual rewards
 
-## Run Locally
+## Tech Stack
 
-**Prerequisites:**  Node.js
+- React 19 + TypeScript
+- Vite
+- Tailwind CSS
+- Lucide Icons
 
+## Getting Started
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+npm install
+npm run dev
+```
+
+## Building
+
+```bash
+npm run build
+```
+
+The built files will be in the `dist/` directory.
+
+## Deployment
+
+Ready for deployment on Netlify, Vercel, or any static hosting service.
+
+## Language
+
+Hebrew (RTL support included)
+
+---
+
+Made with ❤️ for financial literacy
