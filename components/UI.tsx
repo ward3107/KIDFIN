@@ -34,8 +34,8 @@ export const Button: React.FC<ButtonProps> = ({
   );
 };
 
-export const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
-  <div className={`bg-white p-4 rounded-3xl shadow-sm border border-slate-100 ${className}`}>
+export const Card: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className = "", onClick }) => (
+  <div onClick={onClick} className={`bg-white p-4 rounded-3xl shadow-sm border border-slate-100 ${onClick ? 'cursor-pointer' : ''} ${className}`}>
     {children}
   </div>
 );
