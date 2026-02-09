@@ -81,17 +81,17 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
 
       {/* Goal Marker Label */}
       <div className="absolute right-0 bottom-0 flex flex-col items-end">
-        <div className="text-[10px] font-black text-slate-400 flex items-center gap-1">
+        <div className="text-xs md:text-sm font-black text-slate-400 flex items-center gap-1">
           <span>{goal}</span>
-          <DollarSign size={10} strokeWidth={4} />
+          <DollarSign size={12} strokeWidth={4} />
         </div>
       </div>
 
       {/* Current Marker Label */}
       <div className="absolute left-0 bottom-0 flex flex-col items-start">
-        <div className="text-[10px] font-black text-indigo-500 flex items-center gap-1">
+        <div className="text-xs md:text-sm font-black text-indigo-500 flex items-center gap-1">
           <span>{current}</span>
-          <DollarSign size={10} strokeWidth={4} />
+          <DollarSign size={12} strokeWidth={4} />
         </div>
       </div>
     </div>

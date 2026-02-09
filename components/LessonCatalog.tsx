@@ -179,15 +179,15 @@ const InteractiveLessonCard: React.FC<{
 
           {/* Metadata */}
           <div className="flex items-center gap-2 mb-2">
-            <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full bg-${difficultyConfig.color}-100 text-${difficultyConfig.color}-700`}>
+            <span className={`text-xs md:text-sm font-bold px-2 py-0.5 rounded-full bg-${difficultyConfig.color}-100 text-${difficultyConfig.color}-700`}>
               {difficultyConfig.hebrew}
             </span>
-            <span className="text-[9px] text-slate-500">•</span>
-            <span className="text-[9px] text-slate-500">{categoryConfig.label}</span>
+            <span className="text-xs md:text-sm text-slate-500">•</span>
+            <span className="text-xs md:text-sm text-slate-500">{categoryConfig.label}</span>
           </div>
 
           {/* Lesson type badges */}
-          <div className="flex items-center gap-1 text-[8px] text-slate-500">
+          <div className="flex items-center gap-1 text-xs md:text-sm text-slate-500">
             <span>📖</span>
             <span>🎮</span>
             <span>💡</span>

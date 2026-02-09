@@ -59,19 +59,19 @@ export const AnalysisTab: React.FC = () => {
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-2xl text-white">
-          <div className="text-[10px] opacity-80">סה"כ קניות</div>
+          <div className="text-xs md:text-sm opacity-80">סה"כ קניות</div>
           <div className="text-2xl font-black">{totalPurchases}</div>
         </div>
         <div className="bg-gradient-to-br from-green-500 to-emerald-600 p-3 rounded-2xl text-white">
-          <div className="text-[10px] opacity-80">צרכים נקנו</div>
+          <div className="text-xs md:text-sm opacity-80">צרכים נקנו</div>
           <div className="text-2xl font-black">{needPurchases}</div>
         </div>
         <div className="bg-gradient-to-br from-yellow-500 to-orange-500 p-3 rounded-2xl text-white">
-          <div className="text-[10px] opacity-80">רצונות נקנו</div>
+          <div className="text-xs md:text-sm opacity-80">רצונות נקנו</div>
           <div className="text-2xl font-black">{wantPurchases}</div>
         </div>
         <div className="bg-gradient-to-br from-blue-500 to-cyan-600 p-3 rounded-2xl text-white">
-          <div className="text-[10px] opacity-80">סה"כ הוצאה</div>
+          <div className="text-xs md:text-sm opacity-80">סה"כ הוצאה</div>
           <div className="text-2xl font-black">{userBehavior.totalSpent}</div>
         </div>
       </div>
@@ -88,7 +88,7 @@ export const AnalysisTab: React.FC = () => {
 
         {/* Savings Progress */}
         <div className="mb-3">
-          <div className="flex justify-between text-[10px] text-emerald-700 mb-1">
+          <div className="flex justify-between text-xs md:text-sm text-emerald-700 mb-1">
             <span>התקדמות למטרה</span>
             <span>{Math.min(100, Math.round((stats.savings / 2000) * 100))}%</span>
           </div>
@@ -102,33 +102,33 @@ export const AnalysisTab: React.FC = () => {
 
         {/* What can you do with savings */}
         <div className="bg-white/70 p-3 rounded-xl">
-          <div className="font-bold text-emerald-800 text-xs mb-2">💡 מה אפשר לעשות עם חיסכון?</div>
+          <div className="font-bold text-emerald-800 text-xs md:text-sm mb-2">💡 מה אפשר לעשות עם חיסכון?</div>
           <div className="space-y-1">
-            <div className="flex items-start gap-2 text-[10px] text-emerald-700">
+            <div className="flex items-start gap-2 text-xs md:text-sm text-emerald-700">
               <span>🎯</span>
               <span>
                 <strong>מטרה גדולה:</strong> לקנות משהו שחלמת עליו
               </span>
             </div>
-            <div className="flex items-start gap-2 text-[10px] text-emerald-700">
+            <div className="flex items-start gap-2 text-xs md:text-sm text-emerald-700">
               <span>🆘</span>
               <span>
                 <strong>חירום:</strong> למקרה שצריך כסף בדחיפות
               </span>
             </div>
-            <div className="flex items-start gap-2 text-[10px] text-emerald-700">
+            <div className="flex items-start gap-2 text-xs md:text-sm text-emerald-700">
               <span>📈</span>
               <span>
                 <strong>השקעה:</strong> הכסף גדל עם הזמן!
               </span>
             </div>
-            <div className="flex items-start gap-2 text-[10px] text-emerald-700">
+            <div className="flex items-start gap-2 text-xs md:text-sm text-emerald-700">
               <span>🎓</span>
               <span>
                 <strong>לימודים:</strong> להשקיע בעתיד שלך
               </span>
             </div>
-            <div className="flex items-start gap-2 text-[10px] text-emerald-700">
+            <div className="flex items-start gap-2 text-xs md:text-sm text-emerald-700">
               <span>🎁</span>
               <span>
                 <strong>נדיבות:</strong> לעזור לאחרים
@@ -139,7 +139,7 @@ export const AnalysisTab: React.FC = () => {
 
         {/* Savings Tip */}
         <div className="mt-3 p-2 bg-emerald-100 rounded-lg">
-          <div className="text-[10px] text-emerald-800 flex items-start gap-2">
+          <div className="text-xs md:text-sm text-emerald-800 flex items-start gap-2">
             <span className="text-lg">💡</span>
             <span>
               <strong>טיפ:</strong> מומלץ לשמור לפחות 20% מכל הכנסה לחיסכון!
@@ -151,16 +151,16 @@ export const AnalysisTab: React.FC = () => {
       {/* Spending Ratio Bar */}
       {totalPurchases > 0 && (
         <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-          <div className="text-sm font-bold text-slate-800 mb-2">יחס צרכים לרצונות</div>
+          <div className="text-sm md:text-base font-bold text-slate-800 mb-2">יחס צרכים לרצונות</div>
           <div className="w-full bg-slate-200 h-4 rounded-full overflow-hidden flex">
             <div
-              className="bg-green-500 h-full transition-all duration-500 flex items-center justify-center text-[8px] text-white font-black"
+              className="bg-green-500 h-full transition-all duration-500 flex items-center justify-center text-xs md:text-sm text-white font-black"
               style={{ width: `${spendingRatio}%` }}
             >
               {spendingRatio > 15 && `צרכים ${Math.round(spendingRatio)}%`}
             </div>
             <div
-              className="bg-yellow-500 h-full transition-all duration-500 flex items-center justify-center text-[8px] text-white font-black"
+              className="bg-yellow-500 h-full transition-all duration-500 flex items-center justify-center text-xs md:text-sm text-white font-black"
               style={{ width: `${100 - spendingRatio}%` }}
             >
               {100 - spendingRatio > 15 && `רצונות ${Math.round(100 - spendingRatio)}%`}
@@ -178,67 +178,67 @@ export const AnalysisTab: React.FC = () => {
 
         {/* What is a Need */}
         <div className="bg-green-100 p-3 rounded-xl mb-3">
-          <div className="font-bold text-green-800 text-xs mb-2 flex items-center gap-2">
+          <div className="font-bold text-green-800 text-xs md:text-sm mb-2 flex items-center gap-2">
             <span>🟢</span>
             <strong>מה זה צורך (NEED)?</strong>
           </div>
-          <div className="text-[10px] text-green-700 mb-2">
+          <div className="text-xs md:text-sm text-green-700 mb-2">
             צורך זה משהו ש<strong>אי אפשר בלעדיו</strong> - דברים שחייבים כדי לחיות בריא ומסודר!
           </div>
           <div className="grid grid-cols-2 gap-1">
             <div className="bg-white/70 p-2 rounded-lg text-center">
               <div className="text-lg">🍎</div>
-              <div className="text-[9px] font-bold text-green-800">אוכל</div>
+              <div className="text-xs md:text-sm font-bold text-green-800">אוכל</div>
             </div>
             <div className="bg-white/70 p-2 rounded-lg text-center">
               <div className="text-lg">👕</div>
-              <div className="text-[9px] font-bold text-green-800">בגדים</div>
+              <div className="text-xs md:text-sm font-bold text-green-800">בגדים</div>
             </div>
             <div className="bg-white/70 p-2 rounded-lg text-center">
               <div className="text-lg">🏠</div>
-              <div className="text-[9px] font-bold text-green-800">בית</div>
+              <div className="text-xs md:text-sm font-bold text-green-800">בית</div>
             </div>
             <div className="bg-white/70 p-2 rounded-lg text-center">
               <div className="text-lg">📚</div>
-              <div className="text-[9px] font-bold text-green-800">לימודים</div>
+              <div className="text-xs md:text-sm font-bold text-green-800">לימודים</div>
             </div>
           </div>
         </div>
 
         {/* What is a Want */}
         <div className="bg-yellow-100 p-3 rounded-xl mb-3">
-          <div className="font-bold text-yellow-800 text-xs mb-2 flex items-center gap-2">
+          <div className="font-bold text-yellow-800 text-xs md:text-sm mb-2 flex items-center gap-2">
             <span>🟡</span>
             <strong>מה זה רצון (WANT)?</strong>
           </div>
-          <div className="text-[10px] text-yellow-700 mb-2">
+          <div className="text-xs md:text-sm text-yellow-700 mb-2">
             רצון זה משהו ש<strong>כיף לנו</strong> אבל אפשר לחיות בלעדיו. זה דברים שנחמד לקנות, אבל לא
             חייבים!
           </div>
           <div className="grid grid-cols-2 gap-1">
             <div className="bg-white/70 p-2 rounded-lg text-center">
               <div className="text-lg">🎮</div>
-              <div className="text-[9px] font-bold text-yellow-800">משחקים</div>
+              <div className="text-xs md:text-sm font-bold text-yellow-800">משחקים</div>
             </div>
             <div className="bg-white/70 p-2 rounded-lg text-center">
               <div className="text-lg">🍦</div>
-              <div className="text-[9px] font-bold text-yellow-800">גלידה</div>
+              <div className="text-xs md:text-sm font-bold text-yellow-800">גלידה</div>
             </div>
             <div className="bg-white/70 p-2 rounded-lg text-center">
               <div className="text-lg">🎸</div>
-              <div className="text-[9px] font-bold text-yellow-800">צעצועים</div>
+              <div className="text-xs md:text-sm font-bold text-yellow-800">צעצועים</div>
             </div>
             <div className="bg-white/70 p-2 rounded-lg text-center">
               <div className="text-lg">🍕</div>
-              <div className="text-[9px] font-bold text-yellow-800">ממתקים</div>
+              <div className="text-xs md:text-sm font-bold text-yellow-800">ממתקים</div>
             </div>
           </div>
         </div>
 
         {/* Why it matters */}
         <div className="bg-blue-100 p-3 rounded-xl mb-3">
-          <div className="font-bold text-blue-800 text-xs mb-2">💡 למה זה חשוב להבין?</div>
-          <div className="space-y-1 text-[10px] text-blue-700">
+          <div className="font-bold text-blue-800 text-xs md:text-sm mb-2">💡 למה זה חשוב להבין?</div>
+          <div className="space-y-1 text-xs md:text-sm text-blue-700">
             <div>✓ כשמבינים את ההבדל, אפשר <strong>לחסוך יותר כסף</strong></div>
             <div>✓ לומדים <strong>איך לתעדף</strong> - מה לקנות קודם</div>
             <div>✓ מתחילים לחשוב <strong>לפני קנייה</strong></div>
@@ -248,8 +248,8 @@ export const AnalysisTab: React.FC = () => {
 
         {/* How to decide */}
         <div className="bg-purple-100 p-3 rounded-xl">
-          <div className="font-bold text-purple-800 text-xs mb-2">🤔 איך להחליט? שאל את עצמך:</div>
-          <div className="space-y-1 text-[10px] text-purple-700">
+          <div className="font-bold text-purple-800 text-xs md:text-sm mb-2">🤔 איך להחליט? שאל את עצמך:</div>
+          <div className="space-y-1 text-xs md:text-sm text-purple-700">
             <div className="flex items-start gap-2">
               <span className="font-black">1.</span>
               <span>
@@ -279,7 +279,7 @@ export const AnalysisTab: React.FC = () => {
 
         {/* Kid-friendly tip */}
         <div className="mt-3 p-2 bg-gradient-to-r from-pink-100 to-purple-100 rounded-lg">
-          <div className="text-[10px] text-purple-800 flex items-start gap-2">
+          <div className="text-xs md:text-sm text-purple-800 flex items-start gap-2">
             <span className="text-lg">🐿️</span>
             <span>
               <strong>טיפ מהסנאי:</strong> חשוב על זה כמו על מגש באוכל - קודם מגישים את הירקות

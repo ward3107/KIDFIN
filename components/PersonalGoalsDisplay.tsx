@@ -41,8 +41,8 @@ export const PersonalGoalsDisplay: React.FC = () => {
       {/* Other Dreams */}
       {dreams.filter(g => g.id !== activeGoal?.id).length > 0 && (
         <div className="bg-purple-50 p-3 rounded-2xl border-2 border-purple-200">
-          <h4 className="font-bold text-purple-900 text-xs mb-2 flex items-center gap-2">
-            <Star size={14} /> חלומות נוספים
+          <h4 className="font-bold text-purple-900 text-sm md:text-base mb-2 flex items-center gap-2">
+            <Star size={16} /> חלומות נוספים
           </h4>
           <div className="space-y-2">
             {dreams.filter(g => g.id !== activeGoal?.id).map(goal => (
@@ -59,8 +59,8 @@ export const PersonalGoalsDisplay: React.FC = () => {
       {/* Wants */}
       {wants.length > 0 && (
         <div className="bg-yellow-50 p-3 rounded-2xl border-2 border-yellow-200">
-          <h4 className="font-bold text-yellow-900 text-xs mb-2 flex items-center gap-2">
-            <Heart size={14} /> רצונות ({wants.filter(g => g.completed).length}/{wants.length})
+          <h4 className="font-bold text-yellow-900 text-sm md:text-base mb-2 flex items-center gap-2">
+            <Heart size={16} /> רצונות ({wants.filter(g => g.completed).length}/{wants.length})
           </h4>
           <div className="grid grid-cols-2 gap-2">
             {wants.map(goal => (
@@ -77,8 +77,8 @@ export const PersonalGoalsDisplay: React.FC = () => {
       {/* Needs */}
       {needs.length > 0 && (
         <div className="bg-green-50 p-3 rounded-2xl border-2 border-green-200">
-          <h4 className="font-bold text-green-900 text-xs mb-2 flex items-center gap-2">
-            <Target size={14} /> צרכים ({needs.filter(g => g.completed).length}/{needs.length})
+          <h4 className="font-bold text-green-900 text-sm md:text-base mb-2 flex items-center gap-2">
+            <Target size={16} /> צרכים ({needs.filter(g => g.completed).length}/{needs.length})
           </h4>
           <div className="grid grid-cols-2 gap-2">
             {needs.map(goal => (
@@ -124,10 +124,10 @@ const ActiveGoalCard: React.FC<{
         <div className="flex items-start justify-between mb-3">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              {isPrimary && <span className="bg-white/20 px-2 py-0.5 rounded-full text-[8px] font-bold">המטרה שלי</span>}
+              {isPrimary && <span className="bg-white/20 px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-bold">המטרה שלי</span>}
               {goal.completed && (
-                <span className="bg-green-500 px-2 py-0.5 rounded-full text-[8px] font-bold flex items-center gap-1">
-                  <CheckCircle size={10} /> הושג!
+                <span className="bg-green-500 px-2 py-0.5 rounded-full text-[9px] md:text-[10px] font-bold flex items-center gap-1">
+                  <CheckCircle size={12} /> הושג!
                 </span>
               )}
             </div>
@@ -140,7 +140,7 @@ const ActiveGoalCard: React.FC<{
 
         {/* Progress */}
         <div className="mb-3">
-          <div className="flex justify-between text-xs mb-1">
+          <div className="flex justify-between text-xs md:text-sm mb-1">
             <span>התקדמות</span>
             <span className="font-bold">{progressPercent}%</span>
           </div>
@@ -155,17 +155,17 @@ const ActiveGoalCard: React.FC<{
         {/* Stats */}
         <div className="flex justify-between items-center">
           <div>
-            <p className="text-[10px] opacity-80">חיסכון עד עכשיו</p>
+            <p className="text-xs md:text-sm opacity-80">חיסכון עד עכשיו</p>
             <p className="font-black text-xl">{goal.currentSavings} 💰</p>
           </div>
           {!goal.completed ? (
             <div className="text-right">
-              <p className="text-[10px] opacity-80">חסר עוד</p>
+              <p className="text-xs md:text-sm opacity-80">חסר עוד</p>
               <p className="font-black text-xl">{remaining} 💰</p>
             </div>
           ) : (
             <div className="text-right">
-              <p className="text-sm font-bold">🎉 מזל טוב!</p>
+              <p className="text-sm md:text-base font-bold">🎉 מזל טוב!</p>
             </div>
           )}
         </div>
@@ -207,7 +207,7 @@ const MiniGoalCard: React.FC<{ goal: any; onClick?: () => void }> = ({ goal, onC
       <div className="flex items-center gap-2">
         <span className="text-lg">{goal.icon}</span>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-slate-800 text-[10px] leading-tight truncate">{goal.name}</p>
+          <p className="font-bold text-slate-800 text-xs md:text-sm leading-tight truncate">{goal.name}</p>
           <div className="flex items-center gap-2 mt-0.5">
             <div className="flex-1 bg-slate-100 h-1 rounded-full overflow-hidden">
               <div
@@ -215,7 +215,7 @@ const MiniGoalCard: React.FC<{ goal: any; onClick?: () => void }> = ({ goal, onC
                 style={{ width: `${progressPercent}%` }}
               ></div>
             </div>
-            <span className="text-[8px] text-slate-600 font-bold whitespace-nowrap">{progressPercent}%</span>
+            <span className="text-[9px] md:text-[10px] text-slate-600 font-bold whitespace-nowrap">{progressPercent}%</span>
           </div>
         </div>
       </div>
@@ -240,8 +240,8 @@ export const GoalsSummary: React.FC = () => {
   return (
     <Card className="bg-gradient-to-r from-indigo-500 to-purple-600 p-3 text-white">
       <div className="flex justify-between items-center mb-2">
-        <span className="text-xs font-bold flex items-center gap-2">
-          <TrendingUp size={14} /> התקדמות כללית
+        <span className="text-sm md:text-base font-bold flex items-center gap-2">
+          <TrendingUp size={16} /> התקדמות כללית
         </span>
         <span className="text-lg font-black">{progressPercent}%</span>
       </div>
@@ -251,7 +251,7 @@ export const GoalsSummary: React.FC = () => {
           style={{ width: `${progressPercent}%` }}
         ></div>
       </div>
-      <div className="flex justify-between mt-2 text-[10px]">
+      <div className="flex justify-between mt-2 text-xs md:text-sm">
         <span>{goalsState.totalCompleted} הושגו</span>
         <span>{totalSaved} / {totalTarget} 💰</span>
       </div>

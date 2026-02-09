@@ -62,8 +62,8 @@ export const InteractiveLesson: React.FC<InteractiveLessonProps> = ({ lesson, on
             <h2 className="text-2xl font-black text-green-800 mb-2">כל הכבוד!</h2>
             <p className="text-green-700 mb-4">{lesson.quiz.reward}</p>
             <div className="bg-white p-4 rounded-xl mb-4">
-              <p className="text-sm text-green-800 font-bold">📊 הישגים:</p>
-              <div className="flex justify-around mt-2 text-xs text-green-700">
+              <p className="text-base md:text-lg text-green-800 font-bold">📊 הישגים:</p>
+              <div className="flex justify-around mt-2 text-sm md:text-base text-green-700">
                 <span>✅ סיפור</span>
                 <span>✅ סימולציה</span>
                 <span>✅ הסבר</span>
@@ -73,10 +73,10 @@ export const InteractiveLesson: React.FC<InteractiveLessonProps> = ({ lesson, on
             </div>
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1" onClick={() => setPhase('hook')}>
-                <Play size={14} /> חזור על השיעור
+                <Play size={16} /> חזור על השיעור
               </Button>
               <Button className="flex-1 bg-green-500" onClick={onComplete}>
-                סיימתי! <Trophy size={14} />
+                סיימתי! <Trophy size={16} />
               </Button>
             </div>
           </div>
@@ -88,8 +88,8 @@ export const InteractiveLesson: React.FC<InteractiveLessonProps> = ({ lesson, on
   return (
     <div className="space-y-4 animate-fadeIn">
       {/* Phase Progress */}
-      <div className="bg-slate-100 p-3 rounded-xl">
-        <div className="flex items-center justify-between text-xs font-bold text-slate-600 mb-2">
+      <div className="bg-slate-100 p-3 md:p-4 rounded-xl">
+        <div className="flex items-center justify-between text-sm md:text-base font-bold text-slate-600 mb-2">
           <span>התקדמות</span>
           <span>שלב {currentPhaseIndex + 1} מתוך 5</span>
         </div>
@@ -104,7 +104,7 @@ export const InteractiveLesson: React.FC<InteractiveLessonProps> = ({ lesson, on
             />
           ))}
         </div>
-        <div className="flex justify-between text-[9px] text-slate-500 mt-1">
+        <div className="flex justify-between text-xs md:text-sm text-slate-500 mt-1">
           <span>📖 סיפור</span>
           <span>🎮 חקירה</span>
           <span>💡 הבנה</span>
@@ -160,7 +160,7 @@ const HookPhase: React.FC<{
   return (
     <Card className="border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50">
       <div className="flex items-center gap-2 mb-4">
-        <span className="bg-indigo-500 text-white p-1.5 rounded-lg text-xs font-black">שלב 1</span>
+        <span className="bg-indigo-500 text-white p-1.5 rounded-lg text-sm md:text-base font-black">שלב 1</span>
         <h3 className="font-bold text-indigo-900">📖 {hook.title}</h3>
       </div>
 
@@ -235,7 +235,7 @@ const ExplorePhase: React.FC<{
   return (
     <Card className="border-2 border-amber-100 bg-gradient-to-br from-amber-50 to-orange-50">
       <div className="flex items-center gap-2 mb-4">
-        <span className="bg-amber-500 text-white p-1.5 rounded-lg text-xs font-black">שלב 2</span>
+        <span className="bg-amber-500 text-white p-1.5 rounded-lg text-sm md:text-base font-black">שלב 2</span>
         <h3 className="font-bold text-amber-900">🎮 {explore.interactiveElement.title}</h3>
       </div>
 
@@ -243,7 +243,7 @@ const ExplorePhase: React.FC<{
 
       {/* Interactive Interest Calculator */}
       <div className="bg-white p-4 rounded-xl border border-amber-100 mb-4">
-        <p className="text-xs text-slate-600 mb-3">{explore.interactiveElement.instruction}</p>
+        <p className="text-sm md:text-base text-slate-600 mb-3">{explore.interactiveElement.instruction}</p>
 
         <div className="text-center mb-4">
           <div className="text-4xl font-black text-amber-600 mb-2">{value} 💰</div>
@@ -256,7 +256,7 @@ const ExplorePhase: React.FC<{
         <div className="flex gap-2">
           <Button
             onClick={handleNextYear}
-            className="flex-1 text-xs"
+            className="flex-1"
             disabled={years >= 5}
           >
             שנה הבא ➡️
@@ -264,7 +264,6 @@ const ExplorePhase: React.FC<{
           <Button
             variant="outline"
             onClick={reset}
-            className="text-xs"
           >
             איפוס 🔄
           </Button>
@@ -318,7 +317,7 @@ const ExplainPhase: React.FC<{
   return (
     <Card className="border-2 border-green-100 bg-gradient-to-br from-green-50 to-emerald-50">
       <div className="flex items-center gap-2 mb-4">
-        <span className="bg-green-500 text-white p-1.5 rounded-lg text-xs font-black">שלב 3</span>
+        <span className="bg-green-500 text-white p-1.5 rounded-lg text-sm md:text-base font-black">שלב 3</span>
         <h3 className="font-bold text-green-900">💧 {explain.conceptName}</h3>
       </div>
 
@@ -379,7 +378,7 @@ const PracticePhase: React.FC<{
   return (
     <Card className="border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50">
       <div className="flex items-center gap-2 mb-4">
-        <span className="bg-blue-500 text-white p-1.5 rounded-lg text-xs font-black">שלב 4</span>
+        <span className="bg-blue-500 text-white p-1.5 rounded-lg text-sm md:text-base font-black">שלב 4</span>
         <h3 className="font-bold text-blue-900">✏️ תרגול - שאלה {currentIndex + 1} מתוך {practice.scenarios.length}</h3>
       </div>
 
@@ -451,7 +450,7 @@ const QuizPhase: React.FC<{
   return (
     <Card className="border-2 border-purple-100 bg-gradient-to-br from-purple-50 to-pink-50">
       <div className="flex items-center gap-2 mb-4">
-        <span className="bg-purple-500 text-white p-1.5 rounded-lg text-xs font-black">שלב 5</span>
+        <span className="bg-purple-500 text-white p-1.5 rounded-lg text-sm md:text-base font-black">שלב 5</span>
         <h3 className="font-bold text-purple-900">🏆 האתגר הסופי!</h3>
       </div>
 

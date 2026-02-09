@@ -53,9 +53,9 @@ export const SaveTab: React.FC = () => {
             <PiggyBank size={28} />
           </div>
         </div>
-        <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center text-[10px] font-bold text-emerald-100">
+        <div className="mt-4 pt-4 border-t border-white/10 flex justify-between items-center text-xs md:text-sm font-bold text-emerald-100">
           <span className="flex items-center gap-1">
-            <ArrowUpRight size={14} /> +12% החודש
+            <ArrowUpRight size={16} /> +12% החודש
           </span>
           <span className="bg-emerald-600/50 px-2 py-1 rounded-lg">ריבית שנתית: 4.5% 📈</span>
         </div>
@@ -79,13 +79,13 @@ export const SaveTab: React.FC = () => {
         <div className="text-center px-2">
           {leftToGoal > 0 ? (
             <div className="bg-indigo-50 py-2 rounded-2xl inline-block px-4 border border-indigo-100">
-              <p className="text-[10px] text-indigo-700 font-black">
-                נשאר רק עוד <span className="text-sm text-indigo-900">{leftToGoal}</span> מטבעות כדי להגיע ל{goalToUse.name}! {goalToUse.icon}
+              <p className="text-xs md:text-sm text-indigo-700 font-black">
+                נשאר רק עוד <span className="text-sm md:text-base text-indigo-900">{leftToGoal}</span> מטבעות כדי להגיע ל{goalToUse.name}! {goalToUse.icon}
               </p>
             </div>
           ) : (
             <div className="bg-emerald-50 py-3 rounded-2xl border-2 border-emerald-200 animate-bounce">
-              <p className="text-xs text-emerald-600 font-black">
+              <p className="text-sm md:text-base text-emerald-600 font-black">
                 מזל טוב! הגעת ליעד! 🎉 הגעת ל{goalToUse.name}!
               </p>
             </div>
@@ -97,17 +97,17 @@ export const SaveTab: React.FC = () => {
             variant="success"
             onClick={handleDepositWithGoal}
             disabled={stats.coins < 50}
-            className="flex-1 text-sm shadow-emerald-100 hover:shadow-emerald-200"
+            className="flex-1 shadow-emerald-100 hover:shadow-emerald-200"
           >
-            הפקד 50 <DollarSign size={14} strokeWidth={3} />
+            הפקד 50 <DollarSign size={16} strokeWidth={3} />
           </Button>
           <Button
             variant="outline"
             onClick={handleWithdraw}
             disabled={stats.savings < 50}
-            className="flex-1 text-red-400 border-red-50 text-xs hover:bg-red-50"
+            className="flex-1 text-red-400 border-red-50 hover:bg-red-50"
           >
-            משיכה <ArrowUpRight className="rotate-90" size={14} />
+            משיכה <ArrowUpRight className="rotate-90" size={16} />
           </Button>
         </div>
       </Card>
@@ -115,7 +115,7 @@ export const SaveTab: React.FC = () => {
       {/* Personal Goals List */}
       {hasPersonalGoals && (
         <div className="bg-indigo-50 p-3 rounded-xl">
-          <h4 className="font-bold text-indigo-900 text-xs mb-2">כל המטרות שלך</h4>
+          <h4 className="font-bold text-indigo-900 text-sm md:text-base mb-2">כל המטרות שלך</h4>
           <PersonalGoalsDisplay />
         </div>
       )}

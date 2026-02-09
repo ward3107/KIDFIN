@@ -9,14 +9,14 @@ interface ButtonProps {
   disabled?: boolean;
 }
 
-export const Button: React.FC<ButtonProps> = ({ 
-  children, 
-  onClick, 
-  variant = 'primary', 
-  className = '', 
-  disabled = false 
+export const Button: React.FC<ButtonProps> = ({
+  children,
+  onClick,
+  variant = 'primary',
+  className = '',
+  disabled = false
 }) => {
-  const baseStyle = "w-full py-3 px-4 rounded-2xl font-bold transition-all transform active:scale-95 shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed";
+  const baseStyle = "w-full py-3 px-4 rounded-2xl font-bold transition-all transform active:scale-95 shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-lg";
   const variants = {
     primary: "bg-blue-500 text-white hover:bg-blue-600 shadow-blue-200",
     success: "bg-emerald-500 text-white hover:bg-emerald-600 shadow-emerald-200",
@@ -35,13 +35,13 @@ export const Button: React.FC<ButtonProps> = ({
 };
 
 export const Card: React.FC<{ children: React.ReactNode; className?: string; onClick?: () => void }> = ({ children, className = "", onClick }) => (
-  <div onClick={onClick} className={`bg-white p-4 rounded-3xl shadow-sm border border-slate-100 ${onClick ? 'cursor-pointer' : ''} ${className}`}>
+  <div onClick={onClick} className={`bg-white p-4 md:p-5 rounded-3xl shadow-sm border border-slate-100 text-base md:text-lg ${onClick ? 'cursor-pointer' : ''} ${className}`}>
     {children}
   </div>
 );
 
 export const Badge: React.FC<{ children: React.ReactNode; className?: string }> = ({ children, className = "" }) => (
-  <span className={`px-2 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${className}`}>
+  <span className={`px-2 py-1 rounded-full text-xs md:text-sm font-black uppercase tracking-wider ${className}`}>
     {children}
   </span>
 );

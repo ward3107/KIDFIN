@@ -78,7 +78,7 @@ export const HomeTab: React.FC = () => {
           <div className="p-2 md:p-3 bg-indigo-500 text-white rounded-xl md:rounded-2xl shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
             <GraduationCap size={20} className="md:w-6 md:h-6" />
           </div>
-          <span className="font-bold text-slate-700 text-xs md:text-sm text-center">אקדמיה (למד)</span>
+          <span className="font-bold text-slate-700 text-sm md:text-base lg:text-lg text-center">אקדמיה (למד)</span>
         </button>
         <button
           onClick={() => setActiveTab('earn')}
@@ -93,7 +93,7 @@ export const HomeTab: React.FC = () => {
           >
             {stats.knowledgePoints >= 1 ? <CheckCircle size={20} className="md:w-6 md:h-6" /> : <Lock size={20} className="md:w-6 md:h-6" />}
           </div>
-          <span className="font-bold text-slate-700 text-xs md:text-sm text-center">
+          <span className="font-bold text-slate-700 text-sm md:text-base lg:text-lg text-center">
             אתגרים {stats.knowledgePoints < 1 && '🔒'}
           </span>
         </button>
@@ -105,7 +105,7 @@ export const HomeTab: React.FC = () => {
           <div className="p-2 md:p-3 bg-green-500 text-white rounded-xl md:rounded-2xl shadow-lg shadow-green-200 group-hover:scale-110 transition-transform">
             <PiggyBank size={20} className="md:w-6 md:h-6" />
           </div>
-          <span className="font-bold text-slate-700 text-xs md:text-sm text-center">חיסכון</span>
+          <span className="font-bold text-slate-700 text-sm md:text-base lg:text-lg text-center">חיסכון</span>
         </button>
         {/* Shop button */}
         <button
@@ -115,7 +115,7 @@ export const HomeTab: React.FC = () => {
           <div className="p-2 md:p-3 bg-pink-500 text-white rounded-xl md:rounded-2xl shadow-lg shadow-pink-200 group-hover:scale-110 transition-transform">
             <ShoppingBag size={20} className="md:w-6 md:h-6" />
           </div>
-          <span className="font-bold text-slate-700 text-xs md:text-sm text-center">חנות</span>
+          <span className="font-bold text-slate-700 text-sm md:text-base lg:text-lg text-center">חנות</span>
         </button>
       </div>
 
@@ -127,12 +127,12 @@ export const HomeTab: React.FC = () => {
           </div>
           <div className="flex-1">
             <div className="flex justify-between items-center mb-1">
-              <h3 className="font-bold text-blue-900 text-sm md:text-base">טיפ מהסנאי</h3>
+              <h3 className="font-bold text-blue-900 text-base md:text-lg">טיפ מהסנאי</h3>
               <button onClick={fetchTip} disabled={isTipLoading} className="text-blue-600">
                 {isTipLoading ? <Loader2 size={16} className="md:w-5 md:h-5 animate-spin" /> : <Sparkles size={16} className="md:w-5 md:h-5" />}
               </button>
             </div>
-            <p className="text-xs md:text-sm text-blue-700 leading-relaxed">
+            <p className="text-sm md:text-base text-blue-700 leading-relaxed">
               {isTipLoading ? "השועל חושב על משהו חכם..." : dailyTip}
             </p>
           </div>

@@ -154,12 +154,12 @@ export const GoalSelectionFlow: React.FC = () => {
                 </div>
               )}
               <div className="text-2xl mb-1">{goal.icon}</div>
-              <div className="font-bold text-slate-800 text-[10px] leading-tight mb-1">{goal.name}</div>
-              <div className="text-orange-600 font-black text-[9px] flex items-center gap-0.5">
+              <div className="font-bold text-slate-800 text-xs md:text-sm leading-tight mb-1">{goal.name}</div>
+              <div className="text-orange-600 font-black text-xs md:text-sm flex items-center gap-0.5">
                 {goal.cost} 💰
               </div>
               {goal.trending && (
-                <div className="absolute top-1 right-1 bg-gradient-to-r from-pink-400 to-purple-400 text-white text-[7px] px-1.5 py-0.5 rounded-full font-bold">
+                <div className="absolute top-1 right-1 bg-gradient-to-r from-pink-400 to-purple-400 text-white text-[8px] md:text-[9px] px-1.5 py-0.5 rounded-full font-bold">
                   🔥
                 </div>
               )}
@@ -180,17 +180,17 @@ export const GoalSelectionFlow: React.FC = () => {
         <Button
           variant="outline"
           onClick={handleBack}
-          className="flex-1 text-xs"
+          className="flex-1"
         >
-          <ChevronRight size={14} /> חזור
+          <ChevronRight size={16} /> חזור
         </Button>
         <Button
           variant={isValid ? 'academy' : 'outline'}
           onClick={handleNext}
           disabled={!isValid}
-          className={`flex-1 text-xs ${!isValid && 'opacity-50 cursor-not-allowed'}`}
+          className={`flex-1 ${!isValid && 'opacity-50 cursor-not-allowed'}`}
         >
-          המשך <ChevronLeft size={14} />
+          המשך <ChevronLeft size={16} />
         </Button>
       </div>
     </div>
@@ -218,8 +218,8 @@ const WelcomeStep: React.FC<{ onNext: () => void }> = ({ onNext }) => {
             <Target size={16} />
           </div>
           <div>
-            <h4 className="font-bold text-green-800 text-xs">צרכים - חשובים</h4>
-            <p className="text-[10px] text-green-700">דברים שאתה צריך לבית ספר ולחיים</p>
+            <h4 className="font-bold text-green-800 text-xs md:text-sm">צרכים - חשובים</h4>
+            <p className="text-xs md:text-sm text-green-700">דברים שאתה צריך לבית ספר ולחיים</p>
           </div>
         </div>
 
@@ -228,8 +228,8 @@ const WelcomeStep: React.FC<{ onNext: () => void }> = ({ onNext }) => {
             <Heart size={16} />
           </div>
           <div>
-            <h4 className="font-bold text-yellow-800 text-xs">רצונות - כיפיים</h4>
-            <p className="text-[10px] text-yellow-700">דברים שיהיה כיף להרוויח</p>
+            <h4 className="font-bold text-yellow-800 text-xs md:text-sm">רצונות - כיפיים</h4>
+            <p className="text-xs md:text-sm text-yellow-700">דברים שיהיה כיף להרוויח</p>
           </div>
         </div>
 
@@ -238,14 +238,14 @@ const WelcomeStep: React.FC<{ onNext: () => void }> = ({ onNext }) => {
             <Star size={16} />
           </div>
           <div>
-            <h4 className="font-bold text-purple-800 text-xs">חלומות - הגדולים!</h4>
-            <p className="text-[10px] text-purple-700">המטרה הראשית שתעבוד לעברה</p>
+            <h4 className="font-bold text-purple-800 text-xs md:text-sm">חלומות - הגדולים!</h4>
+            <p className="text-xs md:text-sm text-purple-700">המטרה הראשית שתעבוד לעברה</p>
           </div>
         </div>
       </div>
 
       <div className="bg-indigo-50 p-3 rounded-xl border-2 border-indigo-200">
-        <p className="text-[10px] text-indigo-800 font-bold text-center">
+        <p className="text-xs md:text-sm text-indigo-800 font-bold text-center">
           💡 כל מטרה שתבחר תהפוך למשימה אמיתית!
         </p>
       </div>
@@ -287,45 +287,45 @@ const ConfirmStep: React.FC<{ onNext: () => void; onBack: () => void }> = ({ onN
 
       {/* Needs summary */}
       <div className="bg-green-50 p-3 rounded-xl border-2 border-green-200">
-        <h4 className="font-bold text-green-800 text-xs mb-2 flex items-center gap-2">
-          <Target size={14} /> הצרכים שלך ({selectedNeeds.length})
+        <h4 className="font-bold text-green-800 text-xs md:text-sm mb-2 flex items-center gap-2">
+          <Target size={16} /> הצרכים שלך ({selectedNeeds.length})
         </h4>
         <div className="space-y-1">
           {selectedNeeds.map(id => (
-            <div key={id} className="text-[10px] text-green-700">{getGoalName(id)}</div>
+            <div key={id} className="text-xs md:text-sm text-green-700">{getGoalName(id)}</div>
           ))}
         </div>
       </div>
 
       {/* Wants summary */}
       <div className="bg-yellow-50 p-3 rounded-xl border-2 border-yellow-200">
-        <h4 className="font-bold text-yellow-800 text-xs mb-2 flex items-center gap-2">
-          <Heart size={14} /> הרצונות שלך ({selectedWants.length})
+        <h4 className="font-bold text-yellow-800 text-xs md:text-sm mb-2 flex items-center gap-2">
+          <Heart size={16} /> הרצונות שלך ({selectedWants.length})
         </h4>
         <div className="space-y-1">
           {selectedWants.map(id => (
-            <div key={id} className="text-[10px] text-yellow-700">{getGoalName(id)}</div>
+            <div key={id} className="text-xs md:text-sm text-yellow-700">{getGoalName(id)}</div>
           ))}
         </div>
       </div>
 
       {/* Dreams summary */}
       <div className="bg-purple-50 p-3 rounded-xl border-2 border-purple-200">
-        <h4 className="font-bold text-purple-800 text-xs mb-2 flex items-center gap-2">
-          <Star size={14} /> החלומות שלך ({selectedDreams.length})
+        <h4 className="font-bold text-purple-800 text-xs md:text-sm mb-2 flex items-center gap-2">
+          <Star size={16} /> החלומות שלך ({selectedDreams.length})
         </h4>
         <div className="space-y-1">
           {selectedDreams.map(id => (
-            <div key={id} className="text-[10px] text-purple-700 font-bold">{getGoalName(id)}</div>
+            <div key={id} className="text-xs md:text-sm text-purple-700 font-bold">{getGoalName(id)}</div>
           ))}
         </div>
       </div>
 
       {/* Total cost */}
       <div className="bg-gradient-to-r from-indigo-50 to-purple-50 p-3 rounded-xl border-2 border-indigo-200 text-center">
-        <p className="text-[10px] text-indigo-700 mb-1">סה״כ צריך להרוויח</p>
+        <p className="text-xs md:text-sm text-indigo-700 mb-1">סה״כ צריך להרוויח</p>
         <p className="text-2xl font-black text-indigo-900">{getTotalCost()} 💰</p>
-        <p className="text-[9px] text-indigo-600 mt-1">
+        <p className="text-xs md:text-sm text-indigo-600 mt-1">
           {Math.ceil(getTotalCost() / 50)} שיעורים או {Math.ceil(getTotalCost() / 30)} משימות!
         </p>
       </div>
@@ -335,14 +335,14 @@ const ConfirmStep: React.FC<{ onNext: () => void; onBack: () => void }> = ({ onN
         <Button
           variant="outline"
           onClick={onBack}
-          className="flex-1 text-xs"
+          className="flex-1"
         >
-          <ChevronRight size={14} /> חזור
+          <ChevronRight size={16} /> חזור
         </Button>
         <Button
           variant="academy"
           onClick={onNext}
-          className="flex-1 text-xs"
+          className="flex-1"
         >
           אישור <Sparkles size={16} />
         </Button>

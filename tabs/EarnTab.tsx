@@ -43,8 +43,8 @@ export const EarnTab: React.FC = () => {
 
       <div className="flex justify-between items-end mb-2">
         <h2 className="text-xl font-black text-slate-800">אתגרים פיננסיים</h2>
-        <div className="text-[10px] font-bold bg-slate-100 px-2 py-1 rounded-lg text-slate-500 flex items-center gap-1">
-          <Calendar size={12} />
+        <div className="text-xs md:text-sm font-bold bg-slate-100 px-2 py-1 rounded-lg text-slate-500 flex items-center gap-1">
+          <Calendar size={14} />
           {dailyTasksGenerated}/{MAX_DAILY_TASKS} להיום
         </div>
       </div>
@@ -55,7 +55,7 @@ export const EarnTab: React.FC = () => {
           {isMissionLoading ? "מייצר אתגר..." : "קבל אתגר חדש"}
         </Button>
       ) : (
-        <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl text-center text-slate-500 text-xs">
+        <div className="bg-slate-50 border border-slate-200 p-4 rounded-2xl text-center text-slate-500 text-sm md:text-base">
           סיימת את האתגרים להיום! חזור מחר.
         </div>
       )}

@@ -97,9 +97,9 @@ const AppContent: React.FC = () => {
         {/* Header */}
         <div className="pt-8 md:pt-5 lg:pt-6 xl:pt-7 pb-2 md:pb-3 px-4 md:px-5 lg:px-6 xl:px-8 bg-white border-b border-slate-100 flex justify-between items-center z-20">
           <div className="flex items-center gap-1">
-            <span className="text-slate-800 font-black text-lg md:text-xl lg:text-2xl xl:text-3xl italic">Dream</span>
-            <span className="text-indigo-600 font-black text-lg md:text-xl lg:text-2xl xl:text-3xl italic"> 4 </span>
-            <span className="text-slate-800 font-black text-lg md:text-xl lg:text-2xl xl:text-3xl italic underline decoration-yellow-400">Save</span>
+            <span className="text-slate-800 font-black text-xl md:text-2xl lg:text-3xl xl:text-4xl italic">Dream</span>
+            <span className="text-indigo-600 font-black text-xl md:text-2xl lg:text-3xl xl:text-4xl italic"> 4 </span>
+            <span className="text-slate-800 font-black text-xl md:text-2xl lg:text-3xl xl:text-4xl italic underline decoration-yellow-400">Save</span>
           </div>
         </div>
 
@@ -147,7 +147,7 @@ const NavButton = ({ icon: Icon, label, active, onClick }: { icon: any; label: s
   >
     {active && <div className="absolute -top-0.5 md:-top-1 w-5 md:w-7 lg:w-9 h-0.5 md:h-1 bg-indigo-600 rounded-full"></div>}
     <Icon size={18} className="md:w-5 md:h-5 lg:w-6 lg:h-6 xl:w-7 xl:h-7" strokeWidth={active ? 2.5 : 2} />
-    <span className={`text-[8px] md:text-[9px] lg:text-[10px] xl:text-xs font-black ${active ? 'opacity-100' : 'opacity-70'}`}>{label}</span>
+    <span className={`text-xs md:text-sm lg:text-base xl:text-lg font-black ${active ? 'opacity-100' : 'opacity-70'}`}>{label}</span>
   </button>
 );
 

@@ -62,7 +62,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   if (variant === 'level') {
     return (
       <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-4 rounded-3xl text-white shadow-lg relative overflow-hidden">
-        <div className="text-indigo-100 text-[10px] font-bold">{displayLabel}</div>
+        <div className="text-indigo-100 text-xs md:text-sm font-bold">{displayLabel}</div>
         <div className="text-2xl font-black">
           {typeof value === 'number' ? `רמה ${value}` : value}
         </div>
@@ -82,7 +82,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   if (variant === 'knowledge') {
     return (
       <div className="bg-white border-2 border-indigo-100 p-4 rounded-3xl shadow-sm flex flex-col justify-center items-center">
-        <div className="text-slate-400 text-[10px] font-bold mb-1">
+        <div className="text-slate-400 text-xs md:text-sm font-bold mb-1">
           {displayIcon && `${displayIcon} `}
           {displayLabel}
         </div>
@@ -95,7 +95,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   if (variant === 'missions') {
     return (
       <div className="bg-gradient-to-br from-orange-500 to-amber-600 p-4 rounded-3xl text-white shadow-lg">
-        <div className="text-orange-100 text-[10px] font-bold">
+        <div className="text-orange-100 text-xs md:text-sm font-bold">
           {displayIcon && `${displayIcon} `}
           {displayLabel}
         </div>
@@ -108,7 +108,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   if (variant === 'coins') {
     return (
       <div className="bg-gradient-to-br from-yellow-400 to-amber-500 p-4 rounded-3xl text-white shadow-lg">
-        <div className="text-yellow-100 text-[10px] font-bold">
+        <div className="text-yellow-100 text-xs md:text-sm font-bold">
           {displayIcon && `${displayIcon} `}
           {displayLabel}
         </div>
@@ -121,7 +121,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   if (variant === 'savings') {
     return (
       <div className="bg-gradient-to-br from-emerald-500 to-green-600 p-4 rounded-3xl text-white shadow-lg">
-        <div className="text-emerald-100 text-[10px] font-bold">
+        <div className="text-emerald-100 text-xs md:text-sm font-bold">
           {displayIcon && `${displayIcon} `}
           {displayLabel}
         </div>
@@ -133,7 +133,7 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   // Fallback for unknown variants
   return (
     <div className="bg-white border-2 border-slate-100 p-4 rounded-3xl shadow-sm">
-      <div className="text-slate-400 text-[10px] font-bold">{displayLabel}</div>
+      <div className="text-slate-400 text-xs md:text-sm font-bold">{displayLabel}</div>
       <div className="text-2xl font-black text-slate-700">{value}</div>
     </div>
   );

@@ -51,8 +51,8 @@ export const JourneyGuide: React.FC<JourneyGuideProps> = ({ tab }) => {
             <Sparkles size={18} />
           </div>
           <div className="flex-1">
-            <h4 className="font-black text-indigo-900 text-sm mb-1">{hint.title}</h4>
-            <p className="text-xs text-indigo-700 leading-relaxed">{hint.message}</p>
+            <h4 className="font-black text-indigo-900 text-base md:text-lg mb-1">{hint.title}</h4>
+            <p className="text-sm md:text-base text-indigo-700 leading-relaxed">{hint.message}</p>
           </div>
         </div>
 
@@ -60,7 +60,7 @@ export const JourneyGuide: React.FC<JourneyGuideProps> = ({ tab }) => {
         <Button
           onClick={handleAction}
           variant="academy"
-          className="w-full text-xs py-2 shadow-indigo-200"
+          className="w-full text-sm md:text-base py-2 shadow-indigo-200"
         >
           {hint.actionLabel}
           <ArrowRight size={14} />
@@ -77,13 +77,13 @@ export const JourneyProgress: React.FC = () => {
   const { journeyProgress, toggleJourneyGuide } = useJourney();
 
   return (
-    <div className="bg-white border-2 border-slate-100 rounded-2xl p-3">
+    <div className="bg-white border-2 border-slate-100 rounded-2xl p-3 md:p-4">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <MapPin className="text-indigo-500" size={16} />
-          <span className="font-bold text-slate-700 text-xs">המסע שלך</span>
+          <span className="font-bold text-slate-700 text-sm md:text-base">המסע שלך</span>
         </div>
-        <span className="text-[10px] text-slate-500 font-bold">
+        <span className="text-xs md:text-sm text-slate-500 font-bold">
           {journeyProgress.current}/{journeyProgress.total} שלבים
         </span>
       </div>

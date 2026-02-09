@@ -25,11 +25,11 @@ export const ShopTab: React.FC = () => {
       <div className="flex gap-2 mb-3 justify-center">
         <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full border border-green-200">
           <span className="w-2 h-2 rounded-full bg-green-500"></span>
-          <span className="text-[9px] font-bold text-green-700">צורך</span>
+          <span className="text-xs md:text-sm font-bold text-green-700">צורך</span>
         </div>
         <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-full border border-yellow-200">
           <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-          <span className="text-[9px] font-bold text-yellow-700">רצון</span>
+          <span className="text-xs md:text-sm font-bold text-yellow-700">רצון</span>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -45,15 +45,15 @@ export const ShopTab: React.FC = () => {
             ></div>
             <div className="text-4xl group-hover:scale-110 transition-transform">{reward.icon}</div>
             <div className="text-center">
-              <div className="font-black text-slate-800 text-[11px] leading-tight mb-0.5">{reward.name}</div>
-              <div className="text-orange-600 font-black text-[10px] flex items-center justify-center gap-0.5">
-                <DollarSign size={10} strokeWidth={3} /> {reward.price}
+              <div className="font-black text-slate-800 text-xs md:text-sm leading-tight mb-0.5">{reward.name}</div>
+              <div className="text-orange-600 font-black text-xs md:text-sm flex items-center justify-center gap-0.5">
+                <DollarSign size={12} strokeWidth={3} /> {reward.price}
               </div>
             </div>
             <button
               onClick={() => handlePurchase(reward)}
               disabled={stats.coins < reward.price}
-              className={`w-full font-black text-[9px] py-2 rounded-xl mt-1 transition-all ${
+              className={`w-full font-black text-xs md:text-sm py-2 rounded-xl mt-1 transition-all ${
                 stats.coins >= reward.price
                   ? 'bg-white text-slate-800 hover:bg-slate-800 hover:text-white border'
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
