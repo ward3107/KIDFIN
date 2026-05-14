@@ -1,14 +1,29 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { DollarSign } from 'lucide-react';
 import { REWARDS } from '../constants';
 import { JourneyGuide, CurrentStepCard } from '../components/JourneyGuide';
+import { VatBreakdown } from '../components/VatBreakdown';
+import { PaymentMethodPicker } from '../components/PaymentMethodPicker';
 import { useAppContext } from '../context/AppContext';
+import { Reward } from '../types';
 
 /**
  * Rewards shop tab component for purchasing items with coins
  */
 export const ShopTab: React.FC = () => {
   const { stats, handlePurchase } = useAppContext();
+  const [pendingPurchase, setPendingPurchase] = useState<Reward | null>(null);
+
+  const onBuyClick = (reward: Reward) => {
+    if (stats.coins < reward.price) return;
+    setPendingPurchase(reward);
+  };
+
+  const completePurchase = () => {
+    if (!pendingPurchase) return;
+    handlePurchase(pendingPurchase);
+    setPendingPurchase(null);
+  };
 
   return (
     <div className="space-y-4 animate-fadeIn">
@@ -48,10 +63,11 @@ export const ShopTab: React.FC = () => {
               <div className="font-black text-slate-800 text-xs md:text-sm leading-tight mb-0.5">{reward.name}</div>
               <div className="text-orange-600 font-black text-xs md:text-sm flex items-center justify-center gap-0.5">
                 <DollarSign size={12} strokeWidth={3} /> {reward.price}
+                <VatBreakdown price={reward.price} />
               </div>
             </div>
             <button
-              onClick={() => handlePurchase(reward)}
+              onClick={() => onBuyClick(reward)}
               disabled={stats.coins < reward.price}
               className={`w-full font-black text-xs md:text-sm py-2 rounded-xl mt-1 transition-all ${
                 stats.coins >= reward.price
@@ -67,6 +83,14 @@ export const ShopTab: React.FC = () => {
 
       {/* Journey Guide */}
       <JourneyGuide tab="shop" />
+
+      {pendingPurchase && (
+        <PaymentMethodPicker
+          reward={pendingPurchase}
+          onSelect={completePurchase}
+          onCancel={() => setPendingPurchase(null)}
+        />
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { GraduationCap, X, Wallet, ChevronLeft, ShieldAlert, Baby, Banknote as BanknoteIcon } from 'lucide-react';
+import { GraduationCap, X, Wallet, ChevronLeft, ShieldAlert, Baby, Banknote as BanknoteIcon, TrendingUp, Briefcase } from 'lucide-react';
 import { Button, Card } from '../components/UI';
 import { InteractiveLesson } from '../components/InteractiveLesson';
 import { LessonCatalog } from '../components/LessonCatalog';
@@ -8,6 +8,8 @@ import { PayStubSimulator } from '../components/PayStubSimulator';
 import { ScamMiniGame } from '../components/ScamMiniGame';
 import { ChildSavingsSimulator } from '../components/ChildSavingsSimulator';
 import { BanknoteGame } from '../components/BanknoteGame';
+import { InvestingSimulator } from '../components/InvestingSimulator';
+import { LemonadeStand } from '../components/LemonadeStand';
 import { useAppContext } from '../context/AppContext';
 import { INTERACTIVE_LESSONS, LessonV2 } from '../config/lessonsV2';
 
@@ -31,9 +33,9 @@ interface SimulatorCard {
  * Stories + Simulations + Characters + Learning by Doing
  */
 export const SchoolTab: React.FC = () => {
-  const { stats, gameActions, triggerConfetti } = useAppContext();
+  const { stats, gameActions, triggerConfetti, markSimulatorComplete } = useAppContext();
   const [currentLesson, setCurrentLesson] = React.useState<LessonV2 | null>(null);
-  const [activeSim, setActiveSim] = React.useState<null | 'payStub' | 'scam' | 'childSavings' | 'banknote'>(null);
+  const [activeSim, setActiveSim] = React.useState<null | 'payStub' | 'scam' | 'childSavings' | 'banknote' | 'investing' | 'lemonade'>(null);
 
   const handleLessonComplete = () => {
     // Award coins and knowledge points
@@ -48,8 +50,33 @@ export const SchoolTab: React.FC = () => {
     triggerConfetti();
   };
 
-  const handlePayStubComplete = () => grantReward({ coins: 40, xp: 20, knowledgePoints: 1 });
-  const handleChildSavingsComplete = () => grantReward({ coins: 35, xp: 15, knowledgePoints: 1 });
+  const handlePayStubComplete = () => {
+    grantReward({ coins: 40, xp: 20, knowledgePoints: 1 });
+    markSimulatorComplete('paystub');
+  };
+  const handleChildSavingsComplete = () => {
+    grantReward({ coins: 35, xp: 15, knowledgePoints: 1 });
+    markSimulatorComplete('childSavings');
+  };
+  const handleInvestingComplete = () => {
+    grantReward({ coins: 35, xp: 15, knowledgePoints: 1 });
+    markSimulatorComplete('investing');
+  };
+  const handleLemonadeComplete = (profit: number) => {
+    // Reward scales with how much profit the kid made (capped). Loss still pays
+    // a small participation award so trying things out is encouraged.
+    const profitCoins = Math.max(15, Math.min(60, Math.round(profit / 2)));
+    grantReward({ coins: profitCoins, xp: 20, knowledgePoints: 1 });
+    markSimulatorComplete('lemonade', { lemonadeProfit: profit });
+  };
+  const handleScamComplete = (reward: { coins: number; xp: number; knowledgePoints: number }) => {
+    grantReward(reward);
+    markSimulatorComplete('scam', { scamGold: reward.knowledgePoints === 1 && reward.coins >= 80 });
+  };
+  const handleBanknoteComplete = (reward: { coins: number; xp: number; knowledgePoints: number }) => {
+    grantReward(reward);
+    markSimulatorComplete('banknote');
+  };
 
   const simulators: SimulatorCard[] = [
     {
@@ -108,6 +135,34 @@ export const SchoolTab: React.FC = () => {
       chevron: 'text-amber-600',
       onClick: () => setActiveSim('banknote'),
     },
+    {
+      key: 'investing',
+      title: 'סיכון מול תשואה',
+      blurb: 'איפה לשים 1,000 ₪ לשנה?',
+      Icon: TrendingUp,
+      border: 'border-violet-100',
+      bg: 'from-violet-50 to-indigo-50',
+      iconBg: 'bg-violet-500',
+      iconShadow: 'shadow-violet-200',
+      text: 'text-violet-900',
+      badge: 'bg-violet-200 text-violet-900',
+      chevron: 'text-violet-600',
+      onClick: () => setActiveSim('investing'),
+    },
+    {
+      key: 'lemonade',
+      title: 'דוכן לימונדה',
+      blurb: 'פתח עסק קטן ל-7 ימים',
+      Icon: Briefcase,
+      border: 'border-yellow-100',
+      bg: 'from-yellow-50 to-amber-50',
+      iconBg: 'bg-yellow-500',
+      iconShadow: 'shadow-yellow-200',
+      text: 'text-yellow-900',
+      badge: 'bg-yellow-200 text-yellow-900',
+      chevron: 'text-yellow-600',
+      onClick: () => setActiveSim('lemonade'),
+    },
   ];
 
   // Show catalog when no lesson is active
@@ -146,7 +201,7 @@ export const SchoolTab: React.FC = () => {
           <PayStubSimulator onClose={() => setActiveSim(null)} onComplete={handlePayStubComplete} />
         )}
         {activeSim === 'scam' && (
-          <ScamMiniGame onClose={() => setActiveSim(null)} onComplete={grantReward} />
+          <ScamMiniGame onClose={() => setActiveSim(null)} onComplete={handleScamComplete} />
         )}
         {activeSim === 'childSavings' && (
           <ChildSavingsSimulator
@@ -155,7 +210,19 @@ export const SchoolTab: React.FC = () => {
           />
         )}
         {activeSim === 'banknote' && (
-          <BanknoteGame onClose={() => setActiveSim(null)} onComplete={grantReward} />
+          <BanknoteGame onClose={() => setActiveSim(null)} onComplete={handleBanknoteComplete} />
+        )}
+        {activeSim === 'investing' && (
+          <InvestingSimulator
+            onClose={() => setActiveSim(null)}
+            onComplete={handleInvestingComplete}
+          />
+        )}
+        {activeSim === 'lemonade' && (
+          <LemonadeStand
+            onClose={() => setActiveSim(null)}
+            onComplete={handleLemonadeComplete}
+          />
         )}
       </div>
     );

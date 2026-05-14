@@ -76,6 +76,8 @@ interface AppContextType {
   handleDeposit: (charityPercent?: 0 | 10 | 20) => void;
   handleWithdraw: () => void;
   handlePurchase: (reward: Reward) => void;
+  /** Record that a simulator (by id) was completed; optionally captures perf data. */
+  markSimulatorComplete: (id: string, extras?: { scamGold?: boolean; lemonadeProfit?: number }) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -142,6 +144,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     missionsCompleted,
     missionsState.dailyTasksGenerated,
     userBehavior.purchases.length,
+    userBehavior.simulatorsCompleted?.length ?? 0,
+    userBehavior.scamGoldRuns ?? 0,
+    userBehavior.lemonadeBestProfit ?? -1,
+    userBehavior.donationCount ?? 0,
   ]);
 
   const checkMilestones = useCallback((newSavings: number) => {
@@ -193,6 +199,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     gameActions.addCoins(50);
   }, [stats.savings, gameActions]);
 
+  const markSimulatorComplete = useCallback(
+    (id: string, extras?: { scamGold?: boolean; lemonadeProfit?: number }) => {
+      setUserBehavior(prev => {
+        const prior = prev.simulatorsCompleted ?? [];
+        const simulatorsCompleted = prior.includes(id) ? prior : [...prior, id];
+        const scamGoldRuns = (prev.scamGoldRuns ?? 0) + (extras?.scamGold ? 1 : 0);
+        const lemonadeBestProfit =
+          extras?.lemonadeProfit !== undefined
+            ? Math.max(prev.lemonadeBestProfit ?? -Infinity, extras.lemonadeProfit)
+            : prev.lemonadeBestProfit;
+        return { ...prev, simulatorsCompleted, scamGoldRuns, lemonadeBestProfit };
+      });
+    },
+    [setUserBehavior]
+  );
+
   const handlePurchase = useCallback((reward: Reward) => {
     if (stats.coins < reward.price) return;
     gameActions.removeCoins(reward.price);
@@ -235,6 +257,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     handleDeposit,
     handleWithdraw,
     handlePurchase,
+    markSimulatorComplete,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

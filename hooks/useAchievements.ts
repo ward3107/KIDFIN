@@ -93,6 +93,15 @@ export function useAchievements(storageKey: string = 'save4dream_achievements'):
         }
         case 'level_up':          shouldUnlock = stats.level >= 2; break;
         case 'high_roller':       shouldUnlock = stats.coins >= 1000; break;
+
+        // Simulator achievements
+        case 'sim_paystub':       shouldUnlock = (userBehavior.simulatorsCompleted ?? []).includes('paystub'); break;
+        case 'sim_child_savings': shouldUnlock = (userBehavior.simulatorsCompleted ?? []).includes('childSavings'); break;
+        case 'sim_banknote':      shouldUnlock = (userBehavior.simulatorsCompleted ?? []).includes('banknote'); break;
+        case 'sim_investing':     shouldUnlock = (userBehavior.simulatorsCompleted ?? []).includes('investing'); break;
+        case 'sim_scam_gold':     shouldUnlock = (userBehavior.scamGoldRuns ?? 0) >= 1; break;
+        case 'sim_lemonade_profit': shouldUnlock = (userBehavior.lemonadeBestProfit ?? -Infinity) > 0; break;
+        case 'first_charity':     shouldUnlock = (userBehavior.donationCount ?? 0) >= 1; break;
       }
 
       if (shouldUnlock) {

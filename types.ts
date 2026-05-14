@@ -158,6 +158,12 @@ export interface UserBehavior {
   totalSpent: number;
   totalDonated?: number;
   donationCount?: number;
+  /** Ids of simulators the user has completed at least once. */
+  simulatorsCompleted?: ReadonlyArray<string>;
+  /** Number of perfect (gold) scam-game runs. */
+  scamGoldRuns?: number;
+  /** Best profit in any single lemonade-stand week. */
+  lemonadeBestProfit?: number;
 }
 
 // ============================================================================

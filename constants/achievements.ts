@@ -124,6 +124,64 @@ export const ACHIEVEMENTS: Achievement[] = [
     achieved: false,
     category: 'special',
   },
+
+  // Simulator achievements
+  {
+    id: 'sim_paystub',
+    name: 'מבין בתלוש',
+    icon: '🧾',
+    description: 'גילית למה ברוטו זה לא נטו!',
+    achieved: false,
+    category: 'learning',
+  },
+  {
+    id: 'sim_scam_gold',
+    name: 'בלש סייבר',
+    icon: '🕵️',
+    description: 'זיהית את כל ההונאות מההפעם הראשונה!',
+    achieved: false,
+    category: 'special',
+  },
+  {
+    id: 'sim_child_savings',
+    name: 'חוקר חיסכון',
+    icon: '🍼',
+    description: 'גילית את החיסכון לכל ילד שלך!',
+    achieved: false,
+    category: 'learning',
+  },
+  {
+    id: 'sim_banknote',
+    name: 'מומחה לשטרות',
+    icon: '💴',
+    description: 'הכרת את כל המשוררים שעל השטרות!',
+    achieved: false,
+    category: 'learning',
+  },
+  {
+    id: 'sim_investing',
+    name: 'משקיע צעיר',
+    icon: '📈',
+    description: 'התנסית בחלוקת תיק השקעות!',
+    achieved: false,
+    category: 'learning',
+  },
+  {
+    id: 'sim_lemonade_profit',
+    name: 'יזם קטן',
+    icon: '🍋',
+    description: 'הרווחת בשבוע אחד של דוכן לימונדה!',
+    achieved: false,
+    category: 'special',
+  },
+  {
+    id: 'first_charity',
+    name: 'נדבן צעיר',
+    icon: '❤️',
+    description: 'תרמת מהפקדה ראשונה לצדקה!',
+    achieved: false,
+    category: 'special',
+  },
 ];
 
 /**
