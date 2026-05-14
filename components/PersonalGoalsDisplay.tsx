@@ -3,6 +3,7 @@ import { Target, Heart, Star, TrendingUp, CheckCircle, Lock } from 'lucide-react
 import { Card } from './UI';
 import { usePersonalGoals } from '../hooks/usePersonalGoals';
 import { useAppContext } from '../context/AppContext';
+import type { UserPersonalGoal } from '../types/goals';
 
 /**
  * Display user's personal goals with progress
@@ -99,7 +100,7 @@ export const PersonalGoalsDisplay: React.FC = () => {
  * Featured active goal card
  */
 const ActiveGoalCard: React.FC<{
-  goal: any;
+  goal: UserPersonalGoal;
   isPrimary?: boolean;
   onQuickSave?: () => void;
   canSave?: boolean;
@@ -187,7 +188,7 @@ const ActiveGoalCard: React.FC<{
 /**
  * Mini goal card for list views
  */
-const MiniGoalCard: React.FC<{ goal: any; onClick?: () => void }> = ({ goal, onClick }) => {
+const MiniGoalCard: React.FC<{ goal: UserPersonalGoal; onClick?: () => void }> = ({ goal, onClick }) => {
   const progressPercent = Math.min(100, Math.floor((goal.currentSavings / goal.targetCost) * 100));
 
   return (

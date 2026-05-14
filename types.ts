@@ -1,19 +1,11 @@
 // ============================================================================
-// BRANDED TYPES - Type-safe IDs to prevent mixing them up
+// ID TYPES - kept as aliases for documentation
 // ============================================================================
 
-type Branded<T, B> = T & { __brand: B };
-
-export type MissionId = Branded<string, 'MissionId'>;
-export type RewardId = Branded<string, 'RewardId'>;
-export type ScenarioId = Branded<string, 'ScenarioId'>;
-export type AchievementId = Branded<string, 'AchievementId'>;
-
-// Helper functions to create branded IDs
-export const createMissionId = (id: string): MissionId => id as MissionId;
-export const createRewardId = (id: string): RewardId => id as RewardId;
-export const createScenarioId = (id: string): ScenarioId => id as ScenarioId;
-export const createAchievementId = (id: string): AchievementId => id as AchievementId;
+export type MissionId = string;
+export type RewardId = string;
+export type ScenarioId = string;
+export type AchievementId = string;
 
 // ============================================================================
 // LITERAL TYPES AND ENUMS
@@ -52,37 +44,22 @@ export type JourneyStage =
   | 'mastering';
 
 // ============================================================================
-// DISCRIMINATED UNIONS - Better type safety with state machines
+// MISSION
 // ============================================================================
 
-export type Mission = MissionPending | MissionCompleted;
-
-export interface MissionBase {
+export interface Mission {
   readonly id: MissionId;
   readonly title: string;
   readonly reward: number;
   readonly icon: string;
-  readonly isAiGenerated: boolean;
+  readonly isAiGenerated?: boolean;
+  readonly status?: MissionStatus;
+  readonly completed: boolean;
+  readonly completedAt?: number;
 }
 
-export interface MissionPending extends MissionBase {
-  status: 'pending';
-  completed: false;
-  completedAt?: never;
-}
-
-export interface MissionCompleted extends MissionBase {
-  status: 'completed';
-  completed: true;
-  completedAt: number;
-}
-
-// Type guard for mission status
-export const isMissionCompleted = (mission: Mission): mission is MissionCompleted =>
-  mission.status === 'completed';
-
-export const isMissionPending = (mission: Mission): mission is MissionPending =>
-  mission.status === 'pending';
+export const isMissionCompleted = (mission: Mission): boolean =>
+  mission.completed === true;
 
 // ============================================================================
 // CORE INTERFACES with Readonly and strict typing
@@ -119,14 +96,14 @@ export interface PracticeExample {
 }
 
 export interface Lesson {
-  readonly id: string;
+  readonly id?: string;
   readonly concept: string;
   readonly question: string;
   readonly options: readonly string[];
   readonly correctIndex: number;
-  readonly difficulty: LessonDifficulty;
-  readonly category: LessonCategory;
-  readonly examples: readonly PracticeExample[];
+  readonly difficulty?: LessonDifficulty;
+  readonly category?: LessonCategory;
+  readonly examples?: readonly PracticeExample[];
 }
 
 export type LessonPhase = 'learn' | 'practice' | 'quiz';
@@ -185,50 +162,29 @@ export interface UserBehavior {
 // MILESTONE & ACHIEVEMENT TYPES
 // ============================================================================
 
-export type Milestone = MilestoneUnachieved | MilestoneAchieved;
-
-export interface MilestoneBase {
+export interface Milestone {
   readonly percentage: number;
   readonly name: string;
   readonly icon: string;
   readonly description: string;
+  achieved: boolean;
+  achievedAt?: number | null;
 }
 
-export interface MilestoneUnachieved extends MilestoneBase {
-  achieved: false;
-  achievedAt: null;
-}
-
-export interface MilestoneAchieved extends MilestoneBase {
-  achieved: true;
-  achievedAt: number;
-}
-
-export type Achievement = AchievementUnlocked | AchievementLocked;
-
-export interface AchievementBase {
+export interface Achievement {
   readonly id: AchievementId;
   readonly name: string;
   readonly icon: string;
   readonly description: string;
   readonly category: AchievementCategory;
+  achieved: boolean;
+  achievedAt?: number | null;
 }
 
-export interface AchievementLocked extends AchievementBase {
-  achieved: false;
-  achievedAt: null;
-}
-
-export interface AchievementUnlocked extends AchievementBase {
-  achieved: true;
-  achievedAt: number;
-}
-
-// Type guards for achievements and milestones
-export const isAchievementUnlocked = (achievement: Achievement): achievement is AchievementUnlocked =>
+export const isAchievementUnlocked = (achievement: Achievement): boolean =>
   achievement.achieved === true;
 
-export const isMilestoneAchieved = (milestone: Milestone): milestone is MilestoneAchieved =>
+export const isMilestoneAchieved = (milestone: Milestone): boolean =>
   milestone.achieved === true;
 
 // ============================================================================
@@ -244,29 +200,18 @@ export interface ScenarioChoice {
   readonly xpReward?: number;
 }
 
-export type Scenario = ScenarioPending | ScenarioCompleted;
-
-export interface ScenarioBase {
+export interface Scenario {
   readonly id: ScenarioId;
   readonly title: string;
   readonly description: string;
   readonly icon: string;
   readonly category: ScenarioCategory;
   readonly choices: readonly ScenarioChoice[];
+  completed: boolean;
+  completedAt?: number | null;
 }
 
-export interface ScenarioPending extends ScenarioBase {
-  completed: false;
-  completedAt: null;
-}
-
-export interface ScenarioCompleted extends ScenarioBase {
-  completed: true;
-  completedAt: number;
-}
-
-// Type guard for scenarios
-export const isScenarioCompleted = (scenario: Scenario): scenario is ScenarioCompleted =>
+export const isScenarioCompleted = (scenario: Scenario): boolean =>
   scenario.completed === true;
 
 // ============================================================================

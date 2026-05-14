@@ -19,6 +19,8 @@ const STORAGE_KEYS = {
   DAILY_TASKS: 'save4dream_daily_tasks',
   USER_BEHAVIOR: 'save4dream_user_behavior',
   MILESTONES: 'save4dream_milestones',
+  ACHIEVEMENTS: 'save4dream_achievements',
+  SCENARIOS: 'save4dream_scenarios',
 };
 
 // Context interface
@@ -112,7 +114,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     newlyUnlocked,
     clearNewlyUnlocked,
     checkAchievements,
-  } = useAchievements(STORAGE_KEYS.MILESTONES + '_achievements');
+  } = useAchievements(STORAGE_KEYS.ACHIEVEMENTS);
 
   // Calculate completed missions count for achievements
   const missionsCompleted = missions.filter(m => m.completed).length;
@@ -138,7 +140,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [milestoneNotification, setMilestoneNotification] = useState<Milestone | null>(null);
 
   // Scenario state
-  const [scenarios, setScenarios] = useLocalStorage(STORAGE_KEYS.MISSIONS + '_scenarios', SCENARIOS);
+  const [scenarios, setScenarios] = useLocalStorage(STORAGE_KEYS.SCENARIOS, SCENARIOS);
   const [currentScenario, setCurrentScenario] = useState<Scenario | null>(null);
   const [showScenario, setShowScenario] = useState(false);
 
