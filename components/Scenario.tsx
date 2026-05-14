@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Scenario, ScenarioChoice } from '../types';
 import { Button } from './UI';
 
@@ -35,15 +35,16 @@ export const ScenarioModal: React.FC<ScenarioComponentProps> = ({
 }) => {
   const [selectedChoice, setSelectedChoice] = useState<ScenarioChoice | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
 
   const handleChoiceClick = (choice: ScenarioChoice) => {
     setSelectedChoice(choice);
     setShowFeedback(true);
-
-    // Notify parent component after a short delay for visual effect
-    setTimeout(() => {
-      onChoice(choice);
-    }, 1500);
+    timerRef.current = setTimeout(() => onChoice(choice), 1500);
   };
 
   const handleReset = () => {
@@ -120,11 +121,11 @@ export const ScenarioModal: React.FC<ScenarioComponentProps> = ({
               </div>
 
               {/* Rewards */}
-              {selectedChoice && (selectedChoice.coinsReward > 0 || selectedChoice.xpReward > 0) && (
+              {selectedChoice && ((selectedChoice.coinsReward ?? 0) > 0 || (selectedChoice.xpReward ?? 0) > 0) && (
                 <div className="bg-indigo-50 p-4 rounded-2xl border border-indigo-100">
                   <p className="text-sm font-black text-indigo-900 mb-2">הרווחת:</p>
                   <div className="flex gap-4">
-                    {selectedChoice.coinsReward > 0 && (
+                    {(selectedChoice.coinsReward ?? 0) > 0 && (
                       <div className="flex items-center gap-1">
                         <span className="text-orange-500 font-black text-sm">
                           {selectedChoice.coinsReward}
@@ -132,7 +133,7 @@ export const ScenarioModal: React.FC<ScenarioComponentProps> = ({
                         <span className="text-xs text-slate-600">מטבעות</span>
                       </div>
                     )}
-                    {selectedChoice.xpReward > 0 && (
+                    {(selectedChoice.xpReward ?? 0) > 0 && (
                       <div className="flex items-center gap-1">
                         <span className="text-indigo-500 font-black text-sm">
                           {selectedChoice.xpReward}

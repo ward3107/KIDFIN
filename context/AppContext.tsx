@@ -1,29 +1,28 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { UserStats, Mission, Lesson, Reward, UserBehavior, Milestone, Scenario } from '../types';
-import { INITIAL_MISSIONS } from '../constants';
+import { UserStats, Mission, Lesson, Reward, UserBehavior, Milestone, Scenario, ScenarioChoice } from '../types';
 import { SAVINGS_MILESTONES } from '../constants/milestones';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useGameStats } from '../hooks/useGameStats';
 import { useAchievements } from '../hooks/useAchievements';
-import { getDailyTip, generateMagicMission, generateLesson, updateLessonProgress } from '../services/geminiService';
-import { SCENARIOS } from '../config/scenarios';
+import { useNotifications } from '../hooks/useNotifications';
+import { useLessonState } from '../hooks/useLessonState';
+import { useScenarioState } from '../hooks/useScenarioState';
+import { useMissionsState } from '../hooks/useMissionsState';
 
-// Constants
 export const MAX_DAILY_TASKS = 3;
 export const BIKE_GOAL = 1200;
 
-// LocalStorage keys
 const STORAGE_KEYS = {
   STATS: 'save4dream_stats',
   MISSIONS: 'save4dream_missions',
   DAILY_TASKS: 'save4dream_daily_tasks',
   USER_BEHAVIOR: 'save4dream_user_behavior',
   MILESTONES: 'save4dream_milestones',
+  ACHIEVEMENTS: 'save4dream_achievements',
+  SCENARIOS: 'save4dream_scenarios',
 };
 
-// Context interface
 interface AppContextType {
-  // State
   activeTab: string;
   setActiveTab: (tab: string) => void;
   stats: UserStats;
@@ -64,8 +63,6 @@ interface AppContextType {
   setCurrentLesson: React.Dispatch<React.SetStateAction<Lesson | null>>;
   lessonResult: 'success' | 'failure' | null;
   setLessonResult: React.Dispatch<React.SetStateAction<'success' | 'failure' | null>>;
-
-  // Functions
   fetchTip: () => Promise<void>;
   handleMagicMission: () => Promise<void>;
   handleStartLesson: () => Promise<void>;
@@ -73,27 +70,24 @@ interface AppContextType {
   completeMission: (id: string, reward: number) => void;
   triggerConfetti: () => void;
   checkMilestones: (newSavings: number) => void;
-  handleScenarioChoice: (choice: any) => void;
+  handleScenarioChoice: (choice: ScenarioChoice) => void;
   triggerRandomScenario: () => void;
-  handleDeposit: () => void;
+  /** Deposit 50 coins; charityPercent (0/10/20) routes that share to tzedaka instead of savings. */
+  handleDeposit: (charityPercent?: 0 | 10 | 20) => void;
   handleWithdraw: () => void;
   handlePurchase: (reward: Reward) => void;
+  /** Record that a simulator (by id) was completed; optionally captures perf data. */
+  markSimulatorComplete: (id: string, extras?: { scamGold?: boolean; lemonadeProfit?: number }) => void;
 }
 
-// Create context with undefined as default (will be set by provider)
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Provider component
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activeTab, setActiveTab] = useState<string>('home');
+  const [stats, gameActions] = useGameStats({ storageKey: STORAGE_KEYS.STATS });
 
-  // Use useGameStats for all game stats with automatic persistence
-  const [stats, gameActions] = useGameStats({
-    storageKey: STORAGE_KEYS.STATS,
-  });
-
-  const [missions, setMissions] = useLocalStorage<Mission[]>(STORAGE_KEYS.MISSIONS, INITIAL_MISSIONS);
-  const [dailyTasksGenerated, setDailyTasksGenerated] = useLocalStorage<number>(STORAGE_KEYS.DAILY_TASKS, 0);
+  const notifications = useNotifications();
+  const { triggerConfetti, setPurchaseNotification, setMilestoneNotification } = notifications;
 
   const [userBehavior, setUserBehavior] = useLocalStorage<UserBehavior>(STORAGE_KEYS.USER_BEHAVIOR, {
     purchases: [],
@@ -102,258 +96,152 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     totalEarned: 0,
     totalSpent: 0,
   });
-
   const [milestones, setMilestones] = useLocalStorage<Milestone[]>(STORAGE_KEYS.MILESTONES, SAVINGS_MILESTONES);
 
-  // Achievement system
+  const missionsState = useMissionsState({
+    missionsKey: STORAGE_KEYS.MISSIONS,
+    dailyTasksKey: STORAGE_KEYS.DAILY_TASKS,
+    maxDailyTasks: MAX_DAILY_TASKS,
+    gameActions,
+    triggerConfetti,
+  });
+
+  const lessonState = useLessonState({
+    knowledgePoints: stats.knowledgePoints,
+    gameActions,
+    triggerConfetti,
+  });
+
+  const scenarioState = useScenarioState({
+    storageKey: STORAGE_KEYS.SCENARIOS,
+    gameActions,
+    triggerConfetti,
+  });
+
   const {
     achievements,
     totalUnlocked,
     newlyUnlocked,
     clearNewlyUnlocked,
     checkAchievements,
-  } = useAchievements(STORAGE_KEYS.MILESTONES + '_achievements');
+  } = useAchievements(STORAGE_KEYS.ACHIEVEMENTS);
 
-  // Calculate completed missions count for achievements
-  const missionsCompleted = missions.filter(m => m.completed).length;
+  const missionsCompleted = missionsState.missions.filter(m => m.completed).length;
 
-  // Check for achievements when stats, behavior, or missions change
   useEffect(() => {
     checkAchievements({
       stats,
       userBehavior,
       missionsCompleted,
-      dailyTasksCompleted: dailyTasksGenerated,
+      dailyTasksCompleted: missionsState.dailyTasksGenerated,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stats.savings, stats.knowledgePoints, stats.level, stats.coins, missionsCompleted, dailyTasksGenerated, userBehavior.purchases.length]);
+  }, [
+    stats.savings,
+    stats.knowledgePoints,
+    stats.level,
+    stats.coins,
+    missionsCompleted,
+    missionsState.dailyTasksGenerated,
+    userBehavior.purchases.length,
+    userBehavior.simulatorsCompleted?.length ?? 0,
+    userBehavior.scamGoldRuns ?? 0,
+    userBehavior.lemonadeBestProfit ?? -1,
+    userBehavior.donationCount ?? 0,
+  ]);
 
-  // Non-persistent state (kept as regular useState)
-  const [dailyTip, setDailyTip] = useState<string>("טוען טיפ חכם בשבילך...");
-  const [isTipLoading, setIsTipLoading] = useState(false);
-  const [isMissionLoading, setIsMissionLoading] = useState(false);
-  const [isLessonLoading, setIsLessonLoading] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
-  const [purchaseNotification, setPurchaseNotification] = useState<Reward | null>(null);
-  const [milestoneNotification, setMilestoneNotification] = useState<Milestone | null>(null);
-
-  // Scenario state
-  const [scenarios, setScenarios] = useLocalStorage(STORAGE_KEYS.MISSIONS + '_scenarios', SCENARIOS);
-  const [currentScenario, setCurrentScenario] = useState<Scenario | null>(null);
-  const [showScenario, setShowScenario] = useState(false);
-
-  // Academy States
-  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
-  const [lessonResult, setLessonResult] = useState<'success' | 'failure' | null>(null);
-
-  // Initialize lesson progress on mount
-  useEffect(() => {
-    fetchTip();
-    updateLessonProgress(stats.knowledgePoints);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Auto-hide confetti after 2 seconds with cleanup
-  useEffect(() => {
-    if (showConfetti) {
-      const timer = setTimeout(() => setShowConfetti(false), 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [showConfetti]);
-
-  // Auto-hide purchase notification after 3 seconds with cleanup
-  useEffect(() => {
-    if (purchaseNotification) {
-      const timer = setTimeout(() => setPurchaseNotification(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [purchaseNotification]);
-
-  // Auto-hide milestone notification after 4 seconds with cleanup
-  useEffect(() => {
-    if (milestoneNotification) {
-      const timer = setTimeout(() => setMilestoneNotification(null), 4000);
-      return () => clearTimeout(timer);
-    }
-  }, [milestoneNotification]);
-
-  const fetchTip = async () => {
-    setIsTipLoading(true);
-    const tip = await getDailyTip();
-    setDailyTip(tip);
-    setIsTipLoading(false);
-  };
-
-  const handleMagicMission = async () => {
-    if (dailyTasksGenerated >= MAX_DAILY_TASKS) return;
-    setIsMissionLoading(true);
-    const newMissionData = await generateMagicMission();
-    if (newMissionData) {
-      const newMission: Mission = {
-        id: Date.now().toString(),
-        title: newMissionData.title,
-        reward: newMissionData.reward,
-        icon: newMissionData.icon,
-        completed: false,
-        isAiGenerated: true,
-      };
-      setMissions(prev => [newMission, ...prev]);
-      setDailyTasksGenerated(prev => prev + 1);
-      triggerConfetti();
-    }
-    setIsMissionLoading(false);
-  };
-
-  const handleStartLesson = async () => {
-    setIsLessonLoading(true);
-    setLessonResult(null);
-    const lesson = await generateLesson();
-    if (lesson) setCurrentLesson(lesson);
-    setIsLessonLoading(false);
-  };
-
-  const handleAnswerQuiz = (index: number) => {
-    if (!currentLesson) return;
-    if (index === currentLesson.correctIndex) {
-      setLessonResult('success');
-      gameActions.addKnowledgePoints(1);
-      gameActions.addCoins(50);
-      gameActions.addXP(15);
-
-      // Track lesson progress for the config system
-      updateLessonProgress(stats.knowledgePoints + 1, `lesson_${Date.now()}`);
-
-      triggerConfetti();
-    } else {
-      setLessonResult('failure');
-    }
-  };
-
-  const completeMission = (id: string, reward: number) => {
-    setMissions(prev => prev.map(m => m.id === id ? { ...m, completed: true } : m));
-    gameActions.addCoins(reward);
-    gameActions.addXP(25);
-    triggerConfetti();
-  };
-
-  const triggerConfetti = useCallback(() => {
-    setShowConfetti(true);
-  }, []);
-
-  const checkMilestones = (newSavings: number) => {
+  const checkMilestones = useCallback((newSavings: number) => {
     const progressPercent = Math.floor((newSavings / BIKE_GOAL) * 100);
+    let firstNewlyAchieved: Milestone | null = null;
+    let hasChanges = false;
 
-    // Check if any milestone has been reached
-    const updatedMilestones = milestones.map(milestone => {
+    const updated = milestones.map(milestone => {
       if (!milestone.achieved && progressPercent >= milestone.percentage) {
-        // Trigger milestone celebration
-        setMilestoneNotification({
-          ...milestone,
-          achieved: true,
-          achievedAt: Date.now(),
-        });
-        triggerConfetti();
-        return { ...milestone, achieved: true, achievedAt: Date.now() };
+        hasChanges = true;
+        const reached = { ...milestone, achieved: true, achievedAt: Date.now() };
+        if (!firstNewlyAchieved) firstNewlyAchieved = reached;
+        return reached;
       }
       return milestone;
     });
 
-    // Only update if something changed
-    const hasNewAchievement = updatedMilestones.some(
-      (m, i) => m.achieved !== milestones[i].achieved
-    );
-
-    if (hasNewAchievement) {
-      setMilestones(updatedMilestones);
+    if (hasChanges) {
+      setMilestones(updated);
+      if (firstNewlyAchieved) {
+        setMilestoneNotification(firstNewlyAchieved);
+        triggerConfetti();
+      }
     }
-  };
+  }, [milestones, setMilestones, setMilestoneNotification, triggerConfetti]);
 
-  const handleScenarioChoice = (choice: any) => {
-    // Award rewards from the choice
-    if (choice.coinsReward) {
-      gameActions.addCoins(choice.coinsReward);
-    }
-    if (choice.xpReward) {
-      gameActions.addXP(choice.xpReward);
-    }
+  const handleDeposit = useCallback((charityPercent: 0 | 10 | 20 = 0) => {
+    if (stats.coins < 50) return;
+    const charityAmount = (50 * charityPercent) / 100;
+    const savingsAmount = 50 - charityAmount;
 
-    // Mark scenario as completed
-    if (currentScenario) {
-      setScenarios(prev => prev.map(s =>
-        s.id === currentScenario.id
-          ? { ...s, completed: true, completedAt: Date.now() }
-          : s
-      ));
-    }
-
-    // Trigger celebration and close
+    gameActions.removeCoins(50);
+    if (savingsAmount > 0) gameActions.addSavings(savingsAmount);
     triggerConfetti();
-    setTimeout(() => {
-      setShowScenario(false);
-      setCurrentScenario(null);
-    }, 2000);
-  };
+    checkMilestones(stats.savings + savingsAmount);
 
-  const triggerRandomScenario = () => {
-    // Get uncompleted scenarios
-    const uncompleted = scenarios.filter(s => !s.completed);
-    if (uncompleted.length > 0) {
-      const randomScenario = uncompleted[Math.floor(Math.random() * uncompleted.length)];
-      setCurrentScenario(randomScenario);
-      setShowScenario(true);
-    }
-  };
-
-  const handleDeposit = () => {
-    if (stats.coins >= 50) {
-      gameActions.removeCoins(50);
-      gameActions.addSavings(50);
-      triggerConfetti();
-      checkMilestones(stats.savings + 50);
-    }
-  };
-
-  const handleWithdraw = () => {
-    if (stats.savings >= 50) {
-      gameActions.removeSavings(50);
-      gameActions.addCoins(50);
-    }
-  };
-
-  const handlePurchase = (reward: Reward) => {
-    if (stats.coins >= reward.price) {
-      gameActions.removeCoins(reward.price);
-
-      // Track purchase for analysis
+    if (charityAmount > 0) {
       setUserBehavior(prev => ({
         ...prev,
-        purchases: [
-          ...prev.purchases,
-          {
-            rewardId: reward.id,
-            rewardName: reward.name,
-            type: reward.type,
-            price: reward.price,
-            timestamp: Date.now(),
-          }
-        ],
-        totalSpent: prev.totalSpent + reward.price,
+        totalDonated: (prev.totalDonated ?? 0) + charityAmount,
+        donationCount: (prev.donationCount ?? 0) + 1,
       }));
-
-      setPurchaseNotification(reward);
-      triggerConfetti();
     }
-  };
+  }, [stats.coins, stats.savings, gameActions, triggerConfetti, checkMilestones, setUserBehavior]);
+
+  const handleWithdraw = useCallback(() => {
+    if (stats.savings < 50) return;
+    gameActions.removeSavings(50);
+    gameActions.addCoins(50);
+  }, [stats.savings, gameActions]);
+
+  const markSimulatorComplete = useCallback(
+    (id: string, extras?: { scamGold?: boolean; lemonadeProfit?: number }) => {
+      setUserBehavior(prev => {
+        const prior = prev.simulatorsCompleted ?? [];
+        const simulatorsCompleted = prior.includes(id) ? prior : [...prior, id];
+        const scamGoldRuns = (prev.scamGoldRuns ?? 0) + (extras?.scamGold ? 1 : 0);
+        const lemonadeBestProfit =
+          extras?.lemonadeProfit !== undefined
+            ? Math.max(prev.lemonadeBestProfit ?? -Infinity, extras.lemonadeProfit)
+            : prev.lemonadeBestProfit;
+        return { ...prev, simulatorsCompleted, scamGoldRuns, lemonadeBestProfit };
+      });
+    },
+    [setUserBehavior]
+  );
+
+  const handlePurchase = useCallback((reward: Reward) => {
+    if (stats.coins < reward.price) return;
+    gameActions.removeCoins(reward.price);
+    setUserBehavior(prev => ({
+      ...prev,
+      purchases: [
+        ...prev.purchases,
+        {
+          rewardId: reward.id,
+          rewardName: reward.name,
+          type: reward.type,
+          price: reward.price,
+          timestamp: Date.now(),
+        },
+      ],
+      totalSpent: prev.totalSpent + reward.price,
+    }));
+    setPurchaseNotification(reward);
+    triggerConfetti();
+  }, [stats.coins, gameActions, setUserBehavior, setPurchaseNotification, triggerConfetti]);
 
   const value: AppContextType = {
     activeTab,
     setActiveTab,
     stats,
     gameActions,
-    missions,
-    setMissions,
-    dailyTasksGenerated,
-    setDailyTasksGenerated,
+    ...missionsState,
     userBehavior,
     setUserBehavior,
     milestones,
@@ -362,48 +250,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     totalUnlocked,
     newlyUnlocked,
     clearNewlyUnlocked,
-    dailyTip,
-    setDailyTip,
-    isTipLoading,
-    setIsTipLoading,
-    isMissionLoading,
-    setIsMissionLoading,
-    isLessonLoading,
-    setIsLessonLoading,
-    showConfetti,
-    setShowConfetti,
-    purchaseNotification,
-    setPurchaseNotification,
-    milestoneNotification,
-    setMilestoneNotification,
-    scenarios,
-    setScenarios,
-    currentScenario,
-    setCurrentScenario,
-    showScenario,
-    setShowScenario,
-    currentLesson,
-    setCurrentLesson,
-    lessonResult,
-    setLessonResult,
-    fetchTip,
-    handleMagicMission,
-    handleStartLesson,
-    handleAnswerQuiz,
-    completeMission,
-    triggerConfetti,
+    ...lessonState,
+    ...notifications,
+    ...scenarioState,
     checkMilestones,
-    handleScenarioChoice,
-    triggerRandomScenario,
     handleDeposit,
     handleWithdraw,
     handlePurchase,
+    markSimulatorComplete,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
-// Custom hook to use the App context
 export const useAppContext = () => {
   const context = useContext(AppContext);
   if (context === undefined) {

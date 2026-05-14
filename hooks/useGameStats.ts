@@ -75,12 +75,12 @@ export function useGameStats(
 ): [UserStats, GameStatsActions] {
   const {
     initialStats = {
-      coins: 450,
+      coins: 0,
       level: 1,
-      xp: 65,
-      savings: 820,
+      xp: 0,
+      savings: 0,
       knowledgePoints: 0,
-      name: 'אופיר',
+      name: '',
     },
     storageKey = 'save4dream_stats',
     xpPerLevel = 100,

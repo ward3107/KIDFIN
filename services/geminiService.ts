@@ -4,7 +4,7 @@ import { LESSONS_CONFIG, getNextLesson } from "../config/lessonsConfig";
 // AI is disabled for security - using config-based lessons
 
 // Track completed lesson IDs for progression
-let completedLessonIds: string[] = [];
+const completedLessonIds: string[] = [];
 let currentKnowledgePoints = 0;
 
 // Update the knowledge points and completed lessons

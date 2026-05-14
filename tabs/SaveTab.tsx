@@ -1,5 +1,5 @@
-import React from 'react';
-import { PiggyBank, DollarSign, ArrowUpRight, Target } from 'lucide-react';
+import React, { useState } from 'react';
+import { PiggyBank, DollarSign, ArrowUpRight, Target, Heart } from 'lucide-react';
 import { Card, Badge, Button } from '../components/UI';
 import { ProgressBar } from '../components/ProgressBar';
 import { JourneyGuide, CurrentStepCard } from '../components/JourneyGuide';
@@ -8,12 +8,15 @@ import { useAppContext } from '../context/AppContext';
 import { usePersonalGoals } from '../hooks/usePersonalGoals';
 import { BIKE_GOAL } from '../context/AppContext';
 
+type CharityPercent = 0 | 10 | 20;
+
 /**
  * Savings bank tab component for managing savings goals
  */
 export const SaveTab: React.FC = () => {
-  const { stats, handleDeposit, handleWithdraw } = useAppContext();
+  const { stats, handleDeposit, handleWithdraw, userBehavior } = useAppContext();
   const { activeGoal, goalsState, addSavingsToGoal } = usePersonalGoals();
+  const [charityPercent, setCharityPercent] = useState<CharityPercent>(0);
 
   // If user has personal goals, use them; otherwise use default bike goal
   const hasPersonalGoals = goalsState.hasSelectedGoals && goalsState.goals.length > 0;
@@ -22,13 +25,16 @@ export const SaveTab: React.FC = () => {
   const leftToGoal = Math.max(0, goalToUse.targetCost - goalToUse.currentSavings);
   const milestones = [25, 50, 75];
 
+  const charityCoins = (50 * charityPercent) / 100;
+  const savingsCoins = 50 - charityCoins;
+  const totalDonated = userBehavior.totalDonated ?? 0;
+
   // Custom deposit handler that also updates personal goal
   const handleDepositWithGoal = () => {
-    if (stats.coins >= 50) {
-      handleDeposit(); // Original deposit
-      if (hasPersonalGoals && activeGoal && !activeGoal.completed) {
-        addSavingsToGoal(activeGoal.id, 50); // Also add to personal goal
-      }
+    if (stats.coins < 50) return;
+    handleDeposit(charityPercent);
+    if (hasPersonalGoals && activeGoal && !activeGoal.completed && savingsCoins > 0) {
+      addSavingsToGoal(activeGoal.id, savingsCoins);
     }
   };
 
@@ -92,7 +98,44 @@ export const SaveTab: React.FC = () => {
           )}
         </div>
 
-        <div className="mt-6 flex gap-3">
+        {/* Charity (Tzedaka) selector — split the deposit before saving */}
+        <div className="mt-5 bg-rose-50 border border-rose-100 rounded-2xl p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-rose-700 font-black text-sm">
+              <Heart size={16} className="fill-rose-500 text-rose-500" /> צדקה מהפקדה
+            </div>
+            {totalDonated > 0 && (
+              <span className="text-xs font-bold text-rose-600 bg-white px-2 py-0.5 rounded-full">
+                נתרם בסה"כ: {totalDonated}
+              </span>
+            )}
+          </div>
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="אחוז צדקה מההפקדה">
+            {([0, 10, 20] as const).map(pct => (
+              <button
+                key={pct}
+                type="button"
+                role="radio"
+                aria-checked={charityPercent === pct}
+                onClick={() => setCharityPercent(pct)}
+                className={`py-2 rounded-xl text-sm font-black transition-all border-2 ${
+                  charityPercent === pct
+                    ? 'bg-rose-500 text-white border-rose-500 shadow-md'
+                    : 'bg-white text-rose-700 border-rose-200 hover:border-rose-300'
+                }`}
+              >
+                {pct === 0 ? 'אפס' : `${pct}%`}
+              </button>
+            ))}
+          </div>
+          {charityPercent > 0 && (
+            <p className="text-xs text-rose-700 mt-2 text-center">
+              {charityCoins} לצדקה • {savingsCoins} לחיסכון
+            </p>
+          )}
+        </div>
+
+        <div className="mt-4 flex gap-3">
           <Button
             variant="success"
             onClick={handleDepositWithGoal}

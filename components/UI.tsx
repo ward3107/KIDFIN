@@ -7,6 +7,7 @@ interface ButtonProps {
   variant?: 'primary' | 'success' | 'warning' | 'magic' | 'academy' | 'outline' | 'ghost';
   className?: string;
   disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
 }
 
 export const Button: React.FC<ButtonProps> = ({
@@ -14,7 +15,8 @@ export const Button: React.FC<ButtonProps> = ({
   onClick,
   variant = 'primary',
   className = '',
-  disabled = false
+  disabled = false,
+  type = 'button',
 }) => {
   const baseStyle = "w-full py-3 px-4 rounded-2xl font-bold transition-all transform active:scale-95 shadow-md flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-lg";
   const variants = {
@@ -28,7 +30,7 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   return (
-    <button onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
+    <button type={type} onClick={onClick} disabled={disabled} className={`${baseStyle} ${variants[variant]} ${className}`}>
       {children}
     </button>
   );
