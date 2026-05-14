@@ -11,6 +11,7 @@ import {
 import { Button, Card } from './components/UI';
 import { AchievementToast } from './components/AchievementToast';
 import { ScenarioModal } from './components/Scenario';
+import { OnboardingNameEntry } from './components/OnboardingNameEntry';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { HomeTab } from './tabs/HomeTab';
 import { SchoolTab } from './tabs/SchoolTab';
@@ -32,6 +33,7 @@ const AppContent: React.FC = () => {
     activeTab,
     setActiveTab,
     stats,
+    gameActions,
     purchaseNotification,
     milestoneNotification,
     showConfetti,
@@ -43,6 +45,16 @@ const AppContent: React.FC = () => {
     setShowScenario,
     setCurrentScenario,
   } = useAppContext();
+
+  if (!stats.name) {
+    return (
+      <div className="w-full h-[100dvh] bg-slate-100 flex items-center justify-center p-1 md:p-4 lg:p-6 xl:p-8 font-rubik" dir="rtl">
+        <div className="w-full max-w-[420px] md:max-w-md h-[min(900px,96dvh)] bg-white rounded-[2rem] md:rounded-[2.5rem] shadow-2xl border-[6px] md:border-[4px] border-slate-900 overflow-hidden">
+          <OnboardingNameEntry onSubmit={gameActions.setName} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full h-[100dvh] bg-slate-100 flex items-center justify-center p-1 md:p-4 lg:p-6 xl:p-8 font-rubik overflow-hidden" dir="rtl">

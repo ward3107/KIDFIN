@@ -156,6 +156,8 @@ export interface UserBehavior {
   completedMissions: number;
   totalEarned: number;
   totalSpent: number;
+  totalDonated?: number;
+  donationCount?: number;
 }
 
 // ============================================================================

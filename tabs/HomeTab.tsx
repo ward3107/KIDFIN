@@ -37,6 +37,13 @@ export const HomeTab: React.FC = () => {
   if (!goalsState.hasSelectedGoals) {
     return (
       <div className="space-y-4 animate-fadeIn">
+        {stats.name && (
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">👋</span>
+            <h2 className="text-lg md:text-xl font-black text-slate-800">שלום, {stats.name}!</h2>
+          </div>
+        )}
+
         {/* Level & Knowledge Header */}
         <div className="grid grid-cols-2 gap-3">
           <StatsCard variant="level" value={stats.level} secondaryValue={stats.xp} />
@@ -51,6 +58,14 @@ export const HomeTab: React.FC = () => {
 
   return (
     <div className="space-y-3 md:space-y-4 lg:space-y-5 animate-fadeIn">
+      {/* Personalized greeting */}
+      {stats.name && (
+        <div className="flex items-center gap-2">
+          <span className="text-2xl">👋</span>
+          <h2 className="text-lg md:text-xl font-black text-slate-800">שלום, {stats.name}!</h2>
+        </div>
+      )}
+
       {/* Level & Knowledge Header - 2 columns */}
       <div className="grid grid-cols-2 gap-2 md:gap-3 lg:gap-4">
         <StatsCard variant="level" value={stats.level} secondaryValue={stats.xp} />

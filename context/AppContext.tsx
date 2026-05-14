@@ -72,7 +72,8 @@ interface AppContextType {
   checkMilestones: (newSavings: number) => void;
   handleScenarioChoice: (choice: ScenarioChoice) => void;
   triggerRandomScenario: () => void;
-  handleDeposit: () => void;
+  /** Deposit 50 coins; charityPercent (0/10/20) routes that share to tzedaka instead of savings. */
+  handleDeposit: (charityPercent?: 0 | 10 | 20) => void;
   handleWithdraw: () => void;
   handlePurchase: (reward: Reward) => void;
 }
@@ -167,13 +168,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   }, [milestones, setMilestones, setMilestoneNotification, triggerConfetti]);
 
-  const handleDeposit = useCallback(() => {
+  const handleDeposit = useCallback((charityPercent: 0 | 10 | 20 = 0) => {
     if (stats.coins < 50) return;
+    const charityAmount = (50 * charityPercent) / 100;
+    const savingsAmount = 50 - charityAmount;
+
     gameActions.removeCoins(50);
-    gameActions.addSavings(50);
+    if (savingsAmount > 0) gameActions.addSavings(savingsAmount);
     triggerConfetti();
-    checkMilestones(stats.savings + 50);
-  }, [stats.coins, stats.savings, gameActions, triggerConfetti, checkMilestones]);
+    checkMilestones(stats.savings + savingsAmount);
+
+    if (charityAmount > 0) {
+      setUserBehavior(prev => ({
+        ...prev,
+        totalDonated: (prev.totalDonated ?? 0) + charityAmount,
+        donationCount: (prev.donationCount ?? 0) + 1,
+      }));
+    }
+  }, [stats.coins, stats.savings, gameActions, triggerConfetti, checkMilestones, setUserBehavior]);
 
   const handleWithdraw = useCallback(() => {
     if (stats.savings < 50) return;
