@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Check, Sparkles, Target, Heart, Star } from 'lucide-react';
 import { Button } from './UI';
 import { usePersonalGoals } from '../hooks/usePersonalGoals';
@@ -20,11 +20,16 @@ export const GoalSelectionFlow: React.FC = () => {
   } = usePersonalGoals();
 
   const [animating, setAnimating] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
 
   const handleNext = () => {
     if (canProceed()) {
       setAnimating(true);
-      setTimeout(() => {
+      timerRef.current = setTimeout(() => {
         nextStep();
         setAnimating(false);
       }, 300);
@@ -33,7 +38,7 @@ export const GoalSelectionFlow: React.FC = () => {
 
   const handleBack = () => {
     setAnimating(true);
-    setTimeout(() => {
+    timerRef.current = setTimeout(() => {
       prevStep();
       setAnimating(false);
     }, 300);

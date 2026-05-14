@@ -1,7 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Sparkles, Lightbulb, Trophy, Play } from 'lucide-react';
 import { Card, Button } from './UI';
 import { LessonV2, InteractiveChoice, CharacterDialogue, InteractiveLessonPhase } from '../types/lessons';
+
+/** Run a callback after delay ms; auto-cleans on unmount. */
+function useTimeouts() {
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+  useEffect(() => () => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }, []);
+  return (fn: () => void, delay: number) => {
+    const id = setTimeout(fn, delay);
+    timers.current.push(id);
+  };
+}
 
 /**
  * Interactive Lesson Viewer
@@ -19,6 +32,7 @@ export const InteractiveLesson: React.FC<InteractiveLessonProps> = ({ lesson, on
   const [practiceIndex, setPracticeIndex] = useState(0);
   const [practiceResults, setPracticeResults] = useState<number[]>([]);
   const [quizResult, setQuizResult] = useState<boolean | null>(null);
+  const after = useTimeouts();
 
   const phases = ['hook', 'explore', 'explain', 'practice', 'quiz'];
   const currentPhaseIndex = phases.indexOf(phase);
@@ -32,7 +46,7 @@ export const InteractiveLesson: React.FC<InteractiveLessonProps> = ({ lesson, on
 
   const handleHookChoice = (choice: InteractiveChoice, index: number) => {
     setHookResult({ choice, index });
-    setTimeout(() => nextPhase(), 1500);
+    after(() => nextPhase(), 1500);
   };
 
   const handlePracticeAnswer = (answerIndex: number) => {
@@ -41,16 +55,14 @@ export const InteractiveLesson: React.FC<InteractiveLessonProps> = ({ lesson, on
     if (newResults.length < lesson.practice.scenarios.length) {
       setPracticeIndex(newResults.length);
     } else {
-      setTimeout(() => nextPhase(), 1500);
+      after(() => nextPhase(), 1500);
     }
   };
 
   const handleQuizAnswer = (answerIndex: number) => {
     const isCorrect = answerIndex === lesson.quiz.correctIndex;
     setQuizResult(isCorrect);
-    setTimeout(() => {
-      setPhase('complete');
-    }, 2000);
+    after(() => setPhase('complete'), 2000);
   };
 
   if (phase === 'complete') {
@@ -151,10 +163,11 @@ const HookPhase: React.FC<{
   result: { choice: InteractiveChoice; index: number } | null;
 }> = ({ hook, onSelect, result }) => {
   const [selected, setSelected] = useState<number | null>(null);
+  const after = useTimeouts();
 
   const handleSelect = (choice: InteractiveChoice, index: number) => {
     setSelected(index);
-    setTimeout(() => onSelect(choice, index), 500);
+    after(() => onSelect(choice, index), 500);
   };
 
   return (
@@ -374,6 +387,7 @@ const PracticePhase: React.FC<{
   const scenario = practice.scenarios[currentIndex];
   const [selected, setSelected] = useState<number | null>(null);
   const previousResult = results[currentIndex - 1];
+  const after = useTimeouts();
 
   return (
     <Card className="border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -428,7 +442,7 @@ const PracticePhase: React.FC<{
 
   function handleSelectAndAnswer(index: number) {
     setSelected(index);
-    setTimeout(() => onAnswer(index), 1000);
+    after(() => onAnswer(index), 1000);
   }
 };
 
@@ -441,10 +455,11 @@ const QuizPhase: React.FC<{
   result: boolean | null;
 }> = ({ quiz, onSelect, result }) => {
   const [selected, setSelected] = useState<number | null>(null);
+  const after = useTimeouts();
 
   const handleSelect = (index: number) => {
     setSelected(index);
-    setTimeout(() => onSelect(index), 500);
+    after(() => onSelect(index), 500);
   };
 
   return (

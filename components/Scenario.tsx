@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Scenario, ScenarioChoice } from '../types';
 import { Button } from './UI';
 
@@ -35,15 +35,16 @@ export const ScenarioModal: React.FC<ScenarioComponentProps> = ({
 }) => {
   const [selectedChoice, setSelectedChoice] = useState<ScenarioChoice | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
 
   const handleChoiceClick = (choice: ScenarioChoice) => {
     setSelectedChoice(choice);
     setShowFeedback(true);
-
-    // Notify parent component after a short delay for visual effect
-    setTimeout(() => {
-      onChoice(choice);
-    }, 1500);
+    timerRef.current = setTimeout(() => onChoice(choice), 1500);
   };
 
   const handleReset = () => {
