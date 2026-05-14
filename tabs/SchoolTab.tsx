@@ -1,10 +1,11 @@
 import React from 'react';
-import { GraduationCap, X, Wallet, ChevronLeft } from 'lucide-react';
+import { GraduationCap, X, Wallet, ChevronLeft, ShieldAlert } from 'lucide-react';
 import { Button, Card } from '../components/UI';
 import { InteractiveLesson } from '../components/InteractiveLesson';
 import { LessonCatalog } from '../components/LessonCatalog';
 import { JourneyGuide } from '../components/JourneyGuide';
 import { PayStubSimulator } from '../components/PayStubSimulator';
+import { ScamMiniGame } from '../components/ScamMiniGame';
 import { useAppContext } from '../context/AppContext';
 import { INTERACTIVE_LESSONS, LessonV2 } from '../config/lessonsV2';
 
@@ -16,6 +17,7 @@ export const SchoolTab: React.FC = () => {
   const { stats, gameActions, triggerConfetti } = useAppContext();
   const [currentLesson, setCurrentLesson] = React.useState<LessonV2 | null>(null);
   const [showPayStub, setShowPayStub] = React.useState(false);
+  const [showScamGame, setShowScamGame] = React.useState(false);
 
   const handleLessonComplete = () => {
     // Award coins and knowledge points
@@ -30,32 +32,63 @@ export const SchoolTab: React.FC = () => {
     triggerConfetti();
   };
 
+  const handleScamComplete = (reward: { coins: number; xp: number; knowledgePoints: number }) => {
+    if (reward.coins > 0) gameActions.addCoins(reward.coins);
+    if (reward.xp > 0) gameActions.addXP(reward.xp);
+    if (reward.knowledgePoints > 0) gameActions.addKnowledgePoints(reward.knowledgePoints);
+    triggerConfetti();
+  };
+
   // Show catalog when no lesson is active
   if (!currentLesson) {
     return (
       <div className="space-y-4 animate-fadeIn">
-        {/* Interactive simulator card — distinct from the main lesson catalog */}
-        <Card className="border-2 border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50">
-          <button
-            type="button"
-            onClick={() => setShowPayStub(true)}
-            className="w-full flex items-center gap-3 text-right"
-          >
-            <div className="bg-emerald-500 text-white p-3 rounded-2xl shadow-lg shadow-emerald-200 shrink-0">
-              <Wallet size={24} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <h3 className="font-black text-emerald-900 text-base md:text-lg">סימולטור תלוש שכר</h3>
-                <span className="text-[10px] bg-emerald-200 text-emerald-900 font-black px-2 py-0.5 rounded-full">חדש</span>
+        {/* Interactive simulators — distinct from the main lesson catalog */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Card className="border-2 border-emerald-100 bg-gradient-to-br from-emerald-50 to-teal-50">
+            <button
+              type="button"
+              onClick={() => setShowPayStub(true)}
+              className="w-full flex items-center gap-3 text-right"
+            >
+              <div className="bg-emerald-500 text-white p-3 rounded-2xl shadow-lg shadow-emerald-200 shrink-0">
+                <Wallet size={24} />
               </div>
-              <p className="text-xs md:text-sm text-emerald-700 mt-0.5">
-                גלה למה משכורת של 10,000 ₪ לא באמת 10,000 ₪
-              </p>
-            </div>
-            <ChevronLeft size={20} className="text-emerald-600 shrink-0" />
-          </button>
-        </Card>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-black text-emerald-900 text-base md:text-lg">תלוש שכר</h3>
+                  <span className="text-[10px] bg-emerald-200 text-emerald-900 font-black px-2 py-0.5 rounded-full">חדש</span>
+                </div>
+                <p className="text-xs md:text-sm text-emerald-700 mt-0.5">
+                  למה 10,000 ₪ זה לא באמת 10,000 ₪
+                </p>
+              </div>
+              <ChevronLeft size={20} className="text-emerald-600 shrink-0" />
+            </button>
+          </Card>
+
+          <Card className="border-2 border-purple-100 bg-gradient-to-br from-purple-50 to-fuchsia-50">
+            <button
+              type="button"
+              onClick={() => setShowScamGame(true)}
+              className="w-full flex items-center gap-3 text-right"
+            >
+              <div className="bg-purple-600 text-white p-3 rounded-2xl shadow-lg shadow-purple-200 shrink-0">
+                <ShieldAlert size={24} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-black text-purple-900 text-base md:text-lg">אמיתי או מזויף?</h3>
+                  <span className="text-[10px] bg-purple-200 text-purple-900 font-black px-2 py-0.5 rounded-full">חדש</span>
+                </div>
+                <p className="text-xs md:text-sm text-purple-700 mt-0.5">
+                  זהה הונאות ב-SMS, אימייל וצ'אט
+                </p>
+              </div>
+              <ChevronLeft size={20} className="text-purple-600 shrink-0" />
+            </button>
+          </Card>
+        </div>
 
         <LessonCatalog lessons={INTERACTIVE_LESSONS} onSelectLesson={setCurrentLesson} />
         <JourneyGuide tab="school" />
@@ -64,6 +97,12 @@ export const SchoolTab: React.FC = () => {
           <PayStubSimulator
             onClose={() => setShowPayStub(false)}
             onComplete={handlePayStubComplete}
+          />
+        )}
+        {showScamGame && (
+          <ScamMiniGame
+            onClose={() => setShowScamGame(false)}
+            onComplete={handleScamComplete}
           />
         )}
       </div>
