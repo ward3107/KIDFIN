@@ -198,38 +198,45 @@ const AppContent: React.FC = () => {
         </div>
       )}
 
-      {/* TABLET / DESKTOP SHELL — proper webapp layout, rendered at md+ */}
+      {/* TABLET / DESKTOP SHELL — sidebar nav + wide content, rendered at md+ */}
       {isDesktop && (
-        <div className="flex flex-col min-h-[100dvh] w-full">
-          {/* Sticky top bar */}
-          <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
-            <div className="max-w-6xl mx-auto px-4 lg:px-6 py-3 flex items-center justify-between gap-4">
+        <div className="flex min-h-[100dvh] w-full">
+          {/* Sidebar — appears on the right in RTL since it's first in source order */}
+          <aside className="w-60 lg:w-72 shrink-0 bg-white border-l border-slate-200 sticky top-0 h-[100dvh] flex flex-col z-30">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-2">
               <Brand />
-              <nav className="flex items-center gap-1 lg:gap-2 overflow-x-auto no-scrollbar" aria-label="primary">
-                {NAV_ITEMS.map(({ id, icon: Icon, labelKey }) => (
-                  <button
-                    key={id}
-                    type="button"
-                    onClick={() => setActiveTab(id)}
-                    aria-current={tabAt(id) ? 'page' : undefined}
-                    className={`flex items-center gap-1.5 px-2.5 lg:px-3 py-1.5 rounded-xl font-bold text-sm lg:text-base whitespace-nowrap transition-colors ${
-                      tabAt(id)
-                        ? 'bg-indigo-100 text-indigo-700'
-                        : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                    }`}
-                  >
-                    <Icon size={18} strokeWidth={tabAt(id) ? 2.5 : 2} />
-                    <span>{t(labelKey)}</span>
-                  </button>
-                ))}
-              </nav>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto p-3 space-y-1" aria-label="primary">
+              {NAV_ITEMS.map(({ id, icon: Icon, labelKey }) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setActiveTab(id)}
+                  aria-current={tabAt(id) ? 'page' : undefined}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-bold text-sm lg:text-base transition-colors ${
+                    tabAt(id)
+                      ? 'bg-indigo-100 text-indigo-700 shadow-sm'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <Icon size={20} strokeWidth={tabAt(id) ? 2.5 : 2} />
+                  <span className="truncate">{t(labelKey)}</span>
+                </button>
+              ))}
+            </nav>
+
+            <div className="p-4 border-t border-slate-100 flex items-center justify-between gap-2">
+              <span className="text-xs font-bold text-slate-500">{t('lang.switch')}</span>
               <LanguageSwitcher />
             </div>
-          </header>
+          </aside>
 
-          {/* Main content area — readable max-width, generous padding */}
-          <main className="flex-1 w-full max-w-3xl mx-auto px-4 lg:px-6 py-5 lg:py-7 pb-12">
-            <TabContent tab={activeTab as TabId} />
+          {/* Main content area — fills remaining width with comfortable max-width */}
+          <main className="flex-1 min-w-0 overflow-x-hidden">
+            <div className="max-w-5xl mx-auto px-5 lg:px-8 py-6 lg:py-8 pb-16">
+              <TabContent tab={activeTab as TabId} />
+            </div>
           </main>
         </div>
       )}
