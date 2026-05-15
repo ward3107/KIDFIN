@@ -1,8 +1,8 @@
 import React from 'react';
 import { X, Smartphone, CreditCard, Users } from 'lucide-react';
-import { Reward } from '../types';
+import { Reward, PaymentMethod } from '../types';
 
-export type PaymentMethod = 'bit' | 'paybox' | 'credit';
+export type { PaymentMethod };
 
 interface PaymentMethodPickerProps {
   reward: Reward;

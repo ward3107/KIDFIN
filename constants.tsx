@@ -5,7 +5,7 @@ import { Mission, Reward } from './types';
 export const INITIAL_MISSIONS: Mission[] = [
   { id: '1', title: 'סידור החדר', reward: 50, icon: '🧹', completed: false },
   { id: '2', title: 'שיעורי בית בחשבון', reward: 80, icon: '📚', completed: false },
-  { id: '3', title: 'חיסכון ראשון של 20 מטבעות', reward: 100, icon: '🐷', completed: true },
+  { id: '3', title: 'חיסכון ראשון של 20 מטבעות', reward: 100, icon: '🐷', completed: false },
 ];
 
 export const REWARDS: Reward[] = [

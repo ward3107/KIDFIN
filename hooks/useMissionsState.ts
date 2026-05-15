@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Mission } from '../types';
 import { useLocalStorage } from './useLocalStorage';
 import { INITIAL_MISSIONS } from '../constants';
@@ -15,6 +15,17 @@ interface UseMissionsStateOptions {
   triggerConfetti: () => void;
 }
 
+interface DailyCounter {
+  count: number;
+  /** ISO date in the app's local day (YYYY-MM-DD). */
+  date: string;
+}
+
+const todayKey = (): string => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 export function useMissionsState({
   missionsKey,
   dailyTasksKey,
@@ -23,8 +34,27 @@ export function useMissionsState({
   triggerConfetti,
 }: UseMissionsStateOptions) {
   const [missions, setMissions] = useLocalStorage<Mission[]>(missionsKey, INITIAL_MISSIONS);
-  const [dailyTasksGenerated, setDailyTasksGenerated] = useLocalStorage<number>(dailyTasksKey, 0);
+  const [counter, setCounter] = useLocalStorage<DailyCounter>(dailyTasksKey, { count: 0, date: todayKey() });
   const [isMissionLoading, setIsMissionLoading] = useState(false);
+
+  // If the stored counter is from a previous day, treat today's count as 0
+  // without rewriting localStorage (the next increment will normalize it).
+  const dailyTasksGenerated = useMemo(
+    () => (counter.date === todayKey() ? counter.count : 0),
+    [counter]
+  );
+
+  const setDailyTasksGenerated = useCallback(
+    (next: number | ((prev: number) => number)) => {
+      const today = todayKey();
+      setCounter(prev => {
+        const base = prev.date === today ? prev.count : 0;
+        const newCount = typeof next === 'function' ? (next as (p: number) => number)(base) : next;
+        return { count: newCount, date: today };
+      });
+    },
+    [setCounter]
+  );
 
   const handleMagicMission = useCallback(async () => {
     if (dailyTasksGenerated >= maxDailyTasks) return;

@@ -140,6 +140,7 @@ export const InteractiveLesson: React.FC<InteractiveLessonProps> = ({ lesson, on
 
       {phase === 'practice' && (
         <PracticePhase
+          key={practiceIndex}
           practice={lesson.practice}
           currentIndex={practiceIndex}
           onAnswer={handlePracticeAnswer}

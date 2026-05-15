@@ -142,12 +142,15 @@ export interface LessonFailed {
 // USER BEHAVIOR with strict typing
 // ============================================================================
 
+export type PaymentMethod = 'bit' | 'paybox' | 'credit';
+
 export interface Purchase {
   readonly rewardId: RewardId;
   readonly rewardName: string;
   readonly type: RewardType;
   readonly price: number;
   readonly timestamp: number;
+  readonly paymentMethod?: PaymentMethod;
 }
 
 export interface UserBehavior {

@@ -7,7 +7,7 @@
  * app re-seeds from defaults rather than crashing on stale data.
  */
 
-export const SCHEMA_VERSION = 3;
+export const SCHEMA_VERSION = 4;
 export const SCHEMA_KEY = 'save4dream_schema_version';
 export const STORAGE_PREFIX = 'save4dream_';
 

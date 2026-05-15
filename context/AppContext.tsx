@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { UserStats, Mission, Lesson, Reward, UserBehavior, Milestone, Scenario, ScenarioChoice } from '../types';
+import { UserStats, Mission, Lesson, Reward, UserBehavior, Milestone, Scenario, ScenarioChoice, PaymentMethod } from '../types';
 import { SAVINGS_MILESTONES } from '../constants/milestones';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { useGameStats } from '../hooks/useGameStats';
@@ -75,7 +75,7 @@ interface AppContextType {
   /** Deposit 50 coins; charityPercent (0/10/20) routes that share to tzedaka instead of savings. */
   handleDeposit: (charityPercent?: 0 | 10 | 20) => void;
   handleWithdraw: () => void;
-  handlePurchase: (reward: Reward) => void;
+  handlePurchase: (reward: Reward, paymentMethod?: PaymentMethod) => void;
   /** Record that a simulator (by id) was completed; optionally captures perf data. */
   markSimulatorComplete: (id: string, extras?: { scamGold?: boolean; lemonadeProfit?: number }) => void;
 }
@@ -215,7 +215,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     [setUserBehavior]
   );
 
-  const handlePurchase = useCallback((reward: Reward) => {
+  const handlePurchase = useCallback((reward: Reward, paymentMethod?: PaymentMethod) => {
     if (stats.coins < reward.price) return;
     gameActions.removeCoins(reward.price);
     setUserBehavior(prev => ({
@@ -228,6 +228,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           type: reward.type,
           price: reward.price,
           timestamp: Date.now(),
+          paymentMethod,
         },
       ],
       totalSpent: prev.totalSpent + reward.price,

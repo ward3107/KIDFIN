@@ -27,6 +27,12 @@ const AppWithProvider: React.FC = () => (
   </AppProvider>
 );
 
+const PAYMENT_METHOD_LABEL: Record<string, { label: string; copy: string }> = {
+  bit:    { label: '📱 BIT',    copy: 'הכסף ירד מהחשבון מיד' },
+  paybox: { label: '👥 PayBox', copy: 'הכסף ירד מהחשבון מיד' },
+  credit: { label: '💳 אשראי',  copy: 'החיוב יופיע בסוף החודש' },
+};
+
 // App content that consumes the context
 const AppContent: React.FC = () => {
   const {
@@ -44,7 +50,15 @@ const AppContent: React.FC = () => {
     handleScenarioChoice,
     setShowScenario,
     setCurrentScenario,
+    userBehavior,
   } = useAppContext();
+
+  // Most-recent purchase's payment method (if any) — drives the method chip
+  // shown in the post-purchase toast. Read from userBehavior so the method
+  // doesn't need to live in the notification state.
+  const lastPurchaseMethod = userBehavior.purchases.length
+    ? userBehavior.purchases[userBehavior.purchases.length - 1].paymentMethod
+    : undefined;
 
   if (!stats.name) {
     return (
@@ -62,12 +76,20 @@ const AppContent: React.FC = () => {
 
         {/* Purchase Success Toast Overlay */}
         {purchaseNotification && (
-          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 w-64 animate-bounce">
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 w-72 animate-bounce">
             <div className="bg-indigo-600 text-white p-4 rounded-3xl shadow-2xl flex items-center gap-3 border-2 border-white">
               <div className="text-3xl shrink-0 bg-white/20 p-2 rounded-2xl">{purchaseNotification.icon}</div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-black text-sm">איזה יופי!</p>
                 <p className="text-[10px] opacity-90 leading-tight">קנית את "{purchaseNotification.name}" בהצלחה!</p>
+                {lastPurchaseMethod && PAYMENT_METHOD_LABEL[lastPurchaseMethod] && (
+                  <p className="text-[10px] opacity-80 mt-1 flex items-center gap-1">
+                    <span className="bg-white/20 px-1.5 py-0.5 rounded-full font-bold">
+                      {PAYMENT_METHOD_LABEL[lastPurchaseMethod].label}
+                    </span>
+                    {PAYMENT_METHOD_LABEL[lastPurchaseMethod].copy}
+                  </p>
+                )}
               </div>
             </div>
           </div>

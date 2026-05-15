@@ -5,7 +5,7 @@ import { JourneyGuide, CurrentStepCard } from '../components/JourneyGuide';
 import { VatBreakdown } from '../components/VatBreakdown';
 import { PaymentMethodPicker } from '../components/PaymentMethodPicker';
 import { useAppContext } from '../context/AppContext';
-import { Reward } from '../types';
+import { Reward, PaymentMethod } from '../types';
 
 /**
  * Rewards shop tab component for purchasing items with coins
@@ -19,9 +19,9 @@ export const ShopTab: React.FC = () => {
     setPendingPurchase(reward);
   };
 
-  const completePurchase = () => {
+  const completePurchase = (method: PaymentMethod) => {
     if (!pendingPurchase) return;
-    handlePurchase(pendingPurchase);
+    handlePurchase(pendingPurchase, method);
     setPendingPurchase(null);
   };
 

@@ -10,7 +10,7 @@ import type { UserPersonalGoal } from '../types/goals';
  */
 export const PersonalGoalsDisplay: React.FC = () => {
   const { goalsState, activeGoal, setActiveGoal, addSavingsToGoal } = usePersonalGoals();
-  const { stats, setActiveTab } = useAppContext();
+  const { stats, setActiveTab, handleDeposit } = useAppContext();
 
   if (!goalsState.hasSelectedGoals || goalsState.goals.length === 0) {
     return null;
@@ -21,10 +21,12 @@ export const PersonalGoalsDisplay: React.FC = () => {
   const dreams = goalsState.goals.filter(g => g.category === 'dream');
 
   const handleQuickSave = () => {
-    if (activeGoal && stats.coins >= 50) {
-      addSavingsToGoal(activeGoal.id, 50);
-      setActiveTab('save');
-    }
+    if (!activeGoal || stats.coins < 50) return;
+    // handleDeposit removes 50 coins and adds 50 to general savings;
+    // the per-goal tracker also gets the same 50 so the active goal progresses.
+    handleDeposit(0);
+    addSavingsToGoal(activeGoal.id, 50);
+    setActiveTab('save');
   };
 
   return (

@@ -37,17 +37,16 @@ export const SchoolTab: React.FC = () => {
   const [currentLesson, setCurrentLesson] = React.useState<LessonV2 | null>(null);
   const [activeSim, setActiveSim] = React.useState<null | 'payStub' | 'scam' | 'childSavings' | 'banknote' | 'investing' | 'lemonade'>(null);
 
-  const handleLessonComplete = () => {
-    // Award coins and knowledge points
-    alert('🎉 כל הכבוד! הרווחת 50 מטבעות ונקודת ידע!');
-    setCurrentLesson(null);
-  };
-
   const grantReward = (reward: { coins: number; xp: number; knowledgePoints: number }) => {
     if (reward.coins > 0) gameActions.addCoins(reward.coins);
     if (reward.xp > 0) gameActions.addXP(reward.xp);
     if (reward.knowledgePoints > 0) gameActions.addKnowledgePoints(reward.knowledgePoints);
     triggerConfetti();
+  };
+
+  const handleLessonComplete = () => {
+    grantReward({ coins: 50, xp: 25, knowledgePoints: 1 });
+    setCurrentLesson(null);
   };
 
   const handlePayStubComplete = () => {
