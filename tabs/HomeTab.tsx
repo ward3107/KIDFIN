@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   GraduationCap,
   CheckCircle,
@@ -17,10 +18,8 @@ import { PersonalGoalsDisplay, GoalsSummary } from '../components/PersonalGoalsD
 import { useAppContext } from '../context/AppContext';
 import { usePersonalGoals } from '../hooks/usePersonalGoals';
 
-/**
- * Home tab component displaying user stats, quick actions, and daily tips
- */
 export const HomeTab: React.FC = () => {
+  const { t } = useTranslation();
   const {
     stats,
     dailyTip,
@@ -40,7 +39,7 @@ export const HomeTab: React.FC = () => {
         {stats.name && (
           <div className="flex items-center gap-2">
             <span className="text-2xl">👋</span>
-            <h2 className="text-lg md:text-xl font-black text-slate-800">שלום, {stats.name}!</h2>
+            <h2 className="text-lg md:text-xl font-black text-slate-800">{t('home.greeting', { name: stats.name })}</h2>
           </div>
         )}
 
@@ -93,7 +92,7 @@ export const HomeTab: React.FC = () => {
           <div className="p-2 md:p-3 bg-indigo-500 text-white rounded-xl md:rounded-2xl shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform">
             <GraduationCap size={20} className="md:w-6 md:h-6" />
           </div>
-          <span className="font-bold text-slate-700 text-sm md:text-base lg:text-lg text-center">אקדמיה (למד)</span>
+          <span className="font-bold text-slate-700 text-sm md:text-base lg:text-lg text-center">{t('home.qaLearn')}</span>
         </button>
         <button
           onClick={() => setActiveTab('earn')}
@@ -109,7 +108,7 @@ export const HomeTab: React.FC = () => {
             {stats.knowledgePoints >= 1 ? <CheckCircle size={20} className="md:w-6 md:h-6" /> : <Lock size={20} className="md:w-6 md:h-6" />}
           </div>
           <span className="font-bold text-slate-700 text-sm md:text-base lg:text-lg text-center">
-            אתגרים {stats.knowledgePoints < 1 && '🔒'}
+            {t('home.qaChallenges')} {stats.knowledgePoints < 1 && '🔒'}
           </span>
         </button>
         {/* Save button */}
@@ -120,7 +119,7 @@ export const HomeTab: React.FC = () => {
           <div className="p-2 md:p-3 bg-green-500 text-white rounded-xl md:rounded-2xl shadow-lg shadow-green-200 group-hover:scale-110 transition-transform">
             <PiggyBank size={20} className="md:w-6 md:h-6" />
           </div>
-          <span className="font-bold text-slate-700 text-sm md:text-base lg:text-lg text-center">חיסכון</span>
+          <span className="font-bold text-slate-700 text-sm md:text-base lg:text-lg text-center">{t('home.qaSavings')}</span>
         </button>
         {/* Shop button */}
         <button
@@ -130,7 +129,7 @@ export const HomeTab: React.FC = () => {
           <div className="p-2 md:p-3 bg-pink-500 text-white rounded-xl md:rounded-2xl shadow-lg shadow-pink-200 group-hover:scale-110 transition-transform">
             <ShoppingBag size={20} className="md:w-6 md:h-6" />
           </div>
-          <span className="font-bold text-slate-700 text-sm md:text-base lg:text-lg text-center">חנות</span>
+          <span className="font-bold text-slate-700 text-sm md:text-base lg:text-lg text-center">{t('home.qaShop')}</span>
         </button>
       </div>
 
@@ -142,13 +141,13 @@ export const HomeTab: React.FC = () => {
           </div>
           <div className="flex-1">
             <div className="flex justify-between items-center mb-1">
-              <h3 className="font-bold text-blue-900 text-base md:text-lg">טיפ מהסנאי</h3>
+              <h3 className="font-bold text-blue-900 text-base md:text-lg">{t('home.tipTitle')}</h3>
               <button onClick={fetchTip} disabled={isTipLoading} className="text-blue-600">
                 {isTipLoading ? <Loader2 size={16} className="md:w-5 md:h-5 animate-spin" /> : <Sparkles size={16} className="md:w-5 md:h-5" />}
               </button>
             </div>
             <p className="text-sm md:text-base text-blue-700 leading-relaxed">
-              {isTipLoading ? "השועל חושב על משהו חכם..." : dailyTip}
+              {isTipLoading ? t('home.tipLoading') : dailyTip}
             </p>
           </div>
         </div>
@@ -159,9 +158,9 @@ export const HomeTab: React.FC = () => {
         <div className="bg-yellow-50 border border-yellow-200 p-3 md:p-4 rounded-2xl flex items-start gap-2 md:gap-3">
           <AlertCircle className="text-yellow-600 shrink-0 w-[18px] h-[18px] md:w-5 md:h-5" />
           <div>
-            <h4 className="font-bold text-yellow-800 text-sm md:text-base">חדש כאן?</h4>
+            <h4 className="font-bold text-yellow-800 text-sm md:text-base">{t('home.newHere')}</h4>
             <p className="text-yellow-700 text-xs md:text-sm mt-0.5">
-              כדי לפתוח את האתגרים ולהרוויח מטבעות, עליך ללמוד שיעור אחד באקדמיה!
+              {t('home.unlockHint')}
             </p>
           </div>
         </div>
@@ -174,9 +173,9 @@ export const HomeTab: React.FC = () => {
             <div className="flex items-center gap-2 md:gap-3">
               <div className="text-3xl md:text-4xl">🎭</div>
               <div>
-                <h4 className="font-bold text-purple-900 text-sm md:text-base">תרגיל החלטה</h4>
+                <h4 className="font-bold text-purple-900 text-sm md:text-base">{t('home.scenarioTitle')}</h4>
                 <p className="text-[10px] md:text-xs text-purple-700">
-                  סיימת {scenarios.filter(s => s.completed).length} מתוך {scenarios.length} תרחישים
+                  {t('home.scenarioProgress', { completed: scenarios.filter(s => s.completed).length, total: scenarios.length })}
                 </p>
               </div>
             </div>
@@ -186,7 +185,7 @@ export const HomeTab: React.FC = () => {
               className="text-xs md:text-sm py-2 px-3 md:px-4"
               disabled={scenarios.every(s => s.completed)}
             >
-              {scenarios.every(s => s.completed) ? 'כל הכבוד!' : 'התחל'}
+              {scenarios.every(s => s.completed) ? t('home.scenarioDone') : t('home.scenarioStart')}
             </Button>
           </div>
         </Card>

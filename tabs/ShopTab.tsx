@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { DollarSign } from 'lucide-react';
 import { REWARDS } from '../constants';
 import { JourneyGuide, CurrentStepCard } from '../components/JourneyGuide';
@@ -11,6 +12,7 @@ import { Reward, PaymentMethod } from '../types';
  * Rewards shop tab component for purchasing items with coins
  */
 export const ShopTab: React.FC = () => {
+  const { t } = useTranslation();
   const { stats, handlePurchase } = useAppContext();
   const [pendingPurchase, setPendingPurchase] = useState<Reward | null>(null);
 
@@ -31,7 +33,7 @@ export const ShopTab: React.FC = () => {
       <CurrentStepCard />
 
       <div className="flex justify-between items-center mb-2">
-        <h2 className="text-xl font-black text-slate-800">חנות הפרסים</h2>
+        <h2 className="text-xl font-black text-slate-800">{t('shop.title')}</h2>
         <div className="bg-orange-50 px-3 py-1 rounded-full border border-orange-100 flex items-center gap-1">
           <DollarSign size={12} className="text-orange-500" />
           <span className="font-black text-orange-600 text-xs">{stats.coins}</span>
@@ -40,11 +42,11 @@ export const ShopTab: React.FC = () => {
       <div className="flex gap-2 mb-3 justify-center">
         <div className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full border border-green-200">
           <span className="w-2 h-2 rounded-full bg-green-500"></span>
-          <span className="text-xs md:text-sm font-bold text-green-700">צורך</span>
+          <span className="text-xs md:text-sm font-bold text-green-700">{t('shop.needTag')}</span>
         </div>
         <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-full border border-yellow-200">
           <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-          <span className="text-xs md:text-sm font-bold text-yellow-700">רצון</span>
+          <span className="text-xs md:text-sm font-bold text-yellow-700">{t('shop.wantTag')}</span>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -75,7 +77,7 @@ export const ShopTab: React.FC = () => {
                   : 'bg-slate-200 text-slate-400 cursor-not-allowed'
               }`}
             >
-              {stats.coins >= reward.price ? 'קנה עכשיו' : 'חסר לך'}
+              {stats.coins >= reward.price ? t('shop.buyNow') : t('shop.notEnough')}
             </button>
           </div>
         ))}

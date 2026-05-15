@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { GraduationCap, X, Wallet, ChevronLeft, ShieldAlert, Baby, Banknote as BanknoteIcon, TrendingUp, Briefcase } from 'lucide-react';
 import { Button, Card } from '../components/UI';
 import { InteractiveLesson } from '../components/InteractiveLesson';
@@ -33,6 +34,7 @@ interface SimulatorCard {
  * Stories + Simulations + Characters + Learning by Doing
  */
 export const SchoolTab: React.FC = () => {
+  const { t } = useTranslation();
   const { stats, gameActions, triggerConfetti, markSimulatorComplete } = useAppContext();
   const [currentLesson, setCurrentLesson] = React.useState<LessonV2 | null>(null);
   const [activeSim, setActiveSim] = React.useState<null | 'payStub' | 'scam' | 'childSavings' | 'banknote' | 'investing' | 'lemonade'>(null);
@@ -80,8 +82,8 @@ export const SchoolTab: React.FC = () => {
   const simulators: SimulatorCard[] = [
     {
       key: 'payStub',
-      title: 'תלוש שכר',
-      blurb: 'למה 10,000 ₪ זה לא באמת 10,000 ₪',
+      title: t('school.sim.payStub.title'),
+      blurb: t('school.sim.payStub.blurb'),
       Icon: Wallet,
       border: 'border-emerald-100',
       bg: 'from-emerald-50 to-teal-50',
@@ -94,8 +96,8 @@ export const SchoolTab: React.FC = () => {
     },
     {
       key: 'scam',
-      title: 'אמיתי או מזויף?',
-      blurb: 'זהה הונאות ב-SMS, אימייל וצ\'אט',
+      title: t('school.sim.scam.title'),
+      blurb: t('school.sim.scam.blurb'),
       Icon: ShieldAlert,
       border: 'border-purple-100',
       bg: 'from-purple-50 to-fuchsia-50',
@@ -108,8 +110,8 @@ export const SchoolTab: React.FC = () => {
     },
     {
       key: 'childSavings',
-      title: 'חיסכון לכל ילד',
-      blurb: 'כמה יהיה לך בגיל 18?',
+      title: t('school.sim.childSavings.title'),
+      blurb: t('school.sim.childSavings.blurb'),
       Icon: Baby,
       border: 'border-sky-100',
       bg: 'from-sky-50 to-blue-50',
@@ -122,8 +124,8 @@ export const SchoolTab: React.FC = () => {
     },
     {
       key: 'banknote',
-      title: 'השטרות שלנו',
-      blurb: 'מי על השטרות ולמה יש סימני אבטחה',
+      title: t('school.sim.banknote.title'),
+      blurb: t('school.sim.banknote.blurb'),
       Icon: BanknoteIcon,
       border: 'border-amber-100',
       bg: 'from-amber-50 to-orange-50',
@@ -136,8 +138,8 @@ export const SchoolTab: React.FC = () => {
     },
     {
       key: 'investing',
-      title: 'סיכון מול תשואה',
-      blurb: 'איפה לשים 1,000 ₪ לשנה?',
+      title: t('school.sim.investing.title'),
+      blurb: t('school.sim.investing.blurb'),
       Icon: TrendingUp,
       border: 'border-violet-100',
       bg: 'from-violet-50 to-indigo-50',
@@ -150,8 +152,8 @@ export const SchoolTab: React.FC = () => {
     },
     {
       key: 'lemonade',
-      title: 'דוכן לימונדה',
-      blurb: 'פתח עסק קטן ל-7 ימים',
+      title: t('school.sim.lemonade.title'),
+      blurb: t('school.sim.lemonade.blurb'),
       Icon: Briefcase,
       border: 'border-yellow-100',
       bg: 'from-yellow-50 to-amber-50',
@@ -183,7 +185,7 @@ export const SchoolTab: React.FC = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className={`font-black ${s.text} text-base md:text-lg`}>{s.title}</h3>
-                    <span className={`text-[10px] ${s.badge} font-black px-2 py-0.5 rounded-full`}>חדש</span>
+                    <span className={`text-[10px] ${s.badge} font-black px-2 py-0.5 rounded-full`}>{t('common.newBadge')}</span>
                   </div>
                   <p className={`text-xs md:text-sm ${s.text} opacity-80 mt-0.5`}>{s.blurb}</p>
                 </div>
@@ -240,7 +242,7 @@ export const SchoolTab: React.FC = () => {
           onClick={() => setCurrentLesson(null)}
           className="text-xs py-1 px-3"
         >
-          <X size={14} /> חזרה לקטלוג
+          <X size={14} /> {t('school.backToCatalog')}
         </Button>
       </div>
 
