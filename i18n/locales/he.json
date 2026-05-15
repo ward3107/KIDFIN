@@ -1,0 +1,55 @@
+{
+  "brand": {
+    "name": "Save4Dream",
+    "dream": "Dream",
+    "for": "4",
+    "save": "Save"
+  },
+  "nav": {
+    "home": "בית",
+    "school": "אקדמיה",
+    "earn": "אתגרים",
+    "save": "חיסכון",
+    "shop": "חנות",
+    "analysis": "ניתוח"
+  },
+  "lang": {
+    "switch": "שפה",
+    "he": "עברית",
+    "ar": "العربية",
+    "switchTo": "החלף שפה"
+  },
+  "onboarding": {
+    "greeting": "שלום! אני סנאי החיסכון",
+    "question": "איך קוראים לך? אני אקרא לך בשם כל פעם שניפגש",
+    "label": "השם שלי הוא...",
+    "placeholder": "לדוגמה: דניאל",
+    "hint": "עד 20 תווים • אפשר תמיד לשנות",
+    "submit": "בוא נתחיל!"
+  },
+  "toast": {
+    "purchaseTitle": "איזה יופי!",
+    "purchaseBody": "קנית את \"{{name}}\" בהצלחה!"
+  },
+  "payment": {
+    "bitLabel": "📱 BIT",
+    "bitCopy": "הכסף ירד מהחשבון מיד",
+    "payboxLabel": "👥 PayBox",
+    "payboxCopy": "הכסף ירד מהחשבון מיד",
+    "creditLabel": "💳 אשראי",
+    "creditCopy": "החיוב יופיע בסוף החודש"
+  },
+  "common": {
+    "loading": "טוען...",
+    "error": "שגיאה",
+    "close": "סגור",
+    "cancel": "ביטול",
+    "save": "שמור",
+    "continue": "המשך",
+    "back": "חזרה",
+    "next": "הבא",
+    "done": "סיום",
+    "yes": "כן",
+    "no": "לא"
+  }
+}

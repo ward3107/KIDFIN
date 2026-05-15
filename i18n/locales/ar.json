@@ -1,0 +1,55 @@
+{
+  "brand": {
+    "name": "Save4Dream",
+    "dream": "Dream",
+    "for": "4",
+    "save": "Save"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "school": "الأكاديمية",
+    "earn": "التحديات",
+    "save": "التوفير",
+    "shop": "المتجر",
+    "analysis": "التحليل"
+  },
+  "lang": {
+    "switch": "اللغة",
+    "he": "עברית",
+    "ar": "العربية",
+    "switchTo": "تغيير اللغة"
+  },
+  "onboarding": {
+    "greeting": "مرحبًا! أنا سنجاب التوفير",
+    "question": "ما اسمك؟ سأناديك باسمك في كلّ مرّة نلتقي فيها",
+    "label": "اسمي هو...",
+    "placeholder": "مثال: دانيال",
+    "hint": "حتى 20 حرفًا • يمكنك التغيير في أيّ وقت",
+    "submit": "هيّا نبدأ!"
+  },
+  "toast": {
+    "purchaseTitle": "ما أروع ذلك!",
+    "purchaseBody": "اشتريت \"{{name}}\" بنجاح!"
+  },
+  "payment": {
+    "bitLabel": "📱 BIT",
+    "bitCopy": "تمّ خصم المبلغ من الحساب فورًا",
+    "payboxLabel": "👥 PayBox",
+    "payboxCopy": "تمّ خصم المبلغ من الحساب فورًا",
+    "creditLabel": "💳 بطاقة ائتمان",
+    "creditCopy": "ستظهر الفاتورة في نهاية الشهر"
+  },
+  "common": {
+    "loading": "جارٍ التحميل...",
+    "error": "خطأ",
+    "close": "إغلاق",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "continue": "متابعة",
+    "back": "رجوع",
+    "next": "التالي",
+    "done": "إنهاء",
+    "yes": "نعم",
+    "no": "لا"
+  }
+}

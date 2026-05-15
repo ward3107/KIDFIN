@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Home,
   CheckCircle,
@@ -12,6 +13,7 @@ import { Button, Card } from './components/UI';
 import { AchievementToast } from './components/AchievementToast';
 import { ScenarioModal } from './components/Scenario';
 import { OnboardingNameEntry } from './components/OnboardingNameEntry';
+import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { HomeTab } from './tabs/HomeTab';
 import { SchoolTab } from './tabs/SchoolTab';
@@ -27,14 +29,15 @@ const AppWithProvider: React.FC = () => (
   </AppProvider>
 );
 
-const PAYMENT_METHOD_LABEL: Record<string, { label: string; copy: string }> = {
-  bit:    { label: '📱 BIT',    copy: 'הכסף ירד מהחשבון מיד' },
-  paybox: { label: '👥 PayBox', copy: 'הכסף ירד מהחשבון מיד' },
-  credit: { label: '💳 אשראי',  copy: 'החיוב יופיע בסוף החודש' },
+const PAYMENT_METHOD_KEYS: Record<string, { labelKey: string; copyKey: string }> = {
+  bit:    { labelKey: 'payment.bitLabel',    copyKey: 'payment.bitCopy' },
+  paybox: { labelKey: 'payment.payboxLabel', copyKey: 'payment.payboxCopy' },
+  credit: { labelKey: 'payment.creditLabel', copyKey: 'payment.creditCopy' },
 };
 
 // App content that consumes the context
 const AppContent: React.FC = () => {
+  const { t } = useTranslation();
   const {
     activeTab,
     setActiveTab,
@@ -80,14 +83,14 @@ const AppContent: React.FC = () => {
             <div className="bg-indigo-600 text-white p-4 rounded-3xl shadow-2xl flex items-center gap-3 border-2 border-white">
               <div className="text-3xl shrink-0 bg-white/20 p-2 rounded-2xl">{purchaseNotification.icon}</div>
               <div className="flex-1 min-w-0">
-                <p className="font-black text-sm">איזה יופי!</p>
-                <p className="text-[10px] opacity-90 leading-tight">קנית את "{purchaseNotification.name}" בהצלחה!</p>
-                {lastPurchaseMethod && PAYMENT_METHOD_LABEL[lastPurchaseMethod] && (
+                <p className="font-black text-sm">{t('toast.purchaseTitle')}</p>
+                <p className="text-[10px] opacity-90 leading-tight">{t('toast.purchaseBody', { name: purchaseNotification.name })}</p>
+                {lastPurchaseMethod && PAYMENT_METHOD_KEYS[lastPurchaseMethod] && (
                   <p className="text-[10px] opacity-80 mt-1 flex items-center gap-1">
                     <span className="bg-white/20 px-1.5 py-0.5 rounded-full font-bold">
-                      {PAYMENT_METHOD_LABEL[lastPurchaseMethod].label}
+                      {t(PAYMENT_METHOD_KEYS[lastPurchaseMethod].labelKey)}
                     </span>
-                    {PAYMENT_METHOD_LABEL[lastPurchaseMethod].copy}
+                    {t(PAYMENT_METHOD_KEYS[lastPurchaseMethod].copyKey)}
                   </p>
                 )}
               </div>
@@ -135,6 +138,7 @@ const AppContent: React.FC = () => {
             <span className="text-indigo-600 font-black text-xl md:text-2xl lg:text-3xl xl:text-4xl italic"> 4 </span>
             <span className="text-slate-800 font-black text-xl md:text-2xl lg:text-3xl xl:text-4xl italic underline decoration-yellow-400">Save</span>
           </div>
+          <LanguageSwitcher />
         </div>
 
         {/* Content */}
@@ -157,12 +161,12 @@ const AppContent: React.FC = () => {
 
         {/* Navigation */}
         <div className="absolute bottom-0 w-full bg-white/95 backdrop-blur-md border-t border-slate-100 py-2 md:py-3 lg:py-4 xl:py-5 px-3 md:px-6 lg:px-10 xl:px-16 flex justify-between items-center pb-6 md:pb-5 lg:pb-6 xl:pb-8 rounded-b-[2rem] md:rounded-b-[2.5rem] z-20">
-          <NavButton icon={Home} label="בית" active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
-          <NavButton icon={GraduationCap} label="אקדמיה" active={activeTab === 'school'} onClick={() => setActiveTab('school')} />
-          <NavButton icon={CheckCircle} label="אתגרים" active={activeTab === 'earn'} onClick={() => setActiveTab('earn')} />
-          <NavButton icon={PiggyBank} label="חיסכון" active={activeTab === 'save'} onClick={() => setActiveTab('save')} />
-          <NavButton icon={ShoppingBag} label="חנות" active={activeTab === 'shop'} onClick={() => setActiveTab('shop')} />
-          <NavButton icon={TrendingUp} label="ניתוח" active={activeTab === 'analysis'} onClick={() => setActiveTab('analysis')} />
+          <NavButton icon={Home} label={t('nav.home')} active={activeTab === 'home'} onClick={() => setActiveTab('home')} />
+          <NavButton icon={GraduationCap} label={t('nav.school')} active={activeTab === 'school'} onClick={() => setActiveTab('school')} />
+          <NavButton icon={CheckCircle} label={t('nav.earn')} active={activeTab === 'earn'} onClick={() => setActiveTab('earn')} />
+          <NavButton icon={PiggyBank} label={t('nav.save')} active={activeTab === 'save'} onClick={() => setActiveTab('save')} />
+          <NavButton icon={ShoppingBag} label={t('nav.shop')} active={activeTab === 'shop'} onClick={() => setActiveTab('shop')} />
+          <NavButton icon={TrendingUp} label={t('nav.analysis')} active={activeTab === 'analysis'} onClick={() => setActiveTab('analysis')} />
         </div>
       </div>
 
