@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Save4Dream — הצעת מחיר ותכנית עבודה</title>
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 16mm 18mm 16mm;
+    @bottom-center {
+      content: "Save4Dream · הצעת מחיר ותכנית פיתוח · עמוד " counter(page) " מתוך " counter(pages);
+      font-family: 'Rubik', sans-serif; font-size: 8.5pt; color: #9aa0a6;
+    }
+  }
+  @page :first { margin: 0; @bottom-center { content: none; } }
+
+  * { box-sizing: border-box; }
+  html { font-family: 'Rubik', 'Noto Sans Hebrew', sans-serif; color: #2b2f33; }
+  body { margin: 0; font-size: 10.5pt; line-height: 1.6; }
+
+  /* ---------- Cover ---------- */
+  .cover {
+    height: 297mm; padding: 0; margin: 0;
+    background: linear-gradient(150deg, #1f7a4d 0%, #2fa56b 45%, #f4b942 130%);
+    color: #fff; position: relative; page-break-after: always;
+  }
+  .cover-inner { padding: 38mm 22mm; height: 100%; display: flex; flex-direction: column; }
+  .cover .mascot { font-size: 70pt; line-height: 1; margin-bottom: 6mm; }
+  .cover h1 { font-size: 40pt; font-weight: 800; margin: 0 0 4mm 0; letter-spacing: -0.5px; }
+  .cover .tagline { font-size: 15pt; font-weight: 400; opacity: 0.95; margin: 0 0 2mm 0; }
+  .cover .sub { font-size: 12pt; opacity: 0.85; }
+  .cover .doc-type {
+    margin-top: auto; background: rgba(255,255,255,0.16); border-radius: 14px;
+    padding: 8mm 9mm; backdrop-filter: blur(2px);
+  }
+  .cover .doc-type h2 { font-size: 20pt; margin: 0 0 5mm 0; font-weight: 700; }
+  .cover .meta { font-size: 11pt; line-height: 2; }
+  .cover .meta b { font-weight: 700; }
+  .cover .foot { margin-top: 7mm; font-size: 9pt; opacity: 0.8; }
+
+  /* ---------- Typography ---------- */
+  h2.section {
+    font-size: 18pt; font-weight: 800; color: #1f7a4d; margin: 0 0 2mm 0;
+    padding-bottom: 2mm; border-bottom: 3px solid #f4b942;
+  }
+  .section-num { color: #f4b942; font-weight: 800; }
+  h3 { font-size: 13pt; font-weight: 700; color: #235; margin: 7mm 0 2mm 0; }
+  h4 { font-size: 11pt; font-weight: 700; color: #1f7a4d; margin: 5mm 0 1mm 0; }
+  p { margin: 0 0 3mm 0; }
+  .lead { font-size: 11.5pt; color: #444; }
+  ul, ol { margin: 0 0 3mm 0; padding-right: 6mm; }
+  li { margin-bottom: 1.5mm; }
+  .small { font-size: 9pt; color: #6b7177; }
+  .page-break { page-break-before: always; }
+  .avoid-break { page-break-inside: avoid; }
+
+  /* ---------- Tables ---------- */
+  table { width: 100%; border-collapse: collapse; margin: 3mm 0 5mm 0; font-size: 9.7pt; }
+  th { background: #1f7a4d; color: #fff; text-align: right; padding: 2.4mm 3mm; font-weight: 600; }
+  td { padding: 2.2mm 3mm; border-bottom: 1px solid #e3e6e8; vertical-align: top; }
+  tr:nth-child(even) td { background: #f6f9f7; }
+  td.num, th.num { text-align: left; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  tfoot td { font-weight: 800; background: #eef6f1 !important; border-top: 2px solid #1f7a4d; }
+  .free { color: #1f7a4d; font-weight: 700; }
+
+  /* ---------- Boxes ---------- */
+  .box { border-radius: 10px; padding: 4mm 5mm; margin: 4mm 0; }
+  .box.info { background: #eef6f1; border-right: 5px solid #2fa56b; }
+  .box.warn { background: #fdf6e3; border-right: 5px solid #f4b942; }
+  .box.key  { background: #1f7a4d; color: #fff; }
+  .box.key h3 { color: #fff; margin-top: 0; }
+  .box h3, .box h4 { margin-top: 0; }
+
+  /* ---------- Package cards ---------- */
+  .pkgs { display: flex; gap: 4mm; margin: 4mm 0; }
+  .pkg { flex: 1; border: 1.5px solid #d7dbde; border-radius: 12px; padding: 5mm; }
+  .pkg.feature { border-color: #1f7a4d; border-width: 2.5px; background: #f6f9f7; }
+  .pkg .name { font-size: 12pt; font-weight: 800; color: #1f7a4d; }
+  .pkg .who { font-size: 8.6pt; color: #6b7177; min-height: 12mm; }
+  .pkg .price { font-size: 20pt; font-weight: 800; margin: 2mm 0 0 0; }
+  .pkg .hrs { font-size: 8.6pt; color: #6b7177; margin-bottom: 2mm; }
+  .pkg ul { font-size: 8.7pt; padding-right: 4mm; }
+  .badge { display: inline-block; background: #f4b942; color: #3a2f00; font-size: 8pt;
+           font-weight: 700; border-radius: 20px; padding: 0.5mm 3mm; margin-bottom: 1mm; }
+
+  .kpi { display: flex; gap: 3mm; margin: 3mm 0; }
+  .kpi div { flex: 1; background: #f6f9f7; border-radius: 10px; padding: 3.5mm; text-align: center; }
+  .kpi .n { font-size: 17pt; font-weight: 800; color: #1f7a4d; }
+  .kpi .l { font-size: 8.4pt; color: #6b7177; }
+
+  .toc li { margin-bottom: 2mm; font-size: 10.5pt; }
+  .toc .n { color: #f4b942; font-weight: 800; }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<div class="cover">
+  <div class="cover-inner">
+    <div class="mascot">🐿️💰</div>
+    <h1>Save4Dream</h1>
+    <div class="tagline">אפליקציה לחינוך פיננסי לילדים — עברית וערבית</div>
+    <div class="sub">חיסכון · אקדמיה פיננסית · אתגרים · חנות · ניתוח התנהגות</div>
+
+    <div class="doc-type">
+      <h2>הצעת מחיר, ניתוח עלויות ותכנית עבודה</h2>
+      <div class="meta">
+        <div><b>הוכן עבור:</b> [שם הלקוח]</div>
+        <div><b>הוכן על ידי:</b> [שמך] — מפתח/ת המערכת</div>
+        <div><b>תאריך:</b> 14 ביוני 2026</div>
+        <div><b>גרסת מסמך:</b> 1.0</div>
+      </div>
+      <div class="foot">מסמך זה נועד לסייע ללקוח להחליט אם ובאיזה היקף להמשיך בפרויקט.<br>
+      כל הסכומים נקובים בשקלים חדשים (₪) ומהווים הערכה נכון למועד כתיבת המסמך.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOC ============ -->
+<h2 class="section"><span class="section-num"></span> תוכן עניינים</h2>
+<ol class="toc">
+  <li><span class="n">1.</span> תקציר מנהלים — השורה התחתונה</li>
+  <li><span class="n">2.</span> מה זה המוצר ומה כבר נבנה</li>
+  <li><span class="n">3.</span> כלים, טכנולוגיות ועלות כל אחד מהם</li>
+  <li><span class="n">4.</span> עלויות תשתית שוטפות (חודשי / שנתי)</li>
+  <li><span class="n">5.</span> שעות העבודה ופירוטן (תעריף 150 ₪ לשעה)</li>
+  <li><span class="n">6.</span> שלוש חבילות לבחירה — והמחיר של כל אחת</li>
+  <li><span class="n">7.</span> תכנית עתידית: הפיכת האפליקציה למוצר אמיתי לבתי ספר</li>
+  <li><span class="n">8.</span> כמה זה עולה לי מול כמה לגבות מהלקוח</li>
+  <li><span class="n">9.</span> תנאי תשלום ואבני דרך</li>
+  <li><span class="n">10.</span> סיכום והמלצה — להמשיך או לא?</li>
+  <li><span class="n">11.</span> הנחות יסוד והבהרות</li>
+</ol>
+
+<!-- ============ 1. EXEC SUMMARY ============ -->
+<div class="page-break"></div>
+<h2 class="section"><span class="section-num">1.</span> תקציר מנהלים — השורה התחתונה</h2>
+<p class="lead">Save4Dream היא אפליקציית אינטרנט (Web App) שמלמדת ילדים בגילאי 8–12 התנהלות
+כספית נכונה דרך משחק: לומדים שיעור, מרוויחים מטבעות, חוסכים למטרה וקונים בחנות.
+האפליקציה כבר קיימת ועובדת כגרסת הדגמה (MVP), בעברית ובערבית, עם תמיכה מלאה בכיווניות
+מימין לשמאל.</p>
+
+<div class="kpi">
+  <div><div class="n">~11,000</div><div class="l">שורות קוד שכבר נכתבו</div></div>
+  <div><div class="n">6</div><div class="l">מסכים ראשיים פעילים</div></div>
+  <div><div class="n">7</div><div class="l">משחקים/סימולטורים אינטראקטיביים</div></div>
+  <div><div class="n">2</div><div class="l">שפות (עברית + ערבית)</div></div>
+</div>
+
+<p>המסמך מציג שלוש דרכים להמשיך, לפי רמת השאיפה והתקציב. כל הסכומים מבוססים על
+<b>תעריף עבודה של 150 ₪ לשעה</b>, ועל המשימות שנותרו כדי להגיע מ"הדגמה" ל"מוצר".</p>
+
+<div class="box key avoid-break">
+  <h3>שלוש האפשרויות בקצרה</h3>
+  <table style="margin:0;">
+    <thead>
+      <tr><th style="background:#155c39;">חבילה</th><th style="background:#155c39;">מה מקבלים</th>
+      <th class="num" style="background:#155c39;">שעות</th><th class="num" style="background:#155c39;">מחיר ללקוח</th></tr>
+    </thead>
+    <tbody style="color:#2b2f33;">
+      <tr><td><b>א'</b> — מסירה כמו שהוא</td><td>ליטוש, אבטחה, נגישות, העלאה לאוויר ומסירה מסודרת של הגרסה הקיימת</td><td class="num">~116</td><td class="num"><b>≈ 17,400 ₪</b></td></tr>
+      <tr><td><b>ב'</b> — מוצר אמיתי</td><td>חבילה א' + שרת, חשבונות משתמשים, מספר ילדים, שמירת התקדמות בענן ולוח הורים</td><td class="num">~251</td><td class="num"><b>≈ 37,650 ₪</b></td></tr>
+      <tr><td><b>ג'</b> — מוצר לבתי ספר</td><td>חבילה ב' + מערכת מורה/כיתה, דוחות, הרחבת תוכן לימודים, עמידה בתקנות ופיילוט בבית ספר</td><td class="num">~576</td><td class="num"><b>≈ 86,400 ₪</b></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p class="small">המחירים לעיל הם עלות העבודה בלבד (שעות × 150 ₪). אליהם יש להוסיף עלויות תשתית
+שוטפות (סעיף 4) ולשקול תוספת ביטחון לפרויקט במחיר קבוע (סעיף 8).</p>
+
+<div class="box info">
+  <b>ההמלצה שלי בקצרה:</b> להתחיל בחבילה א' (מסירה) או ב' (מוצר אמיתי). חבילה ג' המלאה
+  כדאית רק אם יש כוונה ברורה להגיע לבתי ספר ולעבור את האישורים הרגולטוריים — וגם אז עדיף
+  לבצע אותה בשלבים ולא בבת אחת.
+</div>
+
+<!-- ============ 2. WHAT IS BUILT ============ -->
+<div class="page-break"></div>
+<h2 class="section"><span class="section-num">2.</span> מה זה המוצר ומה כבר נבנה</h2>
+
+<p>המטרה החינוכית בנויה על מעגל אחד פשוט: <b>ללמוד → להרוויח → לחסוך → לקנות בחוכמה</b>.
+הילד לומד מושג כלכלי, מקבל מטבעות וירטואליים על השלמת משימות, מחליט אם לחסוך או לבזבז,
+ומקבל משוב על ההתנהגות הכספית שלו.</p>
+
+<h3>מה כבר עובד היום (נכלל בגרסה הקיימת)</h3>
+<table>
+  <thead><tr><th style="width:32%">רכיב</th><th>מה הוא עושה</th></tr></thead>
+  <tbody>
+    <tr><td>מסך בית (לוח מחוונים)</td><td>רמה, נקודות ניסיון, מטבעות, חיסכון, טיפ יומי מ"הסנאי"</td></tr>
+    <tr><td>אקדמיה פיננסית</td><td>שיעורים אינטראקטיביים: ריבית, תקציב, חיסכון, השוואת מחירים, צרכים מול רצונות, אינפלציה</td></tr>
+    <tr><td>אתגרים יומיים</td><td>משימות פיננסיות יומיות, נפתחות לאחר לימוד, מגבלה יומית שמלמדת סבלנות</td></tr>
+    <tr><td>בנק חיסכון</td><td>הפקדה/משיכה, מטרת חיסכון, פסי התקדמות, הדגמת ריבית</td></tr>
+    <tr><td>חנות פרסים</td><td>28 פריטים, מסומנים כ"צורך" (ירוק) או "רצון" (צהוב)</td></tr>
+    <tr><td>ניתוח התנהגות</td><td>מעקב רכישות, יחס צרכים/רצונות, חוזקות ותחומים לשיפור</td></tr>
+    <tr><td>סימולטורים</td><td>תלוש שכר, זיהוי הונאות, זיהוי שטרות, דוכן לימונדה (יזמות), השקעות, חיסכון לכל ילד, פירוק מע"מ</td></tr>
+    <tr><td>תשתית</td><td>עברית + ערבית, RTL מלא, שמירה מקומית בדפדפן, גבול שגיאות, ~130 בדיקות אוטומטיות</td></tr>
+  </tbody>
+</table>
+
+<h3>מה <u>עדיין חסר</u> כדי שזה יהיה מוצר אמיתי</h3>
+<p>הגרסה הקיימת מצוינת להדגמה, אך יש בה מגבלות שצריך לסגור לפני שימוש אמיתי בקנה מידה:</p>
+<ul>
+  <li><b>אין שרת ואין חשבונות:</b> כל ההתקדמות נשמרת רק בדפדפן של אותו מכשיר. החלפת מכשיר = איבוד הנתונים.</li>
+  <li><b>משתמש יחיד:</b> אין תמיכה במספר ילדים, אין הורים, אין מורים וכיתות.</li>
+  <li><b>נגישות ואבטחה:</b> דורשות הקשחה לפני פרסום ציבורי (כותרות אבטחה, תגיות נגישות, מקלדת).</li>
+  <li><b>פרטיות קטינים:</b> שימוש בבתי ספר מחייב מדיניות פרטיות ועמידה בחוק הגנת הפרטיות.</li>
+</ul>
+<p>שלושת השלבים הללו הם בדיוק מה שמתומחר בחבילות א'–ג' שבהמשך.</p>
+
+<!-- ============ 3. TOOLS ============ -->
+<div class="page-break"></div>
+<h2 class="section"><span class="section-num">3.</span> כלים, טכנולוגיות ועלות כל אחד</h2>
+<p class="lead">חדשות טובות: כל כלי הפיתוח שבהם בנויה האפליקציה הם <b>קוד פתוח וחינמיים</b>.
+העלויות האמיתיות מתחילות רק כשמוסיפים שרת, אחסון ושירותים מנוהלים — וגם אז ניתן
+להתחיל בחבילות חינמיות (Free Tier).</p>
+
+<h3>א. כלי פיתוח (חד-פעמי, ללא עלות)</h3>
+<table>
+  <thead><tr><th>כלי</th><th>תפקיד</th><th class="num">עלות</th></tr></thead>
+  <tbody>
+    <tr><td>React 19 + TypeScript</td><td>שלד האפליקציה והקוד</td><td class="num free">חינם</td></tr>
+    <tr><td>Vite</td><td>כלי בנייה ושרת פיתוח</td><td class="num free">חינם</td></tr>
+    <tr><td>Tailwind CSS</td><td>עיצוב</td><td class="num free">חינם</td></tr>
+    <tr><td>Lucide Icons</td><td>אייקונים</td><td class="num free">חינם</td></tr>
+    <tr><td>i18next</td><td>תרגום עברית/ערבית</td><td class="num free">חינם</td></tr>
+    <tr><td>Vitest / Playwright</td><td>בדיקות אוטומטיות</td><td class="num free">חינם</td></tr>
+    <tr><td>Git + GitHub</td><td>ניהול גרסאות</td><td class="num">חינם (או ~15 ₪/חודש לפרטי)</td></tr>
+  </tbody>
+</table>
+
+<h3>ב. שירותי תשתית (חודשי / שנתי — נדרשים רק בחבילות ב' ו-ג')</h3>
+<table>
+  <thead><tr><th>שירות</th><th>למה צריך</th><th class="num">חבילת התחלה</th><th class="num">בקנה מידה</th></tr></thead>
+  <tbody>
+    <tr><td>דומיין (.co.il / .com)</td><td>כתובת האתר</td><td class="num">~70 ₪/שנה</td><td class="num">~70 ₪/שנה</td></tr>
+    <tr><td>אחסון אתר (Vercel/Netlify)</td><td>הרצת האפליקציה</td><td class="num free">חינם</td><td class="num">~840 ₪/שנה</td></tr>
+    <tr><td>שרת ובסיס נתונים (Supabase)</td><td>חשבונות ושמירת התקדמות בענן</td><td class="num free">חינם</td><td class="num">~1,110 ₪/שנה</td></tr>
+    <tr><td>שליחת מיילים (Resend)</td><td>איפוס סיסמה, התראות</td><td class="num free">חינם</td><td class="num">~880 ₪/שנה</td></tr>
+    <tr><td>ניטור תקלות (Sentry)</td><td>זיהוי באגים בזמן אמת</td><td class="num free">חינם</td><td class="num">~1,150 ₪/שנה</td></tr>
+    <tr><td>אנליטיקה (Plausible)</td><td>מדידת שימוש</td><td class="num free">חינם*</td><td class="num">~400 ₪/שנה</td></tr>
+    <tr><td>תעודת SSL (אבטחה)</td><td>חיבור מאובטח</td><td class="num free">חינם</td><td class="num free">חינם</td></tr>
+  </tbody>
+</table>
+<p class="small">* קיימות חלופות חינמיות (כגון GoatCounter). תוספת אפשרית: חשבונות חנויות אפליקציות אם
+רוצים אפליקציה מותקנת — Apple ‎~370 ₪/שנה, Google ‎~93 ₪ חד-פעמי.</p>
+
+<h3 class="avoid-break">ג. שירות בינה מלאכותית (אופציונלי) — "שאל את הסנאי"</h3>
+<p>אם נרצה להוסיף עוזר חכם שעונה לילדים על שאלות פיננסיות, העלות היא לפי שימוש בלבד.
+התמחור מבוסס על מודלי Claude נכון ליוני 2026:</p>
+<div class="box info avoid-break">
+  <table style="margin:0;">
+    <thead><tr><th style="background:#2fa56b">מודל</th><th class="num" style="background:#2fa56b">עלות ל-1,000 שאלות</th><th style="background:#2fa56b">מתי כדאי</th></tr></thead>
+    <tbody style="color:#2b2f33">
+      <tr><td>Claude Haiku 4.5 (חסכוני)</td><td class="num">≈ $3.5 (~13 ₪)</td><td>מענה מהיר לרוב השאלות — מומלץ</td></tr>
+      <tr><td>Claude Opus 4.8 (חכם יותר)</td><td class="num">≈ $17.5 (~65 ₪)</td><td>שאלות מורכבות / איכות מרבית</td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="small">הערכה בהנחה של ~1,500 טוקני קלט ו-~400 טוקני פלט לשאלה. דוגמה מעשית: בית ספר אחד בפיילוט
+(~30 ילדים) ≈ 40 ₪ לחודש; שירות ל-1,000 ילדים פעילים ≈ 1,000–1,300 ₪ לחודש (במודל החסכוני).</p>
+
+<!-- ============ 4. RUNNING COSTS ============ -->
+<div class="page-break"></div>
+<h2 class="section"><span class="section-num">4.</span> עלויות תשתית שוטפות — סיכום</h2>
+<p class="lead">חשוב להבחין: <b>עלות הפיתוח היא חד-פעמית</b> (משלמים פעם אחת על הבנייה), ואילו
+<b>התשתית היא הוצאה שוטפת</b> שתמשיך כל עוד האפליקציה באוויר. במודל של "בנייה ומסירה",
+את התשתית השוטפת משלם הלקוח (בעל המוצר) ולא המפתח.</p>
+
+<table>
+  <thead><tr><th>תרחיש</th><th>מתאים ל-</th><th class="num">עלות שנתית מוערכת</th></tr></thead>
+  <tbody>
+    <tr><td>מצב הדגמה / פיילוט קטן</td><td>הצגה למשקיעים, בית ספר אחד, חבילות חינמיות</td><td class="num"><b>~100–900 ₪/שנה</b></td></tr>
+    <tr><td>מצב פרודקשן בקנה מידה</td><td>אלפי משתמשים, מספר בתי ספר, שירותים בתשלום</td><td class="num"><b>~4,000–7,000 ₪/שנה</b></td></tr>
+  </tbody>
+  <tfoot><tr><td colspan="2">בתוספת שירות AI אופציונלי (לפי שימוש)</td><td class="num">החל מ-~500 ₪/שנה</td></tr></tfoot>
+</table>
+
+<div class="box warn">
+  <b>שקיפות מלאה:</b> אפשר להתחיל את כל הפרויקט על חבילות חינמיות לחלוטין. מעבר לתשלום נדרש
+  רק כשמספר המשתמשים גדל. כך שאין צורך להתחייב לעלויות תשתית גבוהות מראש — הן גדלות יחד עם המוצר.
+</div>
+
+<!-- ============ 5. LABOR ============ -->
+<div class="page-break"></div>
+<h2 class="section"><span class="section-num">5.</span> שעות העבודה ופירוטן — תעריף 150 ₪/שעה</h2>
+<p class="lead">להלן פירוט מלא של העבודה שנותרה, מחולקת לשלבים. כל שלב עומד בפני עצמו, וניתן
+לעצור בסוף כל שלב עם מוצר עובד.</p>
+
+<h3>שלב 1 — ייצוב, אבטחה ונגישות <span class="small">(נדרש בכל החבילות)</span></h3>
+<table>
+  <tbody>
+    <tr><td>תיקוני כיווניות (RTL) בכל המסכים</td><td class="num">6 ש'</td></tr>
+    <tr><td>הקשחת TypeScript ותיקוני טיפוסים</td><td class="num">5 ש'</td></tr>
+    <tr><td>תיקון דליפות זיכרון ושמירה בטוחה</td><td class="num">8 ש'</td></tr>
+    <tr><td>כותרות אבטחה ומדיניות תוכן (CSP)</td><td class="num">3 ש'</td></tr>
+    <tr><td>נגישות: תגיות ARIA, ניווט מקלדת, הקראה</td><td class="num">12 ש'</td></tr>
+    <tr><td>הוצאת טקסטים לתרגום + בקרת איכות</td><td class="num">8 ש'</td></tr>
+    <tr><td>אופטימיזציית ביצועים וטעינה</td><td class="num">10 ש'</td></tr>
+    <tr><td>הקשחת בדיקות איכות ו-CI</td><td class="num">4 ש'</td></tr>
+    <tr><td>עבודה במצב לא-מקוון (Offline)</td><td class="num">4 ש'</td></tr>
+    <tr><td>בדיקות מקצה-לקצה (E2E)</td><td class="num">10 ש'</td></tr>
+    <tr><td>ליטוש חוויית משתמש וקליטה (Onboarding)</td><td class="num">10 ש'</td></tr>
+  </tbody>
+  <tfoot><tr><td>סך הכל שלב 1</td><td class="num">80 ש' · 12,000 ₪</td></tr></tfoot>
+</table>
+
+<h3>שלב 2 — פריסה, תיעוד ומסירה <span class="small">(נדרש בכל החבילות)</span></h3>
+<table>
+  <tbody>
+    <tr><td>העלאה לפרודקשן והגדרת סביבה</td><td class="num">8 ש'</td></tr>
+    <tr><td>תיעוד טכני + מדריך משתמש</td><td class="num">10 ש'</td></tr>
+    <tr><td>הדרכת לקוח ומסירה מסודרת</td><td class="num">6 ש'</td></tr>
+  </tbody>
+  <tfoot><tr><td>סך הכל שלב 2</td><td class="num">24 ש' · 3,600 ₪</td></tr></tfoot>
+</table>
+
+<h3>שלב 3 — שרת, חשבונות ומשתמשים <span class="small">(חבילות ב' ו-ג')</span></h3>
+<table>
+  <tbody>
+    <tr><td>הקמת שרת ובסיס נתונים (Supabase)</td><td class="num">16 ש'</td></tr>
+    <tr><td>שמירת התקדמות בענן (במקום בדפדפן)</td><td class="num">18 ש'</td></tr>
+    <tr><td>מערכת התחברות (הורה + קוד לילד)</td><td class="num">16 ש'</td></tr>
+    <tr><td>פרופילים למספר ילדים</td><td class="num">14 ש'</td></tr>
+    <tr><td>לוח הורים (משימות בית → תגמול)</td><td class="num">24 ש'</td></tr>
+    <tr><td>שכבת API מאובטחת</td><td class="num">12 ש'</td></tr>
+    <tr><td>מודל נתונים והגירות</td><td class="num">10 ש'</td></tr>
+    <tr><td>בדיקות צד-שרת</td><td class="num">10 ש'</td></tr>
+  </tbody>
+  <tfoot><tr><td>סך הכל שלב 3</td><td class="num">120 ש' · 18,000 ₪</td></tr></tfoot>
+</table>
+
+<div class="page-break"></div>
+<h3>שלב 4 — מערכת מורה / כיתה <span class="small">(חבילה ג' בלבד)</span></h3>
+<table>
+  <tbody>
+    <tr><td>חשבונות מורים והרשאות</td><td class="num">14 ש'</td></tr>
+    <tr><td>יצירת כיתה, רשימת תלמידים, הצטרפות ב-QR/קוד</td><td class="num">22 ש'</td></tr>
+    <tr><td>לוח מורה: מעקב התקדמות ודוחות</td><td class="num">28 ש'</td></tr>
+    <tr><td>טבלאות מובילים ואתגרים שבועיים לכיתה</td><td class="num">16 ש'</td></tr>
+    <tr><td>הקצאת שיעורים לכיתה</td><td class="num">14 ש'</td></tr>
+    <tr><td>פאנל ניהול ברמת בית ספר</td><td class="num">18 ש'</td></tr>
+    <tr><td>חומרים להדפסה וייצוא</td><td class="num">8 ש'</td></tr>
+    <tr><td>בדיקות</td><td class="num">16 ש'</td></tr>
+  </tbody>
+  <tfoot><tr><td>סך הכל שלב 4</td><td class="num">136 ש' · 20,400 ₪</td></tr></tfoot>
+</table>
+
+<h3>שלב 5 — הרחבת תוכן ותכנית לימודים <span class="small">(חבילה ג')</span></h3>
+<table>
+  <tbody>
+    <tr><td>היסטוריית הכסף + סימני אבטחה בשטרות</td><td class="num">10 ש'</td></tr>
+    <tr><td>מחוון צדקה במסך החיסכון</td><td class="num">6 ש'</td></tr>
+    <tr><td>סימולטור אמצעי תשלום דיגיטליים</td><td class="num">8 ש'</td></tr>
+    <tr><td>הרחבת מסלול השקעות</td><td class="num">10 ש'</td></tr>
+    <tr><td>מודול מע"מ ומסים</td><td class="num">6 ש'</td></tr>
+    <tr><td>חידון חוק עבודת הנוער (גיל 12+)</td><td class="num">10 ש'</td></tr>
+    <tr><td>עוזר AI "שאל את הסנאי" (דרך שרת מאובטח)</td><td class="num">24 ש'</td></tr>
+    <tr><td>בקרת תוכן עם איש חינוך</td><td class="num">12 ש'</td></tr>
+  </tbody>
+  <tfoot><tr><td>סך הכל שלב 5</td><td class="num">86 ש' · 12,900 ₪</td></tr></tfoot>
+</table>
+
+<h3>שלב 6 — תאימות, פרטיות והשקה <span class="small">(חבילה ג')</span></h3>
+<table>
+  <tbody>
+    <tr><td>עמידה בחוק הגנת הפרטיות (קטינים) + מסמכי מדיניות</td><td class="num">16 ש'</td></tr>
+    <tr><td>סקירת אבטחה ותיקונים</td><td class="num">12 ש'</td></tr>
+    <tr><td>ביקורת נגישות (ת"י 5568 / WCAG)</td><td class="num">12 ש'</td></tr>
+    <tr><td>הכנת חומרים לאישור גפ"ן / משרד החינוך</td><td class="num">12 ש'</td></tr>
+    <tr><td>ליווי פיילוט (בית ספר אחד, 4 שבועות)</td><td class="num">16 ש'</td></tr>
+  </tbody>
+  <tfoot><tr><td>סך הכל שלב 6</td><td class="num">68 ש' · 10,200 ₪</td></tr></tfoot>
+</table>
+
+<p class="small">לכל חבילה מתווספת תוספת ניהול פרויקט ופגישות בשיעור ~12% (כלולה במחירי החבילות בסעיף 6).</p>
+
+<!-- ============ 6. PACKAGES ============ -->
+<div class="page-break"></div>
+<h2 class="section"><span class="section-num">6.</span> שלוש חבילות לבחירה</h2>
+
+<div class="pkgs">
+  <div class="pkg">
+    <div class="name">חבילה א'</div>
+    <div class="who">מסירה כמו שהוא — הופכים את ההדגמה הקיימת לאתר מלוטש, בטוח ונגיש באוויר.</div>
+    <div class="price">17,400 ₪</div>
+    <div class="hrs">~116 שעות · שלבים 1–2</div>
+    <ul>
+      <li>ייצוב, אבטחה ונגישות</li>
+      <li>תיקוני RTL וביצועים</li>
+      <li>העלאה לאוויר</li>
+      <li>תיעוד והדרכה</li>
+      <li>מסירה מלאה של הקוד</li>
+    </ul>
+  </div>
+  <div class="pkg feature">
+    <div class="badge">המומלצת לרוב הלקוחות</div>
+    <div class="name">חבילה ב'</div>
+    <div class="who">מוצר אמיתי — אפליקציה עם חשבונות, שרת ושמירה בענן שמשפחות יכולות להשתמש בה באמת.</div>
+    <div class="price">37,650 ₪</div>
+    <div class="hrs">~251 שעות · שלבים 1–3</div>
+    <ul>
+      <li>כל מה שבחבילה א'</li>
+      <li>שרת ובסיס נתונים</li>
+      <li>חשבונות הורים + ילדים</li>
+      <li>מספר ילדים במשפחה</li>
+      <li>שמירת התקדמות בענן</li>
+      <li>לוח הורים ומשימות בית</li>
+    </ul>
+  </div>
+  <div class="pkg">
+    <div class="name">חבילה ג'</div>
+    <div class="who">מוצר לבתי ספר — פלטפורמה מלאה עם מורים, כיתות, דוחות ועמידה בתקנות.</div>
+    <div class="price">86,400 ₪</div>
+    <div class="hrs">~576 שעות · שלבים 1–6</div>
+    <ul>
+      <li>כל מה שבחבילה ב'</li>
+      <li>מערכת מורה וכיתה</li>
+      <li>דוחות התקדמות למורה</li>
+      <li>הרחבת תוכן לימודים</li>
+      <li>עוזר AI "שאל את הסנאי"</li>
+      <li>פרטיות, נגישות ופיילוט</li>
+    </ul>
+  </div>
+</div>
+
+<div class="box info avoid-break">
+  <h4>אפשר גם בשלבים, בלי להתחייב להכל מראש</h4>
+  <p style="margin:0;">היופי בחלוקה הזו: מתחילים בחבילה א', ואם הלקוח מרוצה — מוסיפים את שלב 3 (חבילה ב'),
+  ואחר כך את שלבי בית הספר. בכל נקודת עצירה יש מוצר עובד ומלוטש. כך הסיכון של הלקוח קטן,
+  והוא משלם רק על מה שהוא בטוח שהוא רוצה.</p>
+</div>
+
+<!-- ============ 7. FUTURE PLAN ============ -->
+<div class="page-break"></div>
+<h2 class="section"><span class="section-num">7.</span> תכנית עתידית: מוצר אמיתי לבתי ספר</h2>
+<p class="lead">זה התרחיש שבו תלמידים בבתי ספר משתמשים באפליקציה בפועל. הוא הכי שאפתני, אבל גם
+הכי מבטיח — בישראל נכנסת תכנית חינוך פיננסי לחובה (תשפ"ז), ויש ביקוש אמיתי לכלים כאלה.</p>
+
+<h3>הדרך לבתי הספר — לפי שלבים ולוחות זמנים</h3>
+<table>
+  <thead><tr><th>שלב</th><th>מה קורה בו</th><th class="num">משך משוער*</th><th class="num">עלות</th></tr></thead>
+  <tbody>
+    <tr><td>1. ייסוד</td><td>הקשחה, אבטחה, נגישות, העלאה לאוויר</td><td class="num">2–3 שבועות</td><td class="num">15,600 ₪</td></tr>
+    <tr><td>2. תשתית משתמשים</td><td>שרת, חשבונות, מספר ילדים, לוח הורים</td><td class="num">3–4 שבועות</td><td class="num">18,000 ₪</td></tr>
+    <tr><td>3. שכבת בית ספר</td><td>מורים, כיתות, דוחות, ניהול</td><td class="num">4–5 שבועות</td><td class="num">20,400 ₪</td></tr>
+    <tr><td>4. תוכן ותכנית לימודים</td><td>השלמת נושאי הליבה + עוזר AI</td><td class="num">2–3 שבועות</td><td class="num">12,900 ₪</td></tr>
+    <tr><td>5. תאימות ופיילוט</td><td>פרטיות, נגישות, אישורים, פיילוט בבית ספר</td><td class="num">3–4 שבועות</td><td class="num">10,200 ₪</td></tr>
+  </tbody>
+  <tfoot><tr><td colspan="2">סך הכל (כולל ניהול פרויקט)</td><td class="num">~4–5 חודשים</td><td class="num">86,400 ₪</td></tr></tfoot>
+</table>
+<p class="small">* בהנחת עבודה במשרה חלקית. במשרה מלאה הלוחות מתקצרים משמעותית.</p>
+
+<h3>מה צריך מעבר לפיתוח (כדי להגיע באמת לבתי ספר)</h3>
+<ul>
+  <li><b>אישור משרד החינוך / קטלוג גפ"ן:</b> הכנת חומרים ועמידה בקריטריונים — נכלל בשלב 5.</li>
+  <li><b>פרטיות קטינים:</b> מדיניות פרטיות, הסכמת הורים, אבטחת מידע — חובה חוקית.</li>
+  <li><b>נגישות (ת"י 5568):</b> חובה לשירות חינוכי בישראל.</li>
+  <li><b>מודל הכנסה:</b> בהמשך כדאי לשקול מנוי שנתי לבית ספר או לכל תלמיד (מסמך זה ממוקד בבנייה ומסירה חד-פעמית).</li>
+</ul>
+
+<div class="box warn">
+  <b>הערה לגבי הרגולציה:</b> אישורים מול גופים ממשלתיים (משרד החינוך, גפ"ן) הם תהליך שתלוי
+  בגורם חיצוני וזמני האישור אינם בשליטת המפתח. עלות ההכנה נכללת, אך לוח הזמנים לאישור עצמו
+  עשוי להשתנות.
+</div>
+
+<!-- ============ 8. COST VS PRICE ============ -->
+<div class="page-break"></div>
+<h2 class="section"><span class="section-num">8.</span> כמה זה עולה לי מול כמה לגבות</h2>
+<p class="lead">שאלה מצוינת וחשובה. יש הבדל בין <b>העלות הישירה שלי</b> לבין <b>המחיר שכדאי לגבות מהלקוח</b>.</p>
+
+<h3>כמה זה עולה לי (המפתח) בפועל</h3>
+<table>
+  <thead><tr><th>פריט</th><th class="num">עלות בזמן הפיתוח</th></tr></thead>
+  <tbody>
+    <tr><td>כלי פיתוח (קוד פתוח)</td><td class="num free">0 ₪</td></tr>
+    <tr><td>שרת/אחסון בזמן הפיתוח (חבילות חינמיות)</td><td class="num">~0–100 ₪</td></tr>
+    <tr><td>דומיין לבדיקות (אופציונלי)</td><td class="num">~70 ₪</td></tr>
+    <tr><td>בדיקות AI בזמן הפיתוח</td><td class="num">~50–150 ₪</td></tr>
+  </tbody>
+  <tfoot><tr><td>סך עלות כיס ישירה</td><td class="num">פחות מ-300 ₪</td></tr></tfoot>
+</table>
+<p>במילים אחרות: <b>המשאב היקר הוא הזמן שלי, לא הכלים.</b> לכן התמחור מבוסס על שעות עבודה
+בתעריף 150 ₪/שעה — שזה התעריף שמגלם את הידע, הניסיון והאחריות שלי.</p>
+
+<h3>כמה לגבות מהלקוח</h3>
+<p>המחיר ללקוח = <b>שעות × 150 ₪</b>. אם רוצים לעבוד ב<b>מחיר קבוע</b> (ולא לפי שעה בפועל),
+מומלץ להוסיף <b>רזרבת ביטחון של 15%–20%</b> כדי לכסות הפתעות, שינויים ובקשות נוספות.</p>
+
+<div class="box key avoid-break">
+  <h3>טבלת תמחור מומלצת ללקוח</h3>
+  <table style="margin:0;">
+    <thead><tr>
+      <th style="background:#155c39;">חבילה</th>
+      <th class="num" style="background:#155c39;">לפי שעה</th>
+      <th class="num" style="background:#155c39;">מחיר קבוע (+15%)</th>
+      <th class="num" style="background:#155c39;">מחיר קבוע (+20%)</th>
+    </tr></thead>
+    <tbody style="color:#2b2f33;">
+      <tr><td><b>א'</b> מסירה</td><td class="num">17,400 ₪</td><td class="num">~20,000 ₪</td><td class="num">~20,900 ₪</td></tr>
+      <tr><td><b>ב'</b> מוצר אמיתי</td><td class="num">37,650 ₪</td><td class="num">~43,300 ₪</td><td class="num">~45,200 ₪</td></tr>
+      <tr><td><b>ג'</b> בתי ספר</td><td class="num">86,400 ₪</td><td class="num">~99,400 ₪</td><td class="num">~103,700 ₪</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<p class="small">התמחור לפי שעה הוגן ושקוף ומתאים כשההיקף עשוי להשתנות. תמחור קבוע נותן ללקוח ודאות
+תקציבית — ולכן כולל רזרבה. שתי הגישות לגיטימיות; הבחירה תלויה בהעדפת הלקוח.</p>
+
+<div class="box info">
+  <b>אם הלקוח מתלבט:</b> אפשר להציע התחלה בחבילה א' לפי שעה. כך הלקוח רואה תוצאה אמיתית
+  בהשקעה נמוכה יחסית, ומחליט בביטחון אם להמשיך לחבילות הגדולות.
+</div>
+
+<!-- ============ 9. PAYMENT ============ -->
+<div class="page-break"></div>
+<h2 class="section"><span class="section-num">9.</span> תנאי תשלום ואבני דרך</h2>
+<p class="lead">תשלום לפי אבני דרך מגן על שני הצדדים: הלקוח משלם על תוצאות, והמפתח מקבל תזרים לאורך הדרך.</p>
+
+<h3>מודל תשלום מוצע (לדוגמה, חבילה ב')</h3>
+<table>
+  <thead><tr><th>אבן דרך</th><th>מה נמסר</th><th class="num">% מהתשלום</th></tr></thead>
+  <tbody>
+    <tr><td>חתימה / התחלה</td><td>מקדמה והתנעת הפרויקט</td><td class="num">25%</td></tr>
+    <tr><td>סיום שלב 1–2</td><td>גרסה מלוטשת ובטוחה באוויר</td><td class="num">30%</td></tr>
+    <tr><td>סיום שלב 3</td><td>שרת, חשבונות ושמירה בענן עובדים</td><td class="num">30%</td></tr>
+    <tr><td>מסירה סופית</td><td>תיעוד, הדרכה והעברת בעלות</td><td class="num">15%</td></tr>
+  </tbody>
+  <tfoot><tr><td colspan="2">סך הכל</td><td class="num">100%</td></tr></tfoot>
+</table>
+
+<h3>מה כלול במחיר</h3>
+<ul>
+  <li>כל שעות הפיתוח לפי החבילה הנבחרת</li>
+  <li>קוד מקור מלא והעברת בעלות ללקוח</li>
+  <li>תיעוד טכני ומדריך משתמש</li>
+  <li>תקופת אחריות לתיקון באגים — 30 יום ממסירה</li>
+</ul>
+<h3>מה אינו כלול (תוספת בנפרד)</h3>
+<ul>
+  <li>עלויות תשתית שוטפות (שרת, דומיין, AI) — באחריות הלקוח</li>
+  <li>תחזוקה שוטפת ופיצ'רים חדשים לאחר תקופת האחריות</li>
+  <li>עיצוב גרפי מקצועי / מיתוג (ניתן להוסיף לפי דרישה)</li>
+  <li>אגרות ואישורים ממשלתיים</li>
+</ul>
+
+<div class="box info avoid-break">
+  <h4>אופציה: ריטיינר תחזוקה חודשי</h4>
+  <p style="margin:0;">לאחר המסירה ניתן להציע חבילת תחזוקה חודשית (למשל 4–8 שעות בחודש) לתיקונים,
+  עדכונים ושיפורים קטנים — בתעריף 150 ₪/שעה. כך המוצר נשאר מעודכן ובטוח לאורך זמן.</p>
+</div>
+
+<!-- ============ 10. RECOMMENDATION ============ -->
+<div class="page-break"></div>
+<h2 class="section"><span class="section-num">10.</span> סיכום והמלצה — להמשיך או לא?</h2>
+
+<p class="lead">המוצר במצב טוב מאוד להדגמה: הרעיון עובד, העיצוב נעים, התוכן החינוכי איכותי ויש בסיס
+קוד מסודר עם בדיקות. השאלה היא רק <b>עד כמה רוצים לקחת אותו רחוק</b>.</p>
+
+<h3>ההמלצה שלי, לפי מצב הלקוח</h3>
+<table>
+  <thead><tr><th>אם הלקוח רוצה…</th><th>אז כדאי…</th><th class="num">השקעה</th></tr></thead>
+  <tbody>
+    <tr><td>רק להציג מוצר עובד באוויר (למשקיעים / הדגמה)</td><td>חבילה א'</td><td class="num">~17,400 ₪</td></tr>
+    <tr><td>שמשפחות אמיתיות ישתמשו, עם חשבונות ושמירה</td><td>חבילה ב' (מומלץ)</td><td class="num">~37,650 ₪</td></tr>
+    <tr><td>להגיע לבתי ספר ולמסחר את המוצר</td><td>חבילה ג' (בשלבים)</td><td class="num">~86,400 ₪</td></tr>
+    <tr><td>לבדוק את המים לפני התחייבות</td><td>שלב 1 בלבד, לפי שעה</td><td class="num">~12,000 ₪</td></tr>
+  </tbody>
+</table>
+
+<div class="box key avoid-break">
+  <h3>שורה תחתונה</h3>
+  <p style="margin:0 0 2mm 0;">לדעתי כדאי בהחלט להמשיך. הבסיס כבר בנוי ואיכותי — מה שחוסך זמן וכסף משמעותיים.
+  הצעד הנכון: להתחיל ב<b>חבילה א'</b> כדי להעלות מוצר מלוטש לאוויר, ומשם להחליט בביטחון
+  אם להתקדם ל<b>חבילה ב'</b> ולחזון בתי הספר.</p>
+  <p style="margin:0;">אני זמין/ה לפגישה כדי לעבור על המסמך, להתאים את ההיקף לתקציב, ולענות על כל שאלה.</p>
+</div>
+
+<!-- ============ 11. ASSUMPTIONS ============ -->
+<div class="page-break"></div>
+<h2 class="section"><span class="section-num">11.</span> הנחות יסוד והבהרות</h2>
+<ul>
+  <li>כל הסכומים נקובים בשקלים חדשים (₪), לפני מע"מ, ומהווים הערכה נכון ליוני 2026.</li>
+  <li>המרת מטבע משוערת: ‎1$ ≈ ‎3.7 ₪. עלויות שירותים זרים עשויות להשתנות עם שער החליפין והמחירונים.</li>
+  <li>הערכות השעות מבוססות על מצב הקוד הקיים ועל ניסיון; היקף בפועל עשוי להשתנות עם דרישות חדשות.</li>
+  <li>תעריף העבודה: 150 ₪ לשעה.</li>
+  <li>עלויות תשתית שוטפות (שרת, דומיין, AI, ניטור) אינן כלולות במחירי הפיתוח והן באחריות הלקוח.</li>
+  <li>תמחור שירות ה-AI מבוסס על מחירוני מודלי Claude נכון ליוני 2026 ולפי שימוש בפועל.</li>
+  <li>לוחות זמנים לאישורים רגולטוריים (משרד החינוך, גפ"ן) תלויים בגורמים חיצוניים.</li>
+  <li>מסמך זה הוא הצעה ראשונית לדיון, ואינו חוזה מחייב. הסכם סופי ייחתם בנפרד.</li>
+</ul>
+
+<div class="box info" style="margin-top:10mm;">
+  <p style="margin:0; text-align:center; font-size:11pt;">
+  <b>תודה על העיון! 🐿️</b><br>
+  Save4Dream — ללמד את הדור הבא לחסוך, לתכנן ולחלום בגדול.</p>
+</div>
+
+</body>
+</html>
