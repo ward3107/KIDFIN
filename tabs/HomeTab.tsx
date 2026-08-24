@@ -17,6 +17,7 @@ import { GoalSelectionFlow } from '../components/GoalSelection';
 import { PersonalGoalsDisplay, GoalsSummary } from '../components/PersonalGoalsDisplay';
 import { useAppContext } from '../context/AppContext';
 import { usePersonalGoals } from '../hooks/usePersonalGoals';
+import { MascotGreeter } from '../components/avatar/MascotGreeter';
 
 export const HomeTab: React.FC = () => {
   const { t } = useTranslation();
@@ -43,6 +44,9 @@ export const HomeTab: React.FC = () => {
           </div>
         )}
 
+        {/* 3D talking mascot */}
+        <MascotGreeter name={stats.name} />
+
         {/* Level & Knowledge Header */}
         <div className="grid grid-cols-2 gap-3">
           <StatsCard variant="level" value={stats.level} secondaryValue={stats.xp} />
@@ -64,6 +68,9 @@ export const HomeTab: React.FC = () => {
           <h2 className="text-lg md:text-xl font-black text-slate-800">שלום, {stats.name}!</h2>
         </div>
       )}
+
+      {/* 3D talking mascot */}
+      <MascotGreeter name={stats.name} />
 
       {/* Level & Knowledge Header - 2 columns */}
       <div className="grid grid-cols-2 gap-2 md:gap-3 lg:gap-4">
