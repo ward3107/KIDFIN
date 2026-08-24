@@ -34,4 +34,12 @@ export default [
     files: ['tests/**/*.{ts,tsx}'],
     languageOptions: { globals: { ...globals.browser, ...globals.node } },
   },
+  {
+    // react-three-fiber renders Three.js objects as JSX intrinsics (e.g.
+    // <mesh>, <ambientLight>, <primitive object=…/>) whose props the
+    // eslint-plugin-react DOM checker doesn't know about. Disable that rule
+    // for the 3D avatar layer.
+    files: ['components/avatar/**/*.{ts,tsx}'],
+    rules: { 'react/no-unknown-property': 'off' },
+  },
 ];
