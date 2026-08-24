@@ -24,7 +24,12 @@ export type AvatarGesture = 'wave' | 'nod' | 'cheer' | 'shrug' | 'think';
 export interface AvatarHandle {
   /** Speak text aloud (Web Speech) and animate the "talking" motion. */
   speak: (text: string, opts?: SpeakOptions) => void;
-  /** Stop any in-progress speech immediately. */
+  /**
+   * Play a pre-generated natural-voice audio clip (URL) and animate the mouth.
+   * Falls back to `speak(fallbackText)` if the clip can't be loaded/played.
+   */
+  playClip: (url: string, opts?: PlayClipOptions) => void;
+  /** Stop any in-progress speech or clip immediately. */
   stopSpeaking: () => void;
   /** Set the current facial/emotional expression. */
   setExpression: (expression: AvatarExpression) => void;
@@ -32,6 +37,17 @@ export interface AvatarHandle {
   playGesture: (gesture: AvatarGesture) => void;
   /** Whether speech is currently playing. */
   isSpeaking: () => boolean;
+}
+
+export interface PlayClipOptions {
+  /** Expression to hold while the clip plays. */
+  expression?: AvatarExpression;
+  /** Text spoken via Web Speech if the audio clip fails to load. */
+  fallbackText?: string;
+  /** Language for the fallback speech. */
+  lang?: string;
+  /** Called when the clip finishes (or fails/cancels). */
+  onDone?: () => void;
 }
 
 export interface SpeakOptions {
