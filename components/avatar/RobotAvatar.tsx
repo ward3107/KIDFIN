@@ -20,6 +20,7 @@ import type {
   AvatarExpression,
   AvatarGesture,
   AvatarHandle,
+  PlayClipOptions,
   SpeakOptions,
 } from './avatarTypes';
 
@@ -157,7 +158,20 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
       };
     }, []);
 
-    // Cancel any speech if the component unmounts.
+    // Holds the currently-playing natural-voice audio clip (if any).
+    const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    const stopAudioClip = () => {
+      const a = audioRef.current;
+      if (a) {
+        a.onended = null;
+        a.onerror = null;
+        a.pause();
+        audioRef.current = null;
+      }
+    };
+
+    // Cancel any speech/clip if the component unmounts.
     useEffect(() => {
       return () => {
         try {
@@ -165,6 +179,7 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
         } catch {
           /* no-op */
         }
+        stopAudioClip();
       };
     }, []);
 
@@ -201,12 +216,65 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
           u.onerror = end;
           synth.speak(u);
         },
+        playClip: (url: string, opts?: PlayClipOptions) => {
+          if (opts?.expression) motion.current.expression = opts.expression;
+          // Stop any prior clip/speech first.
+          stopAudioClip();
+          try {
+            window.speechSynthesis?.cancel();
+          } catch {
+            /* no-op */
+          }
+
+          const finish = () => {
+            motion.current.speaking = false;
+            opts?.onDone?.();
+          };
+
+          // Fall back to Web Speech if the clip can't be played.
+          const fallback = () => {
+            stopAudioClip();
+            const synth = typeof window !== 'undefined' ? window.speechSynthesis : undefined;
+            if (!synth || !opts?.fallbackText) {
+              finish();
+              return;
+            }
+            const u = new SpeechSynthesisUtterance(opts.fallbackText);
+            u.lang = opts.lang ?? (i18n.language?.startsWith('ar') ? 'ar' : 'he-IL');
+            u.rate = 0.95;
+            u.pitch = 1.1;
+            u.onstart = () => {
+              motion.current.speaking = true;
+            };
+            u.onend = finish;
+            u.onerror = finish;
+            synth.speak(u);
+          };
+
+          try {
+            const audio = new Audio(url);
+            audioRef.current = audio;
+            audio.onplaying = () => {
+              motion.current.speaking = true;
+            };
+            audio.onended = () => {
+              audioRef.current = null;
+              finish();
+            };
+            audio.onerror = fallback;
+            const p = audio.play();
+            if (p && typeof p.catch === 'function') p.catch(fallback);
+          } catch {
+            fallback();
+          }
+        },
         stopSpeaking: () => {
           try {
             window.speechSynthesis?.cancel();
           } catch {
             /* no-op */
           }
+          stopAudioClip();
           motion.current.speaking = false;
         },
         setExpression: (expression: AvatarExpression) => {

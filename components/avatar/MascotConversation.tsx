@@ -1,0 +1,221 @@
+import React, { Suspense, useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Mic, MicOff, Play } from 'lucide-react';
+import type { AvatarHandle } from './avatarTypes';
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import {
+  audioUrl,
+  getTurn,
+  nextTurnId,
+  turnListens,
+  turnText,
+} from '../../services/dialogue/engine';
+import { CONVERSATION_START, type Lang } from '../../services/dialogue/conversation';
+
+// Lazy-load the 3D avatar so three.js stays code-split.
+const RobotAvatar = React.lazy(() =>
+  import('./RobotAvatar').then((m) => ({ default: m.RobotAvatar })),
+);
+
+type Phase = 'idle' | 'speaking' | 'listening' | 'done';
+
+/**
+ * The interactive, proactive, bilingual talking mascot. After one tap to start
+ * (required by browsers before audio can play), the robot leads the whole
+ * conversation: it speaks, then listens, reacts to what the child says, and
+ * moves the lesson forward — so a shy child is gently pulled into talking.
+ */
+export const MascotConversation: React.FC<{ height?: number }> = ({ height = 300 }) => {
+  const { t, i18n } = useTranslation();
+  const lang: Lang = (i18n.language || 'he').startsWith('ar') ? 'ar' : 'he';
+
+  const avatar = useRef<AvatarHandle>(null);
+  const [started, setStarted] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
+  const [turnId, setTurnId] = useState<string>(CONVERSATION_START);
+  const [caption, setCaption] = useState('');
+  const [childSaid, setChildSaid] = useState('');
+  const listenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearListenTimer = () => {
+    if (listenTimer.current) {
+      clearTimeout(listenTimer.current);
+      listenTimer.current = null;
+    }
+  };
+
+  // Forward-declared so speak/afterSpeak can reference each other.
+  const playTurnRef = useRef<(id: string) => void>(() => {});
+
+  const advanceOnHeard = useCallback(
+    (text: string) => {
+      clearListenTimer();
+      setChildSaid(text);
+      const turn = getTurn(turnId);
+      if (!turn) return;
+      const nid = nextTurnId(turn, text, lang);
+      if (nid) playTurnRef.current(nid);
+      else setPhase('idle');
+    },
+    [turnId, lang],
+  );
+
+  const recognition = useSpeechRecognition(advanceOnHeard);
+
+  const beginListening = useCallback(
+    (turnIdForFallback: string) => {
+      setPhase('listening');
+      if (recognition.supported) {
+        recognition.start();
+        // Safety: if the child says nothing, gently continue after a while.
+        clearListenTimer();
+        listenTimer.current = setTimeout(() => {
+          recognition.stop();
+          const turn = getTurn(turnIdForFallback);
+          const nid = turn?.fallbackNext ?? turn?.next;
+          if (nid) playTurnRef.current(nid);
+          else setPhase('idle');
+        }, 9000);
+      }
+    },
+    [recognition],
+  );
+
+  const playTurn = useCallback(
+    (id: string) => {
+      const turn = getTurn(id);
+      if (!turn) return;
+      setTurnId(id);
+      setChildSaid('');
+      setPhase('speaking');
+      const text = turnText(turn, lang);
+      setCaption(text);
+      const a = avatar.current;
+      if (!a) return;
+      a.setExpression(turn.expression);
+      if (turn.gesture) a.playGesture(turn.gesture);
+      a.playClip(audioUrl(turn.audioKey, lang), {
+        expression: turn.expression,
+        fallbackText: text,
+        lang: lang === 'ar' ? 'ar' : 'he-IL',
+        onDone: () => {
+          if (turn.end) {
+            setPhase('done');
+          } else if (turnListens(turn)) {
+            beginListening(turn.id);
+          } else if (turn.next) {
+            playTurn(turn.next);
+          } else {
+            setPhase('idle');
+          }
+        },
+      });
+    },
+    [lang, beginListening],
+  );
+  playTurnRef.current = playTurn;
+
+  const start = () => {
+    setStarted(true);
+    playTurn(CONVERSATION_START);
+  };
+
+  const restart = () => {
+    recognition.stop();
+    clearListenTimer();
+    playTurn(CONVERSATION_START);
+  };
+
+  const talkAgain = () => {
+    const turn = getTurn(turnId);
+    if (turn && turnListens(turn)) beginListening(turn.id);
+  };
+
+  return (
+    <div className="rounded-3xl border-2 border-indigo-100 bg-gradient-to-b from-indigo-50 to-white p-3 md:p-4 shadow-sm">
+      <div className="overflow-hidden rounded-2xl bg-white/60">
+        <Suspense
+          fallback={
+            <div
+              style={{ height }}
+              className="flex items-center justify-center text-4xl animate-pulse"
+            >
+              🤖
+            </div>
+          }
+        >
+          <RobotAvatar ref={avatar} height={height} interactive={false} />
+        </Suspense>
+      </div>
+
+      {/* Caption bubble — the robot's words (also helps non-audio/hard-of-hearing) */}
+      <div className="mt-3 min-h-[3.5rem] rounded-2xl bg-white px-3 py-2 text-center text-sm md:text-base font-medium text-slate-700 shadow-sm ring-1 ring-indigo-100">
+        {caption || (lang === 'ar' ? 'اضغط لتبدأ الحديث مع كيوي! 👇' : 'לחץ כדי להתחיל לדבר עם קיווי! 👇')}
+      </div>
+
+      {/* What the child said */}
+      {childSaid && (
+        <div className="mt-2 text-center text-xs text-indigo-500">
+          {lang === 'ar' ? 'قلت:' : 'אמרת:'} “{childSaid}”
+        </div>
+      )}
+
+      {/* Live state / controls */}
+      <div className="mt-3 flex flex-col items-center gap-2">
+        {!started && (
+          <button
+            onClick={start}
+            className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-base font-bold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 active:scale-95"
+          >
+            <Play size={20} /> {lang === 'ar' ? 'هيا نبدأ' : 'בוא נתחיל'}
+          </button>
+        )}
+
+        {started && phase === 'speaking' && (
+          <div className="text-sm text-indigo-500">🔊 {lang === 'ar' ? 'كيوي يتحدث…' : 'קיווי מדבר…'}</div>
+        )}
+
+        {started && phase === 'listening' && (
+          <div className="flex items-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-white shadow-lg animate-pulse">
+            <Mic size={18} /> {lang === 'ar' ? 'أنا أستمع… تكلم!' : 'אני מקשיב… דבר!'}
+          </div>
+        )}
+
+        {started && phase === 'listening' && !recognition.supported && (
+          <button
+            onClick={() => advanceOnHeard('')}
+            className="rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow"
+          >
+            {lang === 'ar' ? 'متابعة ▶' : 'המשך ▶'}
+          </button>
+        )}
+
+        {started && phase === 'listening' && recognition.supported && (
+          <button onClick={talkAgain} className="text-xs text-indigo-500 underline">
+            {lang === 'ar' ? 'لم يسمعني؟ حاول ثانية' : 'לא שמע? נסה שוב'}
+          </button>
+        )}
+
+        {started && phase === 'done' && (
+          <button
+            onClick={restart}
+            className="rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-indigo-700"
+          >
+            {lang === 'ar' ? 'من البداية 🔄' : 'מהתחלה 🔄'}
+          </button>
+        )}
+
+        {recognition.error === 'not-allowed' && (
+          <p className="text-center text-xs text-amber-700">
+            <MicOff size={12} className="inline" />{' '}
+            {lang === 'ar'
+              ? 'اسمح باستخدام الميكروفون ليتمكن كيوي من سماعك.'
+              : 'אפשר גישה למיקרופון כדי שקיווי ישמע אותך.'}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default MascotConversation;
