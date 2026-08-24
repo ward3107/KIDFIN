@@ -397,8 +397,8 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
           touchAction: interactive ? 'none' : 'auto',
         }}
       >
-        {/* Animated mouth — opens with the live voice level (the robot's real
-            mouth, now that the painted smile is removed from the model). */}
+        {/* Animated mouth — opens with the live voice level. mouthElRef is the
+            scaled wrapper; the inner layers give it lips, teeth and a tongue. */}
         <div
           ref={mouthElRef}
           aria-hidden
@@ -409,17 +409,56 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
             width: '13%',
             maxWidth: 58,
             aspectRatio: '3 / 2',
-            background:
-              'radial-gradient(ellipse at 50% 35%, #333 0%, #111 55%, #000 100%)',
-            borderRadius: '50%',
-            boxShadow: 'inset 0 -28% 40% -12% rgba(200,70,70,0.45)',
             opacity: 0,
             transform: 'translate(-50%, -50%) scaleY(0.22)',
             transition: 'opacity 120ms linear',
             pointerEvents: 'none',
             zIndex: 2,
           }}
-        />
+        >
+          {/* mouth interior + lip rim */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background:
+                'radial-gradient(ellipse at 50% 38%, #2b1414 0%, #160a0a 60%, #050202 100%)',
+              borderRadius: '50%',
+              border: '2px solid rgba(150,70,70,0.85)',
+              boxShadow:
+                '0 1px 3px rgba(0,0,0,0.45), inset 0 2px 4px rgba(0,0,0,0.7)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* upper teeth */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '4%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '74%',
+                height: '20%',
+                background: 'linear-gradient(#ffffff, #f2e9e2)',
+                borderRadius: '0 0 45% 45%',
+              }}
+            />
+            {/* tongue */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '4%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '64%',
+                height: '46%',
+                background:
+                  'radial-gradient(ellipse at 50% 35%, #ec6a84 0%, #c8385a 100%)',
+                borderRadius: '50% 50% 50% 50%',
+              }}
+            />
+          </div>
+        </div>
         <Canvas
           dpr={[1, 1.75]}
           shadows

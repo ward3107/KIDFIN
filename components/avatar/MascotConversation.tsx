@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Mic, MicOff, Play } from 'lucide-react';
+import { Mic, MicOff, Play, Send } from 'lucide-react';
 import type { AvatarHandle } from './avatarTypes';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import {
@@ -35,6 +35,7 @@ export const MascotConversation: React.FC<{ height?: number }> = ({ height = 300
   const [turnId, setTurnId] = useState<string>(CONVERSATION_START);
   const [caption, setCaption] = useState('');
   const [childSaid, setChildSaid] = useState('');
+  const [typed, setTyped] = useState('');
   const listenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearListenTimer = () => {
@@ -131,6 +132,17 @@ export const MascotConversation: React.FC<{ height?: number }> = ({ height = 300
     if (turn && turnListens(turn)) beginListening(turn.id);
   };
 
+  // Let the child TYPE instead of speaking.
+  const submitTyped = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = typed.trim();
+    if (!text) return;
+    recognition.stop();
+    clearListenTimer();
+    setTyped('');
+    advanceOnHeard(text);
+  };
+
   return (
     <div className="rounded-3xl border-2 border-indigo-100 bg-gradient-to-b from-indigo-50 to-white p-3 md:p-4 shadow-sm">
       <div className="overflow-hidden rounded-2xl bg-white/60">
@@ -194,6 +206,27 @@ export const MascotConversation: React.FC<{ height?: number }> = ({ height = 300
           <button onClick={talkAgain} className="text-xs text-indigo-500 underline">
             {lang === 'ar' ? 'لم يسمعني؟ حاول ثانية' : 'לא שמע? נסה שוב'}
           </button>
+        )}
+
+        {/* Type instead of talking — for kids who prefer to write */}
+        {started && phase === 'listening' && (
+          <form onSubmit={submitTyped} className="mt-1 flex w-full max-w-xs items-center gap-2">
+            <input
+              type="text"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              placeholder={lang === 'ar' ? 'أو اكتب هنا…' : 'או כתוב כאן…'}
+              dir={lang === 'ar' ? 'rtl' : 'rtl'}
+              className="flex-1 rounded-2xl border-2 border-indigo-200 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus:border-indigo-400"
+            />
+            <button
+              type="submit"
+              aria-label={lang === 'ar' ? 'إرسال' : 'שליחה'}
+              className="rounded-2xl bg-indigo-600 p-2.5 text-white shadow transition hover:bg-indigo-700 active:scale-95"
+            >
+              <Send size={16} />
+            </button>
+          </form>
         )}
 
         {started && phase === 'done' && (
