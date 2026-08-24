@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Save4Dream — הצעת מחיר</title>
+<style>
+  @page {
+    size: A4; margin: 18mm 16mm 16mm 16mm;
+    @bottom-center {
+      content: "Save4Dream · הצעת מחיר · עמוד " counter(page) " מתוך " counter(pages);
+      font-family: 'Rubik', sans-serif; font-size: 8.5pt; color: #9aa0a6;
+    }
+  }
+  @page :first { margin: 0; @bottom-center { content: none; } }
+  * { box-sizing: border-box; }
+  html { font-family: 'Rubik', 'Noto Sans Hebrew', sans-serif; color: #2b2f33; }
+  body { margin: 0; font-size: 11pt; line-height: 1.65; }
+
+  .cover {
+    height: 297mm; background: linear-gradient(150deg, #1f7a4d 0%, #2fa56b 45%, #f4b942 130%);
+    color: #fff; page-break-after: always;
+  }
+  .cover-inner { padding: 42mm 22mm; height: 100%; display: flex; flex-direction: column; }
+  .cover .mascot { font-size: 72pt; line-height: 1; margin-bottom: 7mm; }
+  .cover h1 { font-size: 44pt; font-weight: 800; margin: 0 0 4mm 0; letter-spacing: -0.5px; }
+  .cover .tagline { font-size: 16pt; opacity: 0.95; margin: 0; }
+  .cover .doc-type {
+    margin-top: auto; background: rgba(255,255,255,0.16); border-radius: 14px; padding: 8mm 9mm;
+  }
+  .cover .doc-type h2 { font-size: 22pt; margin: 0 0 5mm 0; }
+  .cover .meta { font-size: 11.5pt; line-height: 2; }
+  .cover .meta b { font-weight: 700; }
+  .cover .foot { margin-top: 7mm; font-size: 9.5pt; opacity: 0.85; }
+
+  h2.section { font-size: 19pt; font-weight: 800; color: #1f7a4d; margin: 0 0 3mm 0;
+    padding-bottom: 2mm; border-bottom: 3px solid #f4b942; }
+  h3 { font-size: 13pt; font-weight: 700; color: #235; margin: 6mm 0 2mm 0; }
+  p { margin: 0 0 3mm 0; }
+  .lead { font-size: 12pt; color: #444; }
+  ul { margin: 0 0 3mm 0; padding-right: 6mm; }
+  li { margin-bottom: 2mm; }
+  .small { font-size: 9.2pt; color: #6b7177; }
+  .page-break { page-break-before: always; }
+  .avoid-break { page-break-inside: avoid; }
+
+  .kpi { display: flex; gap: 4mm; margin: 5mm 0; }
+  .kpi div { flex: 1; background: #f6f9f7; border-radius: 10px; padding: 4mm; text-align: center; }
+  .kpi .n { font-size: 18pt; font-weight: 800; color: #1f7a4d; }
+  .kpi .l { font-size: 9pt; color: #6b7177; }
+
+  .box { border-radius: 10px; padding: 5mm 6mm; margin: 5mm 0; }
+  .box.info { background: #eef6f1; border-right: 5px solid #2fa56b; }
+  .box.warn { background: #fdf6e3; border-right: 5px solid #f4b942; }
+
+  .price-box {
+    background: #1f7a4d; color: #fff; border-radius: 16px; padding: 9mm 8mm; text-align: center;
+    margin: 6mm 0;
+  }
+  .price-box .label { font-size: 12pt; opacity: 0.9; }
+  .price-box .full { font-size: 24pt; font-weight: 700; text-decoration: line-through;
+    text-decoration-color: #f4b942; opacity: 0.75; margin: 1mm 0; }
+  .price-box .disc { display: inline-block; background: #f4b942; color: #3a2f00; font-weight: 800;
+    font-size: 11pt; border-radius: 20px; padding: 1mm 5mm; margin: 2mm 0; }
+  .price-box .amount { font-size: 52pt; font-weight: 800; line-height: 1.05; margin: 1mm 0; }
+  .price-box .note { font-size: 10pt; opacity: 0.85; }
+
+  .cols { display: flex; gap: 6mm; }
+  .col { flex: 1; }
+  .col h3 { margin-top: 0; }
+  .check li { list-style: none; position: relative; padding-right: 6mm; }
+  .check li::before { content: "✓"; position: absolute; right: 0; color: #1f7a4d; font-weight: 800; }
+  .x li { list-style: none; position: relative; padding-right: 6mm; }
+  .x li::before { content: "✕"; position: absolute; right: 0; color: #c0392b; font-weight: 800; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-inner">
+    <div class="mascot">🐿️💰</div>
+    <h1>Save4Dream</h1>
+    <div class="tagline">אפליקציה לחינוך פיננסי לילדים — עברית וערבית</div>
+    <div class="doc-type">
+      <h2>הצעת מחיר</h2>
+      <div class="meta">
+        <div><b>הוכן עבור:</b> [שם הלקוח]</div>
+        <div><b>הוכן על ידי:</b> [שמך]</div>
+        <div><b>תאריך:</b> 14 ביוני 2026</div>
+      </div>
+      <div class="foot">הצעה להפיכת האפליקציה למוצר מלא ומוכן לשימוש בבתי ספר.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 1. ABOUT -->
+<h2 class="section">על המוצר</h2>
+<p class="lead">Save4Dream היא אפליקציה שמלמדת ילדים בגילאי 8–12 להתנהל נכון עם כסף, דרך משחק:
+לומדים שיעור, מרוויחים מטבעות, חוסכים למטרה וקונים בחוכמה. האפליקציה כבר קיימת ועובדת
+כגרסת הדגמה, בעברית ובערבית.</p>
+
+<div class="kpi">
+  <div><div class="n">6</div><div class="l">מסכים ראשיים</div></div>
+  <div><div class="n">7</div><div class="l">משחקים אינטראקטיביים</div></div>
+  <div><div class="n">2</div><div class="l">שפות</div></div>
+  <div><div class="n">600+</div><div class="l">משתמשים נתמכים</div></div>
+</div>
+
+<p>הצעה זו מתארת את ההשלמה של האפליקציה ל<b>מוצר מלא, יציב ומוכן לשימוש אמיתי בבתי ספר</b> —
+כולל שרת, חשבונות משתמשים, מערכת למורים ולכיתות, ועמידה בדרישות נגישות ופרטיות.</p>
+
+<!-- 2. WHAT'S INCLUDED -->
+<h2 class="section" style="margin-top:8mm;">מה כולל הפרויקט</h2>
+<ul class="check">
+  <li>אפליקציה מלאה ומלוטשת בעברית ובערבית, מותאמת לנייד</li>
+  <li>שרת, חשבונות משתמשים ושמירת ההתקדמות בענן (לא רק על המכשיר)</li>
+  <li>תמיכה במספר ילדים במשפחה + לוח הורים עם משימות ותגמולים</li>
+  <li>מערכת למורים ולכיתות: רישום תלמידים, מעקב התקדמות ודוחות</li>
+  <li>הרחבת התוכן בהתאם לתכנית הלימודים + עוזר חכם "שאל את הסנאי"</li>
+  <li>עמידה בדרישות נגישות ופרטיות, וליווי פיילוט בבית ספר אחד</li>
+  <li>קוד מקור מלא, תיעוד, הדרכה ו-30 יום אחריות לתיקון תקלות</li>
+</ul>
+
+<!-- 3. THE PRICE -->
+<div class="price-box avoid-break">
+  <div class="label">מחיר מלא לפרויקט (576 שעות × 100 ₪)</div>
+  <div class="full">57,600 ₪</div>
+  <div class="disc">הנחה — 25%</div>
+  <div class="amount">43,000 ₪</div>
+  <div class="note">מחיר סופי · חד-פעמי · לא כולל מע"מ · משך משוער: כ-4–5 חודשים</div>
+</div>
+
+<div class="cols avoid-break">
+  <div class="col">
+    <h3>כלול במחיר</h3>
+    <ul class="check small">
+      <li>כל שעות הפיתוח</li>
+      <li>קוד מקור והעברת בעלות</li>
+      <li>תיעוד והדרכה</li>
+      <li>30 יום אחריות</li>
+    </ul>
+  </div>
+  <div class="col">
+    <h3>לא כלול</h3>
+    <ul class="x small">
+      <li>עלויות תשתית שוטפות</li>
+      <li>תחזוקה אחרי 30 יום</li>
+      <li>אגרות ואישורים ממשלתיים</li>
+      <li>מיתוג/עיצוב גרפי (אופציונלי)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- 4. ONGOING + PAYMENT -->
+<h2 class="section" style="margin-top:10mm;">תשלומים חודשיים שוטפים — על שם הלקוח</h2>
+<div class="box warn">
+  <b>חשוב לדעת:</b> מחיר הפיתוח (43,000 ₪) הוא <b>חד-פעמי</b>. כדי שהאפליקציה תפעל באוויר,
+  נדרשים שירותי תשתית חודשיים שנרשמים <b>על שם הלקוח ובאחריותו</b> — אלה אינם כלולים במחיר
+  הפיתוח. אפשר להתחיל בחבילות חינמיות ולעבור לתשלום רק כשמספר המשתמשים גדל.
+</div>
+<table style="width:100%; border-collapse:collapse; font-size:10.2pt;">
+  <tr style="background:#1f7a4d; color:#fff;">
+    <td style="padding:2.6mm 3mm;">שירות חודשי</td><td style="padding:2.6mm 3mm; text-align:left;">עלות מוערכת (₪/חודש)</td>
+  </tr>
+  <tr><td style="padding:2.4mm 3mm; border-bottom:1px solid #e3e6e8;">שרת ובסיס נתונים</td><td style="padding:2.4mm 3mm; text-align:left; border-bottom:1px solid #e3e6e8;">~75 ₪</td></tr>
+  <tr style="background:#f6f9f7;"><td style="padding:2.4mm 3mm; border-bottom:1px solid #e3e6e8;">אחסון האתר</td><td style="padding:2.4mm 3mm; text-align:left; border-bottom:1px solid #e3e6e8;">~60 ₪ (חינם בהתחלה)</td></tr>
+  <tr><td style="padding:2.4mm 3mm; border-bottom:1px solid #e3e6e8;">דומיין (כתובת האתר)</td><td style="padding:2.4mm 3mm; text-align:left; border-bottom:1px solid #e3e6e8;">~6 ₪</td></tr>
+  <tr style="background:#f6f9f7;"><td style="padding:2.4mm 3mm; border-bottom:1px solid #e3e6e8;">ניטור ושליחת מיילים</td><td style="padding:2.4mm 3mm; text-align:left; border-bottom:1px solid #e3e6e8;">~50–120 ₪</td></tr>
+  <tr><td style="padding:2.4mm 3mm; border-bottom:1px solid #e3e6e8;">עוזר AI (לפי שימוש, ~600 משתמשים)</td><td style="padding:2.4mm 3mm; text-align:left; border-bottom:1px solid #e3e6e8;">~250–600 ₪</td></tr>
+  <tr style="background:#eef6f1; font-weight:800;"><td style="padding:2.6mm 3mm; border-top:2px solid #1f7a4d;">סך הכל משוער לחודש</td><td style="padding:2.6mm 3mm; text-align:left; border-top:2px solid #1f7a4d;">~250–850 ₪</td></tr>
+</table>
+<p class="small">הטווח תלוי במספר המשתמשים ובהיקף השימוש בעוזר ה-AI. בהתחלה (חבילות חינמיות) העלות
+החודשית עשויה להיות קרובה ל-0.</p>
+
+<h2 class="section" style="margin-top:9mm;">תנאי תשלום (על הפיתוח החד-פעמי)</h2>
+<table style="width:100%; border-collapse:collapse; font-size:10.5pt;">
+  <tr style="background:#1f7a4d; color:#fff;">
+    <td style="padding:3mm;">שלב</td><td style="padding:3mm; text-align:left;">תשלום</td>
+  </tr>
+  <tr><td style="padding:3mm; border-bottom:1px solid #e3e6e8;">בחתימה והתחלת העבודה</td><td style="padding:3mm; text-align:left; border-bottom:1px solid #e3e6e8;">25% · 10,750 ₪</td></tr>
+  <tr style="background:#f6f9f7;"><td style="padding:3mm; border-bottom:1px solid #e3e6e8;">באמצע הדרך (שרת וחשבונות עובדים)</td><td style="padding:3mm; text-align:left; border-bottom:1px solid #e3e6e8;">50% · 21,500 ₪</td></tr>
+  <tr><td style="padding:3mm;">במסירה הסופית</td><td style="padding:3mm; text-align:left;">25% · 10,750 ₪</td></tr>
+</table>
+
+<div class="box info" style="margin-top:8mm;">
+  <p style="margin:0;"><b>אופציה לתחזוקה שוטפת:</b> לאחר המסירה ניתן להוסיף חבילת תחזוקה חודשית
+  לעדכונים ושיפורים, בתעריף 100 ₪/שעה.</p>
+</div>
+
+<div class="box" style="background:#1f7a4d; color:#fff; text-align:center; margin-top:10mm;">
+  <p style="margin:0; font-size:12pt;"><b>אשמח לעבור על ההצעה יחד ולענות על כל שאלה. 🐿️</b><br>
+  Save4Dream — ללמד את הדור הבא לחסוך, לתכנן ולחלום בגדול.</p>
+</div>
+
+<p class="small" style="margin-top:8mm;">הסכומים נקובים בשקלים חדשים, לפני מע"מ, ומהווים הצעה לדיון (אינה חוזה מחייב).
+הצעה זו בתוקף ל-30 יום ממועד הוצאתה.</p>
+
+</body>
+</html>
