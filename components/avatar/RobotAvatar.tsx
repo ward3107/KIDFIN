@@ -156,8 +156,6 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
     const analyserDataRef = useRef<Uint8Array | null>(null);
     const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
     const usingAnalyserRef = useRef(false);
-    // The visible mouth overlay element (driven directly to avoid per-frame React renders).
-    const mouthElRef = useRef<HTMLDivElement | null>(null);
 
     const ensureAudioGraph = (): AnalyserNode | null => {
       if (typeof window === 'undefined') return null;
@@ -206,13 +204,6 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
             // No analyser (e.g. Web Speech fallback): natural-looking cadence.
             m.mouth = 0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 90));
           }
-        }
-        // Drive the visible 2D mouth overlay directly.
-        const el = mouthElRef.current;
-        if (el) {
-          const open = m.speaking ? m.mouth : 0;
-          el.style.opacity = open > 0.06 ? '1' : '0';
-          el.style.transform = `translate(-50%, -50%) scaleY(${(0.25 + open * 1.6).toFixed(3)}) scaleX(${(0.8 + open * 0.35).toFixed(3)})`;
         }
         rafRef.current = requestAnimationFrame(tick);
       };
@@ -397,28 +388,6 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
           touchAction: interactive ? 'none' : 'auto',
         }}
       >
-        {/* Animated mouth overlay — opens with the live voice level (Route A). */}
-        <div
-          ref={mouthElRef}
-          aria-hidden
-          style={{
-            position: 'absolute',
-            top: '43%',
-            left: '50%',
-            width: '10%',
-            maxWidth: 46,
-            aspectRatio: '3 / 2',
-            background:
-              'radial-gradient(ellipse at 50% 35%, #4a2b2b 0%, #2a1414 70%, #1c0d0d 100%)',
-            borderRadius: '50%',
-            boxShadow: 'inset 0 -30% 40% -10% rgba(220,90,90,0.55)',
-            opacity: 0,
-            transform: 'translate(-50%, -50%) scaleY(0.25)',
-            transition: 'opacity 120ms linear',
-            pointerEvents: 'none',
-            zIndex: 2,
-          }}
-        />
         <Canvas
           dpr={[1, 1.75]}
           shadows
