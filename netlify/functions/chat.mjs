@@ -1,15 +1,17 @@
 /**
- * Kid-safe AI chat proxy (Gemini) for the talking mascot.
+ * Kid-safe AI chat proxy (Anthropic Claude) for the talking mascot.
  *
- * The Gemini API key lives ONLY here (server-side, from the GEMINI_API_KEY env
- * var) — never in the browser. The client posts { message, history, lang } and
- * gets back a short, age-appropriate reply. Guardrails: a strict system prompt,
- * strict safety thresholds, a small token cap, input length limits, and a safe
- * fallback whenever a response is blocked or the key is missing.
+ * The Anthropic API key lives ONLY here (server-side, from ANTHROPIC_API_KEY) —
+ * never in the browser. The client posts { message, history, lang } and gets a
+ * short, age-appropriate reply. Guardrails: a strict kid-safe system prompt, a
+ * small token cap, input length limits, refusal handling, and a safe fallback
+ * whenever the key is missing or a reply is refused.
  *
- * Netlify Function v2 (ESM). Reachable at /api/chat via the redirect in
- * netlify.toml, or directly at /.netlify/functions/chat.
+ * Netlify Function v2 (ESM). Reachable at /api/chat (see netlify.toml) or at
+ * /.netlify/functions/chat.
  */
+
+import Anthropic from '@anthropic-ai/sdk';
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), {
@@ -44,8 +46,8 @@ const safeFallback = (lang) =>
 export default async (req) => {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
 
-  const key = process.env.GEMINI_API_KEY;
-  if (!key) return json({ error: 'not_configured' }, 503);
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return json({ error: 'not_configured' }, 503);
 
   let payload;
   try {
@@ -59,55 +61,41 @@ export default async (req) => {
   const lang = payload?.lang === 'ar' ? 'ar' : 'he';
   const history = Array.isArray(payload?.history) ? payload.history.slice(-10) : [];
 
-  const model = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
-  const contents = [
+  const model = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
+  const messages = [
     ...history
       .filter((h) => h && h.text)
+      // The client uses 'model' for the assistant role (provider-neutral); map it.
       .map((h) => ({
-        role: h.role === 'model' ? 'model' : 'user',
-        parts: [{ text: String(h.text).slice(0, 500) }],
+        role: h.role === 'model' || h.role === 'assistant' ? 'assistant' : 'user',
+        content: String(h.text).slice(0, 500),
       })),
-    { role: 'user', parts: [{ text: message }] },
+    { role: 'user', content: message },
   ];
 
-  const body = {
-    systemInstruction: { parts: [{ text: systemPrompt(lang) }] },
-    contents,
-    generationConfig: { maxOutputTokens: 220, temperature: 0.7, topP: 0.9 },
-    safetySettings: [
-      'HARM_CATEGORY_HARASSMENT',
-      'HARM_CATEGORY_HATE_SPEECH',
-      'HARM_CATEGORY_SEXUALLY_EXPLICIT',
-      'HARM_CATEGORY_DANGEROUS_CONTENT',
-    ].map((category) => ({ category, threshold: 'BLOCK_LOW_AND_ABOVE' })),
-  };
-
   try {
-    const res = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(body),
-      },
-    );
-    const data = await res.json();
-    if (!res.ok) {
-      return json({ error: 'upstream', detail: data?.error?.message ?? res.status }, 502);
-    }
-    const cand = data?.candidates?.[0];
-    if (data?.promptFeedback?.blockReason || cand?.finishReason === 'SAFETY') {
+    const client = new Anthropic({ apiKey });
+    const res = await client.messages.create({
+      model,
+      max_tokens: 300,
+      system: systemPrompt(lang),
+      messages,
+    });
+
+    if (res.stop_reason === 'refusal') {
       return json({ reply: safeFallback(lang), blocked: true });
     }
     const reply =
-      (cand?.content?.parts ?? [])
-        .map((p) => p.text)
-        .filter(Boolean)
+      (res.content ?? [])
+        .filter((b) => b.type === 'text')
+        .map((b) => b.text)
         .join(' ')
         .trim() || safeFallback(lang);
     return json({ reply });
-  } catch {
-    return json({ error: 'network' }, 502);
+  } catch (err) {
+    const status = err?.status ?? 502;
+    if (status === 401) return json({ error: 'bad_key' }, 502);
+    return json({ error: 'upstream' }, 502);
   }
 };
 

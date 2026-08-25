@@ -12,7 +12,7 @@ const RobotAvatar = React.lazy(() =>
 
 /**
  * Free-chat mode: the child can ask the robot ANYTHING (by voice or text) and
- * an LLM (Gemini, via the /api/chat backend) replies with real understanding.
+ * an LLM (Claude, via the /api/chat backend) replies with real understanding.
  * Kid-safe guardrails live server-side. Replies are spoken with the browser
  * voice for now (natural TTS for dynamic replies is a later upgrade). Falls
  * back to a friendly notice when the AI backend isn't configured yet.
@@ -173,8 +173,8 @@ export const MascotFreeChat: React.FC<{ height?: number; childName?: string }> =
         {unavailable && (
           <p className="mt-1 text-center text-xs text-amber-700">
             {ar
-              ? 'الدردشة بالذكاء الاصطناعي غير مُفعّلة بعد (يلزم مفتاح Gemini).'
-              : 'שיחת ה-AI עדיין לא מופעלת (נדרש מפתח Gemini).'}
+              ? 'الدردشة بالذكاء الاصطناعي غير مُفعّلة بعد (يلزم مفتاح ذكاء اصطناعي).'
+              : 'שיחת ה-AI עדיין לא מופעלת (נדרש מפתח AI).'}
           </p>
         )}
       </div>
