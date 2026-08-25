@@ -63,13 +63,20 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
     const m = motion.current;
     const calm = m.reducedMotion;
 
-    // --- Idle: gentle breathing bob + slow sway (skipped under reduced-motion) ---
-    const bob = calm ? 0 : Math.sin(t * 1.4) * 0.03;
-    const sway = calm ? 0 : Math.sin(t * 0.6) * 0.05;
+    const sp = m.speaking ? 1 : 0;
 
-    // --- Talking: bob + quick micro-nod, both driven by the LIVE voice level
-    //     (m.mouth comes from real audio amplitude), so motion matches the words. ---
-    const talk = m.speaking ? m.mouth * 0.05 + Math.sin(t * 24) * 0.015 * m.mouth : 0;
+    // --- Idle: layered waves (breathing + slow drift) so it never looks robotic. ---
+    const bob = calm ? 0 : Math.sin(t * 1.4) * 0.02 + Math.sin(t * 0.73) * 0.012;
+    const idleSwayY = calm ? 0 : Math.sin(t * 0.6) * 0.05 + Math.sin(t * 0.24) * 0.03;
+    const shiftX = calm ? 0 : Math.sin(t * 0.5) * 0.025; // gentle weight shift
+    const idleTiltX = calm ? 0 : Math.sin(t * 0.4) * 0.02; // slow "looking around"
+
+    // --- Talking: the whole body gestures along with the voice, so it feels like
+    //     it's really speaking — bob/nod on the amplitude, plus lively sway & tilts. ---
+    const talk = sp * (m.mouth * 0.05 + Math.sin(t * 24) * 0.015 * m.mouth);
+    const talkSwayY = calm ? 0 : sp * (Math.sin(t * 2.1) * 0.06 + Math.sin(t * 3.7) * 0.02);
+    const talkLeanZ = calm ? 0 : sp * Math.sin(t * 1.6) * 0.05; // head tilts while talking
+    const talkTiltX = calm ? 0 : sp * Math.sin(t * 3.0) * 0.03 * (0.4 + m.mouth); // emphasis nods
 
     // --- Expression: subtle head tilt / lift per mood ---
     let tiltX = 0;
@@ -105,9 +112,10 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
 
     // Compose. lerp for smoothness so mood changes ease in.
     g.position.y = THREE.MathUtils.lerp(g.position.y, bob + talk + lift, 0.2);
-    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, tiltX + gx, 0.15);
-    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, sway + gy, 0.1);
-    g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, tiltZ, 0.15);
+    g.position.x = THREE.MathUtils.lerp(g.position.x, shiftX, 0.06);
+    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, idleTiltX + tiltX + talkTiltX + gx, 0.15);
+    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, idleSwayY + talkSwayY + gy, 0.1);
+    g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, tiltZ + talkLeanZ, 0.15);
 
     // --- Squash & stretch driven by voice level: the whole head "bounces" as it
     //     speaks, so it reads as alive/talking instead of a frozen mesh. ---
