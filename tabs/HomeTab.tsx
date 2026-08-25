@@ -17,7 +17,7 @@ import { GoalSelectionFlow } from '../components/GoalSelection';
 import { PersonalGoalsDisplay, GoalsSummary } from '../components/PersonalGoalsDisplay';
 import { useAppContext } from '../context/AppContext';
 import { usePersonalGoals } from '../hooks/usePersonalGoals';
-import { MascotConversation } from '../components/avatar/MascotConversation';
+import { Mascot } from '../components/avatar/Mascot';
 
 export const HomeTab: React.FC = () => {
   const { t } = useTranslation();
@@ -45,7 +45,7 @@ export const HomeTab: React.FC = () => {
         )}
 
         {/* 3D talking mascot */}
-        <MascotConversation />
+        <Mascot childName={stats.name} />
 
         {/* Level & Knowledge Header */}
         <div className="grid grid-cols-2 gap-3">
@@ -70,7 +70,7 @@ export const HomeTab: React.FC = () => {
       )}
 
       {/* 3D talking mascot */}
-      <MascotConversation />
+      <Mascot childName={stats.name} />
 
       {/* Level & Knowledge Header - 2 columns */}
       <div className="grid grid-cols-2 gap-2 md:gap-3 lg:gap-4">

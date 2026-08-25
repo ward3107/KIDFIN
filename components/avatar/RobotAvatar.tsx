@@ -10,7 +10,6 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import {
   Bounds,
   ContactShadows,
-  Environment,
   OrbitControls,
   useGLTF,
 } from '@react-three/drei';
@@ -64,12 +63,20 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
     const m = motion.current;
     const calm = m.reducedMotion;
 
-    // --- Idle: gentle breathing bob + slow sway (skipped under reduced-motion) ---
-    const bob = calm ? 0 : Math.sin(t * 1.4) * 0.03;
-    const sway = calm ? 0 : Math.sin(t * 0.6) * 0.05;
+    const sp = m.speaking ? 1 : 0;
 
-    // --- Talking: quick vertical "nodding" pulse scaled by mouth level ---
-    const talk = m.speaking ? Math.sin(t * 16) * 0.04 * m.mouth : 0;
+    // --- Idle: layered waves (breathing + slow drift) so it never looks robotic. ---
+    const bob = calm ? 0 : Math.sin(t * 1.4) * 0.02 + Math.sin(t * 0.73) * 0.012;
+    const idleSwayY = calm ? 0 : Math.sin(t * 0.6) * 0.05 + Math.sin(t * 0.24) * 0.03;
+    const shiftX = calm ? 0 : Math.sin(t * 0.5) * 0.025; // gentle weight shift
+    const idleTiltX = calm ? 0 : Math.sin(t * 0.4) * 0.02; // slow "looking around"
+
+    // --- Talking: the whole body gestures along with the voice, so it feels like
+    //     it's really speaking — bob/nod on the amplitude, plus lively sway & tilts. ---
+    const talk = sp * (m.mouth * 0.05 + Math.sin(t * 24) * 0.015 * m.mouth);
+    const talkSwayY = calm ? 0 : sp * (Math.sin(t * 2.1) * 0.06 + Math.sin(t * 3.7) * 0.02);
+    const talkLeanZ = calm ? 0 : sp * Math.sin(t * 1.6) * 0.05; // head tilts while talking
+    const talkTiltX = calm ? 0 : sp * Math.sin(t * 3.0) * 0.03 * (0.4 + m.mouth); // emphasis nods
 
     // --- Expression: subtle head tilt / lift per mood ---
     let tiltX = 0;
@@ -104,10 +111,20 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
     }
 
     // Compose. lerp for smoothness so mood changes ease in.
-    g.position.y = THREE.MathUtils.lerp(g.position.y, bob + talk + lift, 0.15);
-    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, tiltX + gx, 0.15);
-    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, sway + gy, 0.1);
-    g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, tiltZ, 0.15);
+    g.position.y = THREE.MathUtils.lerp(g.position.y, bob + talk + lift, 0.2);
+    g.position.x = THREE.MathUtils.lerp(g.position.x, shiftX, 0.06);
+    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, idleTiltX + tiltX + talkTiltX + gx, 0.15);
+    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, idleSwayY + talkSwayY + gy, 0.1);
+    g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, tiltZ + talkLeanZ, 0.15);
+
+    // --- Squash & stretch driven by voice level: the whole head "bounces" as it
+    //     speaks, so it reads as alive/talking instead of a frozen mesh. ---
+    const openness = m.speaking ? m.mouth : 0;
+    const targetSy = 1 + openness * 0.05;
+    const targetSx = 1 - openness * 0.02;
+    g.scale.y = THREE.MathUtils.lerp(g.scale.y, targetSy, 0.25);
+    g.scale.x = THREE.MathUtils.lerp(g.scale.x, targetSx, 0.25);
+    g.scale.z = THREE.MathUtils.lerp(g.scale.z, targetSx, 0.25);
 
     // Decay the mouth level when not speaking.
     if (!m.speaking && m.mouth > 0) {
@@ -140,15 +157,70 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
         window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true,
     });
 
-    // Keep an animation frame running to raise the "mouth" level while speaking,
-    // so the talking pulse feels lively even without real visemes/morph targets.
+    // --- Web Audio graph: analyse the live voice so the mouth opens on the
+    //     actual sound (louder syllables → wider), not a canned oscillation. ---
+    const audioCtxRef = useRef<AudioContext | null>(null);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const analyserDataRef = useRef<Uint8Array | null>(null);
+    const sourceRef = useRef<MediaElementAudioSourceNode | null>(null);
+    const usingAnalyserRef = useRef(false);
+    // The animated mouth overlay (driven directly to avoid per-frame React renders).
+    const mouthElRef = useRef<HTMLDivElement | null>(null);
+
+    const ensureAudioGraph = (): AnalyserNode | null => {
+      if (typeof window === 'undefined') return null;
+      try {
+        if (!audioCtxRef.current) {
+          const Ctor =
+            window.AudioContext ??
+            (window as unknown as { webkitAudioContext?: typeof AudioContext })
+              .webkitAudioContext;
+          if (!Ctor) return null;
+          const ctx = new Ctor();
+          const analyser = ctx.createAnalyser();
+          analyser.fftSize = 256;
+          analyser.smoothingTimeConstant = 0.6;
+          analyser.connect(ctx.destination);
+          audioCtxRef.current = ctx;
+          analyserRef.current = analyser;
+          analyserDataRef.current = new Uint8Array(analyser.fftSize);
+        }
+        return analyserRef.current;
+      } catch {
+        return null;
+      }
+    };
+
+    // Animation frame: derive the mouth-open level from real audio amplitude
+    // (with a Web-Speech fallback), then drive the visible mouth overlay.
     const rafRef = useRef<number | null>(null);
     useEffect(() => {
       const tick = () => {
         const m = motion.current;
         if (m.speaking) {
-          // Oscillate the target mouth openness for a natural cadence.
-          m.mouth = 0.6 + 0.4 * Math.abs(Math.sin(performance.now() / 90));
+          const analyser = analyserRef.current;
+          const data = analyserDataRef.current;
+          if (usingAnalyserRef.current && analyser && data) {
+            analyser.getByteTimeDomainData(data);
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) {
+              const v = (data[i] - 128) / 128;
+              sum += v * v;
+            }
+            const rms = Math.sqrt(sum / data.length);
+            const level = Math.min(1, rms * 3.4); // gain up to a usable range
+            m.mouth = m.mouth * 0.55 + level * 0.45; // smooth
+          } else {
+            // No analyser (e.g. Web Speech fallback): natural-looking cadence.
+            m.mouth = 0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 90));
+          }
+        }
+        // Drive the animated mouth overlay: opens with the live voice level.
+        const el = mouthElRef.current;
+        if (el) {
+          const open = m.speaking ? m.mouth : 0;
+          el.style.opacity = open > 0.06 ? '1' : '0';
+          el.style.transform = `translate(-50%, -50%) scaleY(${(0.22 + open * 1.5).toFixed(3)}) scaleX(${(0.85 + open * 0.3).toFixed(3)})`;
         }
         rafRef.current = requestAnimationFrame(tick);
       };
@@ -169,6 +241,15 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
         a.pause();
         audioRef.current = null;
       }
+      if (sourceRef.current) {
+        try {
+          sourceRef.current.disconnect();
+        } catch {
+          /* no-op */
+        }
+        sourceRef.current = null;
+      }
+      usingAnalyserRef.current = false;
     };
 
     // Cancel any speech/clip if the component unmounts.
@@ -180,6 +261,12 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
           /* no-op */
         }
         stopAudioClip();
+        try {
+          void audioCtxRef.current?.close();
+        } catch {
+          /* no-op */
+        }
+        audioCtxRef.current = null;
       };
     }, []);
 
@@ -194,6 +281,7 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
             return;
           }
           synth.cancel(); // interrupt any previous line
+          usingAnalyserRef.current = false; // Web Speech can't be analysed → cadence fallback
           const u = new SpeechSynthesisUtterance(text);
           u.lang = opts?.lang ?? (i18n.language?.startsWith('he') ? 'he-IL' : 'en-US');
           u.rate = opts?.rate ?? 0.95;
@@ -234,6 +322,7 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
           // Fall back to Web Speech if the clip can't be played.
           const fallback = () => {
             stopAudioClip();
+            usingAnalyserRef.current = false;
             const synth = typeof window !== 'undefined' ? window.speechSynthesis : undefined;
             if (!synth || !opts?.fallbackText) {
               finish();
@@ -253,12 +342,30 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
 
           try {
             const audio = new Audio(url);
+            audio.crossOrigin = 'anonymous';
             audioRef.current = audio;
+
+            // Route the clip through the analyser so the mouth tracks the voice.
+            const analyser = ensureAudioGraph();
+            if (analyser && audioCtxRef.current) {
+              try {
+                if (audioCtxRef.current.state === 'suspended') {
+                  void audioCtxRef.current.resume();
+                }
+                const src = audioCtxRef.current.createMediaElementSource(audio);
+                src.connect(analyser);
+                sourceRef.current = src;
+                usingAnalyserRef.current = true;
+              } catch {
+                usingAnalyserRef.current = false; // still plays, mouth uses cadence
+              }
+            }
+
             audio.onplaying = () => {
               motion.current.speaking = true;
             };
             audio.onended = () => {
-              audioRef.current = null;
+              stopAudioClip();
               finish();
             };
             audio.onerror = fallback;
@@ -291,22 +398,92 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
     return (
       <div
         className={className}
-        style={{ height, width: '100%', touchAction: interactive ? 'none' : 'auto' }}
+        style={{
+          height,
+          width: '100%',
+          position: 'relative',
+          touchAction: interactive ? 'none' : 'auto',
+        }}
       >
+        {/* Animated mouth — opens with the live voice level. mouthElRef is the
+            scaled wrapper; the inner layers give it lips, teeth and a tongue. */}
+        <div
+          ref={mouthElRef}
+          aria-hidden
+          style={{
+            position: 'absolute',
+            top: '44%',
+            left: '50%',
+            width: '13%',
+            maxWidth: 58,
+            aspectRatio: '3 / 2',
+            opacity: 0,
+            transform: 'translate(-50%, -50%) scaleY(0.22)',
+            transition: 'opacity 120ms linear',
+            pointerEvents: 'none',
+            zIndex: 2,
+          }}
+        >
+          {/* mouth interior + lip rim */}
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background:
+                'radial-gradient(ellipse at 50% 38%, #2b1414 0%, #160a0a 60%, #050202 100%)',
+              borderRadius: '50%',
+              border: '2px solid rgba(150,70,70,0.85)',
+              boxShadow:
+                '0 1px 3px rgba(0,0,0,0.45), inset 0 2px 4px rgba(0,0,0,0.7)',
+              overflow: 'hidden',
+            }}
+          >
+            {/* upper teeth */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '4%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '74%',
+                height: '20%',
+                background: 'linear-gradient(#ffffff, #f2e9e2)',
+                borderRadius: '0 0 45% 45%',
+              }}
+            />
+            {/* tongue */}
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '4%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '64%',
+                height: '46%',
+                background:
+                  'radial-gradient(ellipse at 50% 35%, #ec6a84 0%, #c8385a 100%)',
+                borderRadius: '50% 50% 50% 50%',
+              }}
+            />
+          </div>
+        </div>
         <Canvas
           dpr={[1, 1.75]}
           shadows
           camera={{ position: [0, 0.4, 4.2], fov: 40 }}
           gl={{ antialias: true, alpha: true }}
         >
-          <ambientLight intensity={0.7} />
-          <directionalLight position={[3, 5, 4]} intensity={1.1} castShadow />
-          <directionalLight position={[-4, 2, -2]} intensity={0.4} />
+          {/* Self-contained lighting — no remote HDR, so the robot always renders
+              (even offline / in the PWA cache). */}
+          <ambientLight intensity={0.85} />
+          <hemisphereLight args={['#ffffff', '#b9c6d6', 0.6]} />
+          <directionalLight position={[3, 5, 4]} intensity={1.15} castShadow />
+          <directionalLight position={[-4, 2, -2]} intensity={0.45} />
+          <directionalLight position={[0, 2, -5]} intensity={0.35} />
           <Suspense fallback={null}>
             <Bounds fit clip observe margin={1.15}>
               <RobotModel motion={motion} />
             </Bounds>
-            <Environment preset="city" />
           </Suspense>
           <ContactShadows
             position={[0, -1.15, 0]}
