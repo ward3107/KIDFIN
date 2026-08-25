@@ -22,8 +22,40 @@ import type {
   PlayClipOptions,
   SpeakOptions,
 } from './avatarTypes';
+import { sanitizeForSpeech, speechLang } from '../../utils/speechText';
 
 const MODEL_URL = '/models/robot.glb';
+
+/**
+ * The synthesizer's voice list loads asynchronously — on the first call
+ * getVoices() is often empty, so the utterance grabs a wrong default voice
+ * (which can sound like another language). Warm and cache the list here.
+ */
+let cachedVoices: SpeechSynthesisVoice[] = [];
+if (typeof window !== 'undefined' && window.speechSynthesis) {
+  const warm = () => {
+    try {
+      cachedVoices = window.speechSynthesis.getVoices();
+    } catch {
+      /* no-op */
+    }
+  };
+  warm();
+  window.speechSynthesis.addEventListener?.('voiceschanged', warm);
+}
+
+/** Pick the best installed voice for a BCP-47 language tag, else undefined. */
+const pickVoice = (
+  synth: SpeechSynthesis,
+  lang: string,
+): SpeechSynthesisVoice | undefined => {
+  const voices = synth.getVoices().length ? synth.getVoices() : cachedVoices;
+  const base = lang.split('-')[0];
+  return (
+    voices.find((v) => v.lang === lang) ??
+    voices.find((v) => v.lang?.toLowerCase().startsWith(base.toLowerCase()))
+  );
+};
 
 /** Mutable state shared from the DOM layer (speak/expression) into the R3F loop. */
 interface AvatarMotionState {
@@ -276,21 +308,20 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
         speak: (text: string, opts?: SpeakOptions) => {
           const synth = typeof window !== 'undefined' ? window.speechSynthesis : undefined;
           if (opts?.expression) motion.current.expression = opts.expression;
-          if (!synth || !text) {
+          const spoken = sanitizeForSpeech(text); // strip emojis/markdown so they aren't read aloud
+          if (!synth || !spoken) {
             opts?.onDone?.();
             return;
           }
           synth.cancel(); // interrupt any previous line
           usingAnalyserRef.current = false; // Web Speech can't be analysed → cadence fallback
-          const u = new SpeechSynthesisUtterance(text);
-          u.lang = opts?.lang ?? (i18n.language?.startsWith('he') ? 'he-IL' : 'en-US');
+          const u = new SpeechSynthesisUtterance(spoken);
+          u.lang = speechLang(i18n.language, opts?.lang);
           u.rate = opts?.rate ?? 0.95;
           u.pitch = opts?.pitch ?? 1.1;
 
-          // Prefer a voice matching the language, if the browser has one.
-          const voices = synth.getVoices();
-          const match = voices.find((v) => v.lang === u.lang) ??
-            voices.find((v) => v.lang?.startsWith(u.lang.split('-')[0]));
+          // Use a voice that matches the language; never let it grab a foreign default.
+          const match = pickVoice(synth, u.lang);
           if (match) u.voice = match;
 
           u.onstart = () => {
@@ -324,14 +355,17 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
             stopAudioClip();
             usingAnalyserRef.current = false;
             const synth = typeof window !== 'undefined' ? window.speechSynthesis : undefined;
-            if (!synth || !opts?.fallbackText) {
+            const spoken = sanitizeForSpeech(opts?.fallbackText ?? '');
+            if (!synth || !spoken) {
               finish();
               return;
             }
-            const u = new SpeechSynthesisUtterance(opts.fallbackText);
-            u.lang = opts.lang ?? (i18n.language?.startsWith('ar') ? 'ar' : 'he-IL');
+            const u = new SpeechSynthesisUtterance(spoken);
+            u.lang = speechLang(i18n.language, opts?.lang);
             u.rate = 0.95;
             u.pitch = 1.1;
+            const match = pickVoice(synth, u.lang);
+            if (match) u.voice = match;
             u.onstart = () => {
               motion.current.speaking = true;
             };
