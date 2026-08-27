@@ -16,21 +16,32 @@ if (!rootElement) {
 // Lazy-load the 3D avatar demo so three.js is only fetched when actually opened
 // (visit "…/#avatar"). Keeps the main app bundle light.
 const AvatarDemo = React.lazy(() => import('./components/avatar/AvatarDemo'));
+// Full-screen, distraction-free robot room (visit "…/#robot").
+const RobotRoom = React.lazy(() => import('./components/avatar/RobotRoom'));
 
-const isAvatarRoute = () =>
-  typeof window !== 'undefined' && window.location.hash.replace(/^#\/?/, '') === 'avatar';
+const currentRoute = () =>
+  typeof window !== 'undefined' ? window.location.hash.replace(/^#\/?/, '') : '';
 
 const Root: React.FC = () => {
-  const [avatarRoute, setAvatarRoute] = React.useState(isAvatarRoute());
+  const [route, setRoute] = React.useState(currentRoute());
   React.useEffect(() => {
-    const onHash = () => setAvatarRoute(isAvatarRoute());
+    const onHash = () => setRoute(currentRoute());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  if (avatarRoute) {
+  const fallback = <div style={{ padding: 24 }}>טוען את הרובוט… 🤖</div>;
+
+  if (route === 'robot') {
     return (
-      <Suspense fallback={<div style={{ padding: 24 }}>טוען את הרובוט… 🤖</div>}>
+      <Suspense fallback={fallback}>
+        <RobotRoom />
+      </Suspense>
+    );
+  }
+  if (route === 'avatar') {
+    return (
+      <Suspense fallback={fallback}>
         <AvatarDemo />
       </Suspense>
     );

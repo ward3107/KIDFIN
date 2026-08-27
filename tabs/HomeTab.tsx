@@ -9,6 +9,7 @@ import {
   Sparkles,
   PiggyBank,
   ShoppingBag,
+  Maximize2,
 } from 'lucide-react';
 import { Card, Button } from '../components/UI';
 import { StatsCard } from '../components/StatsCard';
@@ -20,7 +21,11 @@ import { usePersonalGoals } from '../hooks/usePersonalGoals';
 import { Mascot } from '../components/avatar/Mascot';
 
 export const HomeTab: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const arLang = (i18n.language || 'he').startsWith('ar');
+  const openRobotRoom = () => {
+    window.location.hash = 'robot';
+  };
   const {
     stats,
     dailyTip,
@@ -45,7 +50,15 @@ export const HomeTab: React.FC = () => {
         )}
 
         {/* 3D talking mascot */}
-        <Mascot childName={stats.name} />
+        <div className="space-y-2">
+          <Mascot childName={stats.name} />
+          <button
+            onClick={openRobotRoom}
+            className="mx-auto flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs md:text-sm font-semibold text-indigo-700 shadow ring-1 ring-indigo-200 transition hover:bg-indigo-50"
+          >
+            <Maximize2 size={14} /> {arLang ? 'شاشة الروبوت كاملة' : 'מסך מלא של הרובוט'}
+          </button>
+        </div>
 
         {/* Level & Knowledge Header */}
         <div className="grid grid-cols-2 gap-3">
@@ -70,7 +83,15 @@ export const HomeTab: React.FC = () => {
       )}
 
       {/* 3D talking mascot */}
-      <Mascot childName={stats.name} />
+      <div className="space-y-2">
+        <Mascot childName={stats.name} />
+        <button
+          onClick={openRobotRoom}
+          className="mx-auto flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-xs md:text-sm font-semibold text-indigo-700 shadow ring-1 ring-indigo-200 transition hover:bg-indigo-50"
+        >
+          <Maximize2 size={14} /> {arLang ? 'شاشة الروبوت كاملة' : 'מסך מלא של הרובוט'}
+        </button>
+      </div>
 
       {/* Level & Knowledge Header - 2 columns */}
       <div className="grid grid-cols-2 gap-2 md:gap-3 lg:gap-4">

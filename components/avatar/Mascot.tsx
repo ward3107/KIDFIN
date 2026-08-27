@@ -12,7 +12,10 @@ type Mode = 'lesson' | 'chat';
  *  - "chat":   free AI conversation (Gemini) where the child can ask anything.
  * A small segmented toggle switches between them.
  */
-export const Mascot: React.FC<{ childName?: string }> = ({ childName }) => {
+export const Mascot: React.FC<{ childName?: string; height?: number }> = ({
+  childName,
+  height,
+}) => {
   const { i18n } = useTranslation();
   const ar = (i18n.language || 'he').startsWith('ar');
   const [mode, setMode] = useState<Mode>('lesson');
@@ -35,7 +38,11 @@ export const Mascot: React.FC<{ childName?: string }> = ({ childName }) => {
         <Tab id="lesson" icon={<GraduationCap size={14} />} label={ar ? 'درس' : 'שיעור'} />
         <Tab id="chat" icon={<Sparkles size={14} />} label={ar ? 'محادثة حرة' : 'שיחה חופשית'} />
       </div>
-      {mode === 'lesson' ? <MascotConversation /> : <MascotFreeChat childName={childName} />}
+      {mode === 'lesson' ? (
+        <MascotConversation height={height} />
+      ) : (
+        <MascotFreeChat childName={childName} height={height} />
+      )}
     </div>
   );
 };
