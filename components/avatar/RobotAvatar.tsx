@@ -23,6 +23,7 @@ import type {
   SpeakOptions,
 } from './avatarTypes';
 import { sanitizeForSpeech, speechLang } from '../../utils/speechText';
+import { buildArmRig } from './armRig';
 
 const MODEL_URL = '/models/robot.glb';
 
@@ -88,6 +89,10 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
   // Clone so the cached GLTF is never mutated across mounts.
   const model = useMemo(() => scene.clone(true), [scene]);
 
+  // The GLB ships as one fused, boneless mesh. Give it a two-bone arm rig so
+  // the arms can actually move while it talks (see armRig.ts).
+  const rig = useMemo(() => buildArmRig(model), [model]);
+
   useFrame((state) => {
     const g = group.current;
     if (!g) return;
@@ -125,6 +130,10 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
     // --- One-shot gesture (decays over ~1s) ---
     let gx = 0;
     let gy = 0;
+    // Arm targets, in radians: raise > 0 lifts the arm outward/up.
+    let raiseL = 0;
+    let raiseR = 0;
+    let armFwd = 0;
     if (m.gesture) {
       const age = t - m.gesture.start;
       if (age > 1) {
@@ -132,11 +141,31 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
       } else {
         const env = Math.sin(Math.min(age, 1) * Math.PI); // 0→1→0
         switch (m.gesture.name) {
-          case 'wave':  gy = Math.sin(age * 22) * 0.18 * env; break;
-          case 'nod':   gx = Math.sin(age * 16) * 0.14 * env; break;
-          case 'cheer': gy = Math.sin(age * 8) * 0.10 * env; lift += 0.06 * env; break;
-          case 'shrug': gx = -0.10 * env; break;
-          case 'think': tiltZ += 0.18 * env; break;
+          case 'wave':
+            gy = Math.sin(age * 22) * 0.18 * env;
+            raiseR = (1.15 + Math.sin(age * 16) * 0.3) * env;
+            break;
+          case 'nod':
+            gx = Math.sin(age * 16) * 0.14 * env;
+            raiseL = 0.12 * env;
+            raiseR = 0.12 * env;
+            break;
+          case 'cheer':
+            gy = Math.sin(age * 8) * 0.10 * env;
+            lift += 0.06 * env;
+            raiseL = (1.05 + Math.sin(age * 14) * 0.15) * env;
+            raiseR = (1.05 + Math.sin(age * 14 + 1) * 0.15) * env;
+            break;
+          case 'shrug':
+            gx = -0.10 * env;
+            raiseL = 0.55 * env;
+            raiseR = 0.55 * env;
+            break;
+          case 'think':
+            tiltZ += 0.18 * env;
+            raiseR = 0.75 * env;
+            armFwd = 0.35 * env;
+            break;
           default: break;
         }
       }
@@ -157,6 +186,31 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
     g.scale.y = THREE.MathUtils.lerp(g.scale.y, targetSy, 0.25);
     g.scale.x = THREE.MathUtils.lerp(g.scale.x, targetSx, 0.25);
     g.scale.z = THREE.MathUtils.lerp(g.scale.z, targetSx, 0.25);
+
+    // --- Arms. Idle breathing sway, plus loose "talking with your hands"
+    //     motion driven by the same voice level that opens the mouth, plus
+    //     whatever one-shot gesture is playing. ---
+    if (rig) {
+      const idleArm = calm ? 0 : Math.sin(t * 1.1) * 0.05 + Math.sin(t * 0.47) * 0.03;
+      // The two arms run slightly out of phase so they never look mechanical.
+      const beat = calm ? 0 : sp * (0.18 + m.mouth * 0.5);
+      const gestureL = calm ? 0 : Math.sin(t * 5.3) * beat;
+      const gestureR = calm ? 0 : Math.sin(t * 4.6 + 1.9) * beat;
+      let moodArm = 0;
+      if (m.expression === 'happy') moodArm = 0.16;
+      else if (m.expression === 'surprised') moodArm = 0.3;
+      else if (m.expression === 'sad') moodArm = -0.12;
+
+      const targetL = idleArm + gestureL + moodArm + raiseL;
+      const targetR = idleArm + gestureR + moodArm + raiseR;
+      const fwd = armFwd + (calm ? 0 : sp * m.mouth * 0.18);
+
+      // Signs are mirrored: +z lifts the left arm, −z lifts the right one.
+      rig.armL.rotation.z = THREE.MathUtils.lerp(rig.armL.rotation.z, rig.restL.z + targetL, 0.16);
+      rig.armR.rotation.z = THREE.MathUtils.lerp(rig.armR.rotation.z, rig.restR.z - targetR, 0.16);
+      rig.armL.rotation.x = THREE.MathUtils.lerp(rig.armL.rotation.x, rig.restL.x + fwd, 0.16);
+      rig.armR.rotation.x = THREE.MathUtils.lerp(rig.armR.rotation.x, rig.restR.x + fwd, 0.16);
+    }
 
     // Decay the mouth level when not speaking.
     if (!m.speaking && m.mouth > 0) {
