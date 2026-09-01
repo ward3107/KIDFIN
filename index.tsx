@@ -32,12 +32,10 @@ const Root: React.FC = () => {
 
   const fallback = <div style={{ padding: 24 }}>טוען את הרובוט… 🤖</div>;
 
-  if (route === 'robot') {
-    return (
-      <Suspense fallback={fallback}>
-        <RobotRoom />
-      </Suspense>
-    );
+  // The full KIDFIN app now lives behind "#app" (teachers reach it via the
+  // small gear in the robot room). Everything else opens straight to the robot.
+  if (route === 'app') {
+    return <App />;
   }
   if (route === 'avatar') {
     return (
@@ -46,7 +44,12 @@ const Root: React.FC = () => {
       </Suspense>
     );
   }
-  return <App />;
+  // Default (and legacy "#robot"): the robot is the front door.
+  return (
+    <Suspense fallback={fallback}>
+      <RobotRoom />
+    </Suspense>
+  );
 };
 
 const root = ReactDOM.createRoot(rootElement);

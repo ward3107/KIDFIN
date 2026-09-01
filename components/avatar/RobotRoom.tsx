@@ -1,57 +1,49 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, ArrowRight } from 'lucide-react';
-import { Mascot } from './Mascot';
-import { LanguageSwitcher } from '../LanguageSwitcher';
+import { MascotConversation } from './MascotConversation';
 
 /**
- * A dedicated, distraction-free full-screen "room" for the robot. No app
- * navigation, stats, or other UI — just the robot and the talk/type controls,
- * so a child can focus entirely on the interaction. Reached at "…/#robot".
+ * The app's front door. On open the child sees only the robot, and the robot
+ * starts the conversation by itself — no start button, no navigation, nothing
+ * else to figure out (see MascotConversation's autoStart). This is what loads
+ * at the root URL; the rest of the app lives behind "…/#app" for teachers.
  */
-export const RobotRoom: React.FC<{ childName?: string }> = ({ childName }) => {
+export const RobotRoom: React.FC<{ childName?: string }> = () => {
   const { i18n } = useTranslation();
   const ar = (i18n.language || 'he').startsWith('ar');
 
-  // Size the avatar to the viewport so it fills the focused screen nicely.
-  const [avatarHeight, setAvatarHeight] = React.useState(360);
+  // Fill the viewport so the robot is as large as the screen comfortably allows.
+  const [avatarHeight, setAvatarHeight] = React.useState(420);
   React.useEffect(() => {
     const resize = () =>
-      setAvatarHeight(Math.round(Math.min(Math.max(window.innerHeight * 0.46, 280), 480)));
+      setAvatarHeight(Math.round(Math.min(Math.max(window.innerHeight * 0.52, 320), 560)));
     resize();
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
   }, []);
 
-  const goBack = () => {
-    // Clearing the hash returns to the normal app (see index.tsx routing).
-    window.location.hash = '';
+  // Discreet exit for teachers only — small and low-contrast so children don't
+  // reach for it, but always there so an adult can get to the main app.
+  const toApp = () => {
+    window.location.hash = 'app';
   };
-
-  const Back = ar ? ArrowRight : ArrowLeft;
 
   return (
     <div
-      dir={ar ? 'rtl' : 'rtl'}
-      className="min-h-dvh w-full bg-gradient-to-b from-indigo-100 via-indigo-50 to-purple-100"
+      dir="rtl"
+      className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-indigo-100 via-indigo-50 to-purple-100 px-3"
     >
-      {/* Top bar: back + language only */}
-      <div className="mx-auto flex max-w-md items-center justify-between px-3 pt-3">
-        <button
-          onClick={goBack}
-          className="flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-sm font-semibold text-indigo-700 shadow ring-1 ring-indigo-200 backdrop-blur transition hover:bg-white"
-        >
-          <Back size={16} /> {ar ? 'رجوع' : 'חזרה'}
-        </button>
-        <LanguageSwitcher />
-      </div>
+      <button
+        onClick={toApp}
+        aria-label={ar ? 'للمعلّم: التطبيق' : 'למורה: האפליקציה'}
+        title={ar ? 'للمعلّم' : 'למורה'}
+        className="absolute top-2 ltr:right-2 rtl:left-2 z-10 rounded-full p-2 text-xs text-indigo-400/50 transition hover:bg-white/60 hover:text-indigo-700"
+      >
+        ⚙
+      </button>
 
-      {/* The robot, centered and large */}
-      <div className="mx-auto flex max-w-md flex-col justify-center px-3 pb-6 pt-2">
-        <h1 className="mb-2 text-center text-xl font-black text-indigo-900">
-          {ar ? 'كيوي 🤖' : 'קיווי 🤖'}
-        </h1>
-        <Mascot childName={childName} height={avatarHeight} />
+      <div className="mx-auto w-full max-w-md">
+        <MascotConversation height={avatarHeight} autoStart />
       </div>
     </div>
   );
