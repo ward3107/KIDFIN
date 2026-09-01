@@ -109,18 +109,20 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
 
     const sp = m.speaking ? 1 : 0;
 
-    // --- Idle: layered waves (breathing + slow drift) so it never looks robotic. ---
-    const bob = calm ? 0 : Math.sin(t * 1.4) * 0.02 + Math.sin(t * 0.73) * 0.012;
-    const idleSwayY = calm ? 0 : Math.sin(t * 0.6) * 0.05 + Math.sin(t * 0.24) * 0.03;
-    const shiftX = calm ? 0 : Math.sin(t * 0.5) * 0.025; // gentle weight shift
-    const idleTiltX = calm ? 0 : Math.sin(t * 0.4) * 0.02; // slow "looking around"
+    // --- Idle: a faint breathing bob only. The body must NOT sway/turn — the
+    //     model is one fused mesh, so any rotation.y / position.x moves the whole
+    //     robot and reads as distracting "swinging". Liveliness comes from the
+    //     mouth, eyes, eyebrows and hands instead. ---
+    const bob = calm ? 0 : Math.sin(t * 1.2) * 0.008 + Math.sin(t * 0.63) * 0.004;
+    const idleSwayY = calm ? 0 : Math.sin(t * 0.5) * 0.01; // barely-there drift
+    const shiftX = 0; // no lateral body shift
+    const idleTiltX = calm ? 0 : Math.sin(t * 0.4) * 0.008; // tiny nod
 
-    // --- Talking: the whole body gestures along with the voice, so it feels like
-    //     it's really speaking — bob/nod on the amplitude, plus lively sway & tilts. ---
-    const talk = sp * (m.mouth * 0.05 + Math.sin(t * 24) * 0.015 * m.mouth);
-    const talkSwayY = calm ? 0 : sp * (Math.sin(t * 2.1) * 0.06 + Math.sin(t * 3.7) * 0.02);
-    const talkLeanZ = calm ? 0 : sp * Math.sin(t * 1.6) * 0.05; // head tilts while talking
-    const talkTiltX = calm ? 0 : sp * Math.sin(t * 3.0) * 0.03 * (0.4 + m.mouth); // emphasis nods
+    // --- Talking: a small head nod on the voice, nothing that sways the body. ---
+    const talk = sp * (m.mouth * 0.02 + Math.sin(t * 24) * 0.006 * m.mouth);
+    const talkSwayY = calm ? 0 : sp * Math.sin(t * 2.1) * 0.012; // minimal
+    const talkLeanZ = calm ? 0 : sp * Math.sin(t * 1.6) * 0.012; // slight head tilt
+    const talkTiltX = calm ? 0 : sp * Math.sin(t * 3.0) * 0.022 * (0.4 + m.mouth); // nod
 
     // --- Expression: subtle head tilt / lift per mood ---
     let tiltX = 0;
@@ -185,11 +187,11 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
     g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, idleSwayY + talkSwayY + gy, 0.1);
     g.rotation.z = THREE.MathUtils.lerp(g.rotation.z, tiltZ + talkLeanZ, 0.15);
 
-    // --- Squash & stretch driven by voice level: the whole head "bounces" as it
-    //     speaks, so it reads as alive/talking instead of a frozen mesh. ---
+    // --- A faint squash & stretch on the voice — kept subtle so the body stays
+    //     put and the mouth does the talking. ---
     const openness = m.speaking ? m.mouth : 0;
-    const targetSy = 1 + openness * 0.05;
-    const targetSx = 1 - openness * 0.02;
+    const targetSy = 1 + openness * 0.02;
+    const targetSx = 1 - openness * 0.008;
     g.scale.y = THREE.MathUtils.lerp(g.scale.y, targetSy, 0.25);
     g.scale.x = THREE.MathUtils.lerp(g.scale.x, targetSx, 0.25);
     g.scale.z = THREE.MathUtils.lerp(g.scale.z, targetSx, 0.25);
