@@ -24,6 +24,7 @@ import type {
 } from './avatarTypes';
 import { sanitizeForSpeech, speechLang } from '../../utils/speechText';
 import { buildArmRig } from './armRig';
+import { blinkAmount, blinkDuration, buildFaceRig, browPose } from './faceRig';
 
 const MODEL_URL = '/models/robot.glb';
 
@@ -93,7 +94,13 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
   // the arms can actually move while it talks (see armRig.ts).
   const rig = useMemo(() => buildArmRig(model), [model]);
 
-  useFrame((state) => {
+  // Eyelids and eyebrows — the two things a face needs before it reads as alive.
+  const face = useMemo(() => buildFaceRig(model), [model]);
+
+  // When the next blink is due, and when the current one started.
+  const blink = useRef({ nextAt: 1.5, phase: -1, double: false });
+
+  useFrame((state, delta) => {
     const g = group.current;
     if (!g) return;
     const t = state.clock.elapsedTime;
@@ -211,6 +218,55 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
       rig.armL.rotation.x = THREE.MathUtils.lerp(rig.armL.rotation.x, rig.restL.x + fwd, 0.16);
       rig.armR.rotation.x = THREE.MathUtils.lerp(rig.armR.rotation.x, rig.restR.x + fwd, 0.16);
     }
+
+    // --- Blinking. Real blinks are quick and irregular: a fast close, a
+    //     slightly slower open, and an uneven gap in between. ---
+    const b = blink.current;
+    if (calm) {
+      face.lids.forEach(l => {
+        l.scale.y = 0;
+      });
+    } else {
+      if (b.phase < 0 && t >= b.nextAt) {
+        b.phase = 0;
+        b.double = Math.random() < 0.22; // people often blink twice
+      }
+      let shut = 0;
+      if (b.phase >= 0) {
+        const total = blinkDuration(b.double);
+        // Advance the blink by elapsed time, but never by more than a quarter of
+        // it in one frame: on a slow device a single frame can be longer than
+        // the whole blink, and stepping in wall-clock time would skip straight
+        // past the closed pose without ever drawing it.
+        b.phase += Math.min(delta, total / 4);
+        shut = blinkAmount(b.phase, b.double);
+        if (b.phase >= total) {
+          b.phase = -1;
+          // Blink more often while talking — it tracks the pace of speech.
+          const gap = m.speaking ? 1.6 : 2.6;
+          b.nextAt = t + gap + Math.random() * 3.4;
+        }
+      }
+      face.lids.forEach(l => {
+        l.scale.y = shut;
+      });
+    }
+
+    // --- Eyebrows. Mood sets the resting shape; speech nudges them so the
+    //     face stays busy while it talks. ---
+    const pose = browPose(m.expression);
+    const emphasis = calm ? 0 : sp * m.mouth * 0.035;
+    face.brows.forEach((brow, i) => {
+      const inner = i === 0 ? 1 : -1; // the left brow's inner end points at +x
+      // "Thinking" cocks one brow rather than both.
+      const solo = m.expression === 'thinking' && i === 1 ? 1.9 : 1;
+      brow.rotation.z = THREE.MathUtils.lerp(brow.rotation.z, pose.tilt * inner * solo, 0.12);
+      brow.position.y = THREE.MathUtils.lerp(
+        brow.position.y,
+        face.browRestY[i] + pose.lift * solo + emphasis,
+        0.12,
+      );
+    });
 
     // Decay the mouth level when not speaking.
     if (!m.speaking && m.mouth > 0) {

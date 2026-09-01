@@ -1,4 +1,4 @@
-import React, { Suspense, useCallback, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Mic, MicOff, Play, Send } from 'lucide-react';
 import type { AvatarHandle } from './avatarTypes';
@@ -19,14 +19,46 @@ const RobotAvatar = React.lazy(() =>
 
 type Phase = 'idle' | 'speaking' | 'listening' | 'done';
 
+// A few ms of silence — used only to ask the browser "would you let me play
+// audio right now?" without a user gesture.
+const SILENT_WAV =
+  'data:audio/wav;base64,UklGRkwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSgAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
+
 /**
- * The interactive, proactive, bilingual talking mascot. After one tap to start
- * (required by browsers before audio can play), the robot leads the whole
- * conversation: it speaks, then listens, reacts to what the child says, and
- * moves the lesson forward — so a shy child is gently pulled into talking.
+ * True when the browser will let us start audio with no user gesture — the case
+ * in an installed PWA or a kiosk with autoplay enabled. On a normal cold tab
+ * this is false and one screen touch is required first (a hard browser rule).
  */
-export const MascotConversation: React.FC<{ height?: number }> = ({ height = 300 }) => {
-  const { t, i18n } = useTranslation();
+const canAutoplay = async (): Promise<boolean> => {
+  try {
+    const a = new Audio(SILENT_WAV);
+    a.volume = 0;
+    const p = a.play();
+    if (p && typeof p.then === 'function') await p;
+    a.pause();
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+/**
+ * The interactive, proactive, bilingual talking mascot. The robot leads the
+ * whole conversation: it speaks, then listens, reacts to what the child says,
+ * and moves the lesson forward — so a shy child is gently pulled into talking.
+ *
+ * With `autoStart`, the robot begins the moment the page opens. If the browser
+ * blocks audio before any interaction, a full-screen "touch anywhere" catch
+ * (not a button) starts it on the child's first touch — the least friction the
+ * browser allows.
+ */
+export const MascotConversation: React.FC<{
+  height?: number;
+  autoStart?: boolean;
+  /** Strip the card frame/background so the robot sits directly on the page. */
+  bare?: boolean;
+}> = ({ height = 300, autoStart = false, bare = false }) => {
+  const { i18n } = useTranslation();
   const lang: Lang = (i18n.language || 'he').startsWith('ar') ? 'ar' : 'he';
 
   const avatar = useRef<AvatarHandle>(null);
@@ -36,6 +68,7 @@ export const MascotConversation: React.FC<{ height?: number }> = ({ height = 300
   const [caption, setCaption] = useState('');
   const [childSaid, setChildSaid] = useState('');
   const [typed, setTyped] = useState('');
+  const [awaitingTap, setAwaitingTap] = useState(false);
   const listenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearListenTimer = () => {
@@ -117,9 +150,30 @@ export const MascotConversation: React.FC<{ height?: number }> = ({ height = 300
   playTurnRef.current = playTurn;
 
   const start = () => {
+    setAwaitingTap(false);
     setStarted(true);
     playTurn(CONVERSATION_START);
   };
+
+  // Proactive opening: the robot starts by itself when the page loads. If the
+  // browser won't allow audio yet, wait for the first touch anywhere (below)
+  // rather than making the child hunt for a start button.
+  const autoStarted = useRef(false);
+  useEffect(() => {
+    if (!autoStart || autoStarted.current) return;
+    autoStarted.current = true;
+    let cancelled = false;
+    void canAutoplay().then((ok) => {
+      if (cancelled) return;
+      if (ok) start();
+      else setAwaitingTap(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // start is stable enough for a once-only autostart; guarded by autoStarted.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart]);
 
   const restart = () => {
     recognition.stop();
@@ -144,8 +198,32 @@ export const MascotConversation: React.FC<{ height?: number }> = ({ height = 300
   };
 
   return (
-    <div className="rounded-3xl border-2 border-indigo-100 bg-gradient-to-b from-indigo-50 to-white p-3 md:p-4 shadow-sm">
-      <div className="overflow-hidden rounded-2xl bg-white/60">
+    <div
+      className={
+        bare
+          ? ''
+          : 'rounded-3xl border-2 border-indigo-100 bg-gradient-to-b from-indigo-50 to-white p-3 md:p-4 shadow-sm'
+      }
+    >
+      {/* Full-screen "touch anywhere" catch — shown only when the browser blocks
+          audio before the child interacts. It is the whole screen, not a button,
+          so a young student just taps and Kiwi starts talking. */}
+      {awaitingTap && (
+        <div
+          onPointerDown={start}
+          role="button"
+          tabIndex={0}
+          aria-label={lang === 'ar' ? 'المس الشاشة لتتحدث مع كيوي' : 'געו במסך כדי לדבר עם קיווי'}
+          className="fixed inset-0 z-50 flex cursor-pointer flex-col items-center justify-center gap-5 bg-indigo-950/45 text-white backdrop-blur-sm"
+        >
+          <div className="text-7xl animate-bounce">👋</div>
+          <div className="px-6 text-center text-2xl font-black drop-shadow">
+            {lang === 'ar' ? 'المس الشاشة لتتحدث مع كيوي' : 'געו במסך כדי לדבר עם קיווי'}
+          </div>
+        </div>
+      )}
+
+      <div className={bare ? '' : 'overflow-hidden rounded-2xl bg-white/60'}>
         <Suspense
           fallback={
             <div
@@ -161,8 +239,21 @@ export const MascotConversation: React.FC<{ height?: number }> = ({ height = 300
       </div>
 
       {/* Caption bubble — the robot's words (also helps non-audio/hard-of-hearing) */}
-      <div className="mt-3 min-h-[3.5rem] rounded-2xl bg-white px-3 py-2 text-center text-sm md:text-base font-medium text-slate-700 shadow-sm ring-1 ring-indigo-100">
-        {caption || (lang === 'ar' ? 'اضغط لتبدأ الحديث مع كيوي! 👇' : 'לחץ כדי להתחיל לדבר עם קיווי! 👇')}
+      <div
+        className={
+          bare
+            ? 'mt-3 min-h-[3.5rem] px-3 py-2 text-center text-base md:text-lg font-semibold text-slate-800'
+            : 'mt-3 min-h-[3.5rem] rounded-2xl bg-white px-3 py-2 text-center text-sm md:text-base font-medium text-slate-700 shadow-sm ring-1 ring-indigo-100'
+        }
+      >
+        {caption ||
+          (autoStart
+            ? lang === 'ar'
+              ? 'مرحباً! 👋'
+              : 'שלום! 👋'
+            : lang === 'ar'
+              ? 'اضغط لتبدأ الحديث مع كيوي! 👇'
+              : 'לחץ כדי להתחיל לדבר עם קיווי! 👇')}
       </div>
 
       {/* What the child said */}
@@ -174,7 +265,7 @@ export const MascotConversation: React.FC<{ height?: number }> = ({ height = 300
 
       {/* Live state / controls */}
       <div className="mt-3 flex flex-col items-center gap-2">
-        {!started && (
+        {!started && !autoStart && (
           <button
             onClick={start}
             className="flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-base font-bold text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 active:scale-95"
