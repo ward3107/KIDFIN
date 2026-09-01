@@ -31,6 +31,29 @@ Then **redeploy** (or push a commit) so the function picks up the variable.
 - Until a key is set, the endpoint returns `503` and the app shows a friendly
   "AI not enabled yet" notice and stays in scripted lesson mode.
 
+## Abuse protection (the `/api/chat` endpoint is public)
+Three layers keep a stranger from spending your Anthropic budget:
+
+1. **Anthropic spend cap — set this first.** Anthropic Console → **Billing →
+   usage limit**. This is the hard backstop: the bill can't exceed your cap no
+   matter what. Do this even if you skip everything below.
+2. **Same-origin check (built in).** The function only answers requests coming
+   from your own site, so a random `curl` or another website is rejected (403).
+   Custom domains: set `ALLOWED_ORIGINS` (comma-separated) if needed.
+3. **Per-IP rate limit (optional, recommended).** Uses **Upstash Redis** (free
+   tier). Create a database at upstash.com, then add its two REST values as env
+   vars alongside the key:
+
+   | Key | Value |
+   |-----|-------|
+   | `UPSTASH_REDIS_REST_URL` | *from the Upstash database page* |
+   | `UPSTASH_REDIS_REST_TOKEN` | *from the Upstash database page* |
+   | `CHAT_RATE_LIMIT` *(optional)* | messages per minute per IP (default `20`) |
+
+   Each IP is limited to `CHAT_RATE_LIMIT` messages/minute. **If Upstash isn't
+   configured or is unreachable, the limit simply fails open** (allows the
+   request) — it can never lock out a real student; the spend cap still applies.
+
 ## Safety (built in)
 - Strict **system prompt**: kind tutor for young kids, simple words, only
   friendly/educational topics, steers away from unsafe subjects, never asks for

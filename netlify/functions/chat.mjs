@@ -43,11 +43,77 @@ const safeFallback = (lang) =>
     ? 'دعنا نتحدث عن شيء لطيف! كيف تشعر اليوم؟ 😊'
     : 'בוא נדבר על משהו נחמד! איך אתה מרגיש היום? 😊';
 
+// Only serve requests that came from our own page (blocks curl / other sites).
+// Missing Origin or a different host is rejected; ALLOWED_ORIGINS (comma-list)
+// covers extra custom domains.
+const sameOrigin = (req) => {
+  const origin = req.headers.get('origin');
+  if (!origin) return false;
+  let originHost;
+  try {
+    originHost = new URL(origin).host;
+  } catch {
+    return false;
+  }
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || '';
+  if (originHost && originHost === host) return true;
+  const allow = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return allow.some((a) => {
+    try {
+      return new URL(a.includes('://') ? a : `https://${a}`).host === originHost;
+    } catch {
+      return a === originHost;
+    }
+  });
+};
+
+const clientIp = (req) => {
+  const ip = req.headers.get('x-nf-client-connection-ip') || req.headers.get('x-forwarded-for');
+  return ip ? ip.split(',')[0].trim() : 'unknown';
+};
+
+// Fixed-window per-IP limit via Upstash Redis (REST). Fails OPEN when Upstash
+// is not configured or unreachable, so an outage never blocks real users.
+const rateLimited = async (ip) => {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return false;
+  const limit = Number(process.env.CHAT_RATE_LIMIT || '20');
+  const key = `chat:rl:${ip}:${Math.floor(Date.now() / 60000)}`;
+  try {
+    const res = await fetch(`${url}/pipeline`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify([
+        ['INCR', key],
+        ['EXPIRE', key, '120'],
+      ]),
+    });
+    if (!res.ok) return false;
+    const data = await res.json();
+    const count = Array.isArray(data) ? Number(data[0]?.result ?? 0) : 0;
+    return count > limit;
+  } catch {
+    return false;
+  }
+};
+
 export default async (req) => {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+  if (!sameOrigin(req)) return json({ error: 'forbidden' }, 403);
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return json({ error: 'not_configured' }, 503);
+
+  if (await rateLimited(clientIp(req))) {
+    return new Response(JSON.stringify({ error: 'rate_limited' }), {
+      status: 429,
+      headers: { 'content-type': 'application/json', 'retry-after': '60' },
+    });
+  }
 
   let payload;
   try {

@@ -3,10 +3,16 @@
  *
  * Mirror of netlify/functions/chat.mjs so the app's AI free-chat works when the
  * project is deployed on Vercel. The Anthropic key lives ONLY here (server-side,
- * from ANTHROPIC_API_KEY) — never in the browser. Same guardrails: a strict
- * kid-safe system prompt, a small token cap, input length limits, refusal
- * handling, and a safe fallback whenever the key is missing or a reply is
- * refused.
+ * from ANTHROPIC_API_KEY) — never in the browser.
+ *
+ * Abuse protection (the endpoint is public):
+ *  - Same-origin check: only requests coming from our own site are served, so a
+ *    random `curl` or another website can't spend the budget through it.
+ *  - Per-IP rate limit via Upstash Redis (UPSTASH_REDIS_REST_URL / _TOKEN); a
+ *    single IP gets CHAT_RATE_LIMIT messages/minute (default 20). Both checks
+ *    FAIL OPEN if unconfigured, so they can never break a real student — the
+ *    Anthropic Console spend cap remains the hard backstop.
+ *  - Per-call caps: short input, last-10 turns, small max_tokens.
  *
  * Vercel Edge Function, reachable at /api/chat (file-based routing).
  */
@@ -20,11 +26,77 @@ interface HistoryTurn {
   text?: string;
 }
 
-const json = (obj: unknown, status = 200): Response =>
+const json = (obj: unknown, status = 200, headers: Record<string, string> = {}): Response =>
   new Response(JSON.stringify(obj), {
     status,
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', ...headers },
   });
+
+/**
+ * Only serve requests that came from our own page. A browser sends `Origin` on
+ * a same-origin `fetch` POST, and its host matches the host we're served on.
+ * A missing Origin (plain curl) or a different host is rejected. An optional
+ * ALLOWED_ORIGINS env (comma-separated) covers extra custom domains.
+ */
+const sameOrigin = (req: Request): boolean => {
+  const origin = req.headers.get('origin');
+  if (!origin) return false;
+  let originHost: string;
+  try {
+    originHost = new URL(origin).host;
+  } catch {
+    return false;
+  }
+  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || '';
+  if (originHost && originHost === host) return true;
+  const allow = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return allow.some((a) => {
+    try {
+      return new URL(a.includes('://') ? a : `https://${a}`).host === originHost;
+    } catch {
+      return a === originHost;
+    }
+  });
+};
+
+const clientIp = (req: Request): string => {
+  const xff = req.headers.get('x-forwarded-for');
+  if (xff) return xff.split(',')[0].trim();
+  return req.headers.get('x-real-ip') || 'unknown';
+};
+
+/**
+ * Fixed-window per-IP limit backed by Upstash Redis (REST). Returns true when
+ * the caller is over the limit. Fails OPEN (returns false) whenever Upstash is
+ * not configured or unreachable, so a store outage never blocks real users.
+ */
+const rateLimited = async (ip: string): Promise<boolean> => {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !token) return false;
+  const limit = Number(process.env.CHAT_RATE_LIMIT || '20');
+  const windowId = Math.floor(Date.now() / 60000); // 1-minute buckets
+  const key = `chat:rl:${ip}:${windowId}`;
+  try {
+    const res = await fetch(`${url}/pipeline`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify([
+        ['INCR', key],
+        ['EXPIRE', key, '120'],
+      ]),
+    });
+    if (!res.ok) return false;
+    const data = (await res.json()) as Array<{ result?: number }>;
+    const count = Array.isArray(data) ? Number(data[0]?.result ?? 0) : 0;
+    return count > limit;
+  } catch {
+    return false;
+  }
+};
 
 const systemPrompt = (lang: Lang): string => {
   const langLine =
@@ -52,9 +124,14 @@ const safeFallback = (lang: Lang): string =>
 
 export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+  if (!sameOrigin(req)) return json({ error: 'forbidden' }, 403);
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return json({ error: 'not_configured' }, 503);
+
+  if (await rateLimited(clientIp(req))) {
+    return json({ error: 'rate_limited' }, 429, { 'retry-after': '60' });
+  }
 
   let payload: { message?: unknown; lang?: unknown; history?: unknown };
   try {
