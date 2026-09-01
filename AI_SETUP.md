@@ -2,26 +2,32 @@
 
 The mascot's **free-chat mode** uses Anthropic **Claude (Haiku)** for real
 understanding of what a child says. The API key lives **only on the server**
-(a Netlify Function), never in the browser.
+(a serverless function), never in the browser. The same endpoint (`/api/chat`)
+ships for **both hosts**: `api/chat.ts` on Vercel and
+`netlify/functions/chat.mjs` on Netlify — so it works whichever one you deploy.
 
 ## 1. Get an Anthropic API key
 - Go to the **Anthropic Console** → **API Keys** (console.anthropic.com/settings/keys).
 - Create a key. Set spend limits in the console if you want.
 
-## 2. Add it to Netlify (production)
-Netlify site → **Site configuration → Environment variables → Add a variable**:
+## 2. Add it to your host (production)
+
+**Vercel** → Project **kidfin** → Settings → **Environment Variables** → Add:
 
 | Key | Value |
 |-----|-------|
 | `ANTHROPIC_API_KEY` | *your key* |
 | `ANTHROPIC_MODEL` *(optional)* | e.g. `claude-haiku-4-5` (default) |
 
+**Netlify** (if used) → **Site configuration → Environment variables** → add the
+same variables.
+
 Then **redeploy** (or push a commit) so the function picks up the variable.
 
 > Do **not** put the key in the app code, a committed `.env`, or the client.
 
 ## 3. That's it
-- The client calls `POST /api/chat` → `netlify/functions/chat.mjs` → Claude.
+- The client calls `POST /api/chat` → the serverless function → Claude.
 - Until a key is set, the endpoint returns `503` and the app shows a friendly
   "AI not enabled yet" notice and stays in scripted lesson mode.
 
