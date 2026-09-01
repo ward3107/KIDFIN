@@ -43,7 +43,7 @@ export const RobotRoom: React.FC<{ childName?: string }> = () => {
       </button>
 
       <div className="mx-auto w-full max-w-md">
-        <MascotConversation height={avatarHeight} autoStart />
+        <MascotConversation height={avatarHeight} autoStart bare />
       </div>
     </div>
   );

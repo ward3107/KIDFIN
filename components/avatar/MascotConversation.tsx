@@ -52,11 +52,13 @@ const canAutoplay = async (): Promise<boolean> => {
  * (not a button) starts it on the child's first touch — the least friction the
  * browser allows.
  */
-export const MascotConversation: React.FC<{ height?: number; autoStart?: boolean }> = ({
-  height = 300,
-  autoStart = false,
-}) => {
-  const { t, i18n } = useTranslation();
+export const MascotConversation: React.FC<{
+  height?: number;
+  autoStart?: boolean;
+  /** Strip the card frame/background so the robot sits directly on the page. */
+  bare?: boolean;
+}> = ({ height = 300, autoStart = false, bare = false }) => {
+  const { i18n } = useTranslation();
   const lang: Lang = (i18n.language || 'he').startsWith('ar') ? 'ar' : 'he';
 
   const avatar = useRef<AvatarHandle>(null);
@@ -196,7 +198,13 @@ export const MascotConversation: React.FC<{ height?: number; autoStart?: boolean
   };
 
   return (
-    <div className="rounded-3xl border-2 border-indigo-100 bg-gradient-to-b from-indigo-50 to-white p-3 md:p-4 shadow-sm">
+    <div
+      className={
+        bare
+          ? ''
+          : 'rounded-3xl border-2 border-indigo-100 bg-gradient-to-b from-indigo-50 to-white p-3 md:p-4 shadow-sm'
+      }
+    >
       {/* Full-screen "touch anywhere" catch — shown only when the browser blocks
           audio before the child interacts. It is the whole screen, not a button,
           so a young student just taps and Kiwi starts talking. */}
@@ -215,7 +223,7 @@ export const MascotConversation: React.FC<{ height?: number; autoStart?: boolean
         </div>
       )}
 
-      <div className="overflow-hidden rounded-2xl bg-white/60">
+      <div className={bare ? '' : 'overflow-hidden rounded-2xl bg-white/60'}>
         <Suspense
           fallback={
             <div
@@ -231,7 +239,13 @@ export const MascotConversation: React.FC<{ height?: number; autoStart?: boolean
       </div>
 
       {/* Caption bubble — the robot's words (also helps non-audio/hard-of-hearing) */}
-      <div className="mt-3 min-h-[3.5rem] rounded-2xl bg-white px-3 py-2 text-center text-sm md:text-base font-medium text-slate-700 shadow-sm ring-1 ring-indigo-100">
+      <div
+        className={
+          bare
+            ? 'mt-3 min-h-[3.5rem] px-3 py-2 text-center text-base md:text-lg font-semibold text-slate-800'
+            : 'mt-3 min-h-[3.5rem] rounded-2xl bg-white px-3 py-2 text-center text-sm md:text-base font-medium text-slate-700 shadow-sm ring-1 ring-indigo-100'
+        }
+      >
         {caption ||
           (autoStart
             ? lang === 'ar'
