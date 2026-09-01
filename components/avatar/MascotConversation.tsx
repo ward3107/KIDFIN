@@ -124,26 +124,47 @@ export const MascotConversation: React.FC<{
       setPhase('speaking');
       const text = turnText(turn, lang);
       setCaption(text);
-      const a = avatar.current;
-      if (!a) return;
-      a.setExpression(turn.expression);
-      if (turn.gesture) a.playGesture(turn.gesture);
-      a.playClip(audioUrl(turn.audioKey, lang), {
-        expression: turn.expression,
-        fallbackText: text,
-        lang: lang === 'ar' ? 'ar' : 'he-IL',
-        onDone: () => {
-          if (turn.end) {
-            setPhase('done');
-          } else if (turnListens(turn)) {
-            beginListening(turn.id);
-          } else if (turn.next) {
-            playTurn(turn.next);
-          } else {
+
+      const runClip = (a: AvatarHandle) => {
+        a.setExpression(turn.expression);
+        if (turn.gesture) a.playGesture(turn.gesture);
+        a.playClip(audioUrl(turn.audioKey, lang), {
+          expression: turn.expression,
+          fallbackText: text,
+          lang: lang === 'ar' ? 'ar' : 'he-IL',
+          onDone: () => {
+            if (turn.end) {
+              setPhase('done');
+            } else if (turnListens(turn)) {
+              beginListening(turn.id);
+            } else if (turn.next) {
+              playTurn(turn.next);
+            } else {
+              setPhase('idle');
+            }
+          },
+        });
+      };
+
+      // The 3D avatar is lazy-loaded, so its ref may not exist yet when the
+      // conversation auto-starts — especially when returning to the robot room,
+      // where audio is already unlocked and start() fires immediately. Wait for
+      // the handle to mount instead of silently dropping the turn (which left
+      // the robot mute on re-entry). Give up after ~5s so it can never hang.
+      if (avatar.current) {
+        runClip(avatar.current);
+      } else {
+        let tries = 0;
+        const wait = setInterval(() => {
+          if (avatar.current) {
+            clearInterval(wait);
+            runClip(avatar.current);
+          } else if (++tries > 100) {
+            clearInterval(wait);
             setPhase('idle');
           }
-        },
-      });
+        }, 50);
+      }
     },
     [lang, beginListening],
   );
