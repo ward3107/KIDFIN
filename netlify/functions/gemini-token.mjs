@@ -11,7 +11,7 @@ import { GoogleGenAI, Modality } from '@google/genai';
 
 // Native-audio Gemini 2.5 Flash: most natural voice + best Hebrew/Arabic, free
 // tier. Preview ids rotate — override with GEMINI_LIVE_MODEL if "model not found".
-const DEFAULT_LIVE_MODEL = 'gemini-2.5-flash-native-audio-preview-09-2025';
+const DEFAULT_LIVE_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
 const DEFAULT_LIVE_VOICE = 'Aoede';
 
 const json = (obj, status = 200, headers = {}) =>

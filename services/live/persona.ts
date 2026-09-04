@@ -17,7 +17,7 @@
  * ever returns "model not found", set GEMINI_LIVE_MODEL to the current Live
  * model id from https://ai.google.dev/gemini-api/docs/models — no code change.
  */
-export const DEFAULT_LIVE_MODEL = 'gemini-2.5-flash-native-audio-preview-09-2025';
+export const DEFAULT_LIVE_MODEL = 'gemini-2.5-flash-native-audio-preview-12-2025';
 
 /** Kiwi's default spoken voice (a Gemini prebuilt voice). Override per env. */
 export const DEFAULT_LIVE_VOICE = 'Aoede';
