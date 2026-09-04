@@ -3,15 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { Mic, MicOff, Send } from 'lucide-react';
 import type { AvatarHandle } from './avatarTypes';
 import type { Lang } from '../../services/dialogue/conversation';
-import type { GeminiLiveSession, LiveStatus } from '../../services/live/geminiLive';
+import type { TalkRecorder, TurnHistory } from '../../services/live/turnClient';
 
 // Lazy-load the 3D avatar so three.js stays code-split.
 const RobotAvatar = React.lazy(() =>
   import('./RobotAvatar').then((m) => ({ default: m.RobotAvatar })),
 );
 
-// A few ms of silence — used only to ask the browser "would you let me start
-// audio right now?" without a user gesture (installed PWA / kiosk).
 const SILENT_WAV =
   'data:audio/wav;base64,UklGRkwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSgAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
 
@@ -28,26 +26,17 @@ const canAutoplay = async (): Promise<boolean> => {
   }
 };
 
-// Errors that mean "live voice can't run here" → fall back to scripted mode.
-const FATAL_FALLBACK = new Set([
-  'not_configured',
-  'token_failed',
-  'network',
-  'connect_failed',
-  'connection',
-  'mic_graph',
-]);
+type Phase = 'idle' | 'greeting' | 'ready' | 'recording' | 'thinking' | 'speaking';
+
+const FATAL = new Set(['not_configured', 'network', 'turn_failed', 'greeting_failed', 'no_audio']);
 
 /**
- * Kiwi in LIVE voice mode: a real, two-way spoken conversation powered by Gemini
- * Live. Kiwi opens the conversation, listens continuously, and stops talking the
- * moment the child speaks. Understands and speaks Hebrew and spoken Arabic.
- *
- * If live voice isn't available (no key configured, offline, or the browser
- * can't connect), `onFallback` fires so the caller can drop back to the scripted
- * conversation — the app always works.
+ * Kiwi voice — Route B ("the reliable ears"). Push-to-talk: the child taps to
+ * talk, taps to send; we record the whole sentence, send it to Gemini for
+ * accurate transcription + a reply, then Kiwi speaks the reply. Understands kids
+ * far better than live streaming. Falls back to scripted mode if unavailable.
  */
-export const LiveConversation: React.FC<{
+export const TalkConversation: React.FC<{
   height?: number;
   bare?: boolean;
   autoStart?: boolean;
@@ -55,16 +44,36 @@ export const LiveConversation: React.FC<{
 }> = ({ height = 300, bare = false, autoStart = true, onFallback }) => {
   const { i18n } = useTranslation();
   const lang: Lang = (i18n.language || 'he').startsWith('ar') ? 'ar' : 'he';
+  const speechLang = lang === 'ar' ? 'ar' : 'he-IL';
 
   const avatar = useRef<AvatarHandle>(null);
-  const sessionRef = useRef<GeminiLiveSession | null>(null);
+  const recorder = useRef<TalkRecorder | null>(null);
+  const history = useRef<TurnHistory[]>([]);
   const startedRef = useRef(false);
 
-  const [status, setStatus] = useState<LiveStatus>('closed');
+  const [phase, setPhase] = useState<Phase>('idle');
   const [awaitingTap, setAwaitingTap] = useState(false);
   const [kiwiText, setKiwiText] = useState('');
-  const [userText, setUserText] = useState('');
+  const [heard, setHeard] = useState('');
   const [micDenied, setMicDenied] = useState(false);
+
+  const speak = useCallback(
+    (text: string) => {
+      setKiwiText(text);
+      setPhase('speaking');
+      const a = avatar.current;
+      if (!a) {
+        setPhase('ready');
+        return;
+      }
+      a.speak(text, {
+        lang: speechLang,
+        expression: 'happy',
+        onDone: () => setPhase('ready'),
+      });
+    },
+    [speechLang],
+  );
 
   const start = useCallback(async () => {
     if (startedRef.current) return;
@@ -72,35 +81,30 @@ export const LiveConversation: React.FC<{
     setAwaitingTap(false);
     setMicDenied(false);
 
-    const sink = avatar.current?.getLiveAudioSink?.();
-    if (!sink) {
-      onFallback?.('no_audio');
+    const { TalkRecorder, postKiwiGreeting } = await import('../../services/live/turnClient');
+    const rec = new TalkRecorder();
+    try {
+      await rec.init();
+    } catch {
+      setMicDenied(true);
+      // Mic is required for the voice chat; drop to scripted so the app still works.
+      onFallback?.('mic_denied');
       return;
     }
+    recorder.current = rec;
 
-    // Load the live engine lazily so its WebSocket/audio code isn't in the main
-    // bundle and only downloads when a child actually starts talking.
-    const { GeminiLiveSession } = await import('../../services/live/geminiLive');
-    const session = new GeminiLiveSession({
-      lang,
-      sink: { context: sink.context, node: sink.node },
-      callbacks: {
-        onStatus: setStatus,
-        onKiwiText: (t) => setKiwiText((prev) => (prev + ' ' + t).trim().slice(-240)),
-        onUserText: (t) => setUserText((prev) => (prev + ' ' + t).trim().slice(-160)),
-        onError: (code) => {
-          if (code === 'mic_denied') setMicDenied(true);
-          if (FATAL_FALLBACK.has(code)) onFallback?.(code);
-        },
-      },
-    });
-    session.onSpeakingChange = (on) => avatar.current?.setSpeaking?.(on);
-    sessionRef.current = session;
-    void session.start();
-  }, [lang, onFallback]);
+    setPhase('greeting');
+    try {
+      const reply = await postKiwiGreeting(lang);
+      history.current.push({ role: 'model', text: reply });
+      speak(reply);
+    } catch (e) {
+      const code = e instanceof Error ? e.message : 'greeting_failed';
+      if (FATAL.has(code)) onFallback?.(code);
+      else setPhase('ready');
+    }
+  }, [lang, onFallback, speak]);
 
-  // Proactive opening: start by itself if the browser allows audio; otherwise
-  // wait for one screen touch (mic + audio unlock on the child's first tap).
   useEffect(() => {
     if (!autoStart) return;
     let cancelled = false;
@@ -114,31 +118,53 @@ export const LiveConversation: React.FC<{
     };
   }, [autoStart, start]);
 
-  // Watchdog: if a reply never arrives (dropped packet, model silence), don't
-  // leave the child staring at "Kiwi is thinking…" forever — hand the turn back
-  // so they can simply press "talk" again.
-  useEffect(() => {
-    if (status !== 'thinking') return;
-    const t = setTimeout(() => setStatus('ready'), 15000);
-    return () => clearTimeout(t);
-  }, [status]);
-
-  // Tear down the session on unmount.
   useEffect(
     () => () => {
-      sessionRef.current?.stop();
-      sessionRef.current = null;
+      recorder.current?.dispose();
+      recorder.current = null;
     },
     [],
   );
 
-  const listening = status === 'listening';
-  const speaking = status === 'speaking';
-  const connecting = status === 'connecting';
-  const thinking = status === 'thinking';
+  const onTalk = () => {
+    const rec = recorder.current;
+    if (!rec) return;
+    avatar.current?.stopSpeaking();
+    rec.start();
+    setHeard('');
+    setPhase('recording');
+  };
 
-  const talk = () => sessionRef.current?.beginTurn();
-  const send = () => sessionRef.current?.endTurn();
+  const onSend = async () => {
+    const rec = recorder.current;
+    if (!rec) return;
+    const secs = rec.seconds;
+    const audio = rec.stop();
+    if (secs < 0.35 || !audio) {
+      setPhase('ready'); // accidental tap — nothing captured
+      return;
+    }
+    setPhase('thinking');
+    try {
+      const { postKiwiTurn } = await import('../../services/live/turnClient');
+      const res = await postKiwiTurn(audio, history.current, lang);
+      if (res.heard) {
+        setHeard(res.heard);
+        history.current.push({ role: 'user', text: res.heard });
+      }
+      history.current.push({ role: 'model', text: res.reply });
+      if (history.current.length > 16) history.current = history.current.slice(-16);
+      speak(res.reply);
+    } catch (e) {
+      const code = e instanceof Error ? e.message : 'turn_failed';
+      if (FATAL.has(code)) onFallback?.(code);
+      else setPhase('ready');
+    }
+  };
+
+  const recording = phase === 'recording';
+  const thinking = phase === 'thinking' || phase === 'greeting';
+  const speaking = phase === 'speaking';
 
   return (
     <div
@@ -175,7 +201,6 @@ export const LiveConversation: React.FC<{
         </Suspense>
       </div>
 
-      {/* Caption bubble — Kiwi's words (also helps hard-of-hearing kids). */}
       <div
         className={
           bare
@@ -187,17 +212,16 @@ export const LiveConversation: React.FC<{
         {kiwiText || (lang === 'ar' ? 'مرحباً! 👋' : 'שלום! 👋')}
       </div>
 
-      {userText && (
+      {heard && (
         <div className="mt-2 text-center text-xs text-indigo-500" dir="rtl">
-          {lang === 'ar' ? 'قلت:' : 'אמרת:'} “{userText}”
+          {lang === 'ar' ? 'قلت:' : 'אמרת:'} “{heard}”
         </div>
       )}
 
-      {/* Live status + push-to-talk button */}
       <div className="mt-3 flex flex-col items-center gap-2">
-        {connecting && (
+        {thinking && (
           <div className="text-sm text-indigo-500 animate-pulse">
-            {lang === 'ar' ? 'كيوي يستعد…' : 'קיווי מתכונן…'}
+            {lang === 'ar' ? 'كيوي يفكّر…' : 'קיווי חושב…'}
           </div>
         )}
         {speaking && (
@@ -205,25 +229,18 @@ export const LiveConversation: React.FC<{
             🔊 {lang === 'ar' ? 'كيوي يتحدث…' : 'קיווי מדבר…'}
           </div>
         )}
-        {thinking && (
-          <div className="text-sm text-indigo-500 animate-pulse">
-            {lang === 'ar' ? 'كيوي يفكّر…' : 'קיווי חושב…'}
-          </div>
-        )}
 
-        {/* The big button. Push-to-talk so background noise never triggers Kiwi:
-            the child taps to talk, then taps again to send it to Kiwi. */}
-        {!connecting && !micDenied && (
-          listening ? (
+        {!awaitingTap && !micDenied && (
+          recording ? (
             <button
-              onClick={send}
+              onClick={() => void onSend()}
               className="flex items-center gap-2 rounded-full bg-emerald-600 px-8 py-4 text-lg font-black text-white shadow-lg shadow-emerald-200 transition active:scale-95"
             >
               <Send size={22} /> {lang === 'ar' ? 'أرسل لكيوي ✋' : 'שלח לקיווי ✋'}
             </button>
           ) : (
             <button
-              onClick={talk}
+              onClick={onTalk}
               disabled={thinking}
               className="flex items-center gap-2 rounded-full bg-indigo-600 px-8 py-4 text-lg font-black text-white shadow-lg shadow-indigo-200 transition active:scale-95 disabled:opacity-40"
             >
@@ -231,9 +248,9 @@ export const LiveConversation: React.FC<{
             </button>
           )
         )}
-        {listening && (
+        {recording && (
           <div className="text-xs text-rose-500 animate-pulse">
-            {lang === 'ar' ? '🔴 أنا أسمعك… اضغط "أرسل" عند الانتهاء' : '🔴 אני שומע… לחצו "שלח" בסיום'}
+            {lang === 'ar' ? '🔴 أنا أسجّل… اضغط "أرسل" عند الانتهاء' : '🔴 מקליט… לחצו "שלח" בסיום'}
           </div>
         )}
 
@@ -250,4 +267,4 @@ export const LiveConversation: React.FC<{
   );
 };
 
-export default LiveConversation;
+export default TalkConversation;

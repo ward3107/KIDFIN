@@ -9,8 +9,8 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Note: netlify/functions/gemini-token.mjs registers its own route at
-# /api/gemini-token (via `export const config = { path: '/api/gemini-token' }`),
+# Note: netlify/functions/kiwi-turn.mjs registers its own route at
+# /api/kiwi-turn (via `export const config = { path: '/api/kiwi-turn' }`),
 # handled before this SPA catch-all, so the endpoint is not rewritten to
 # index.html.
 [[redirects]]
