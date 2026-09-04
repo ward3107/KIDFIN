@@ -143,6 +143,9 @@ export default async (req) => {
             },
             inputAudioTranscription: {},
             outputAudioTranscription: {},
+            realtimeInputConfig: {
+              automaticActivityDetection: { disabled: true },
+            },
           },
         },
       },

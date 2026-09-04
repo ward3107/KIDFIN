@@ -9,9 +9,10 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Note: netlify/functions/chat.mjs registers its own route at /api/chat
-# (via `export const config = { path: '/api/chat' }`), handled before this
-# SPA catch-all, so the AI endpoint is not rewritten to index.html.
+# Note: netlify/functions/gemini-token.mjs registers its own route at
+# /api/gemini-token (via `export const config = { path: '/api/gemini-token' }`),
+# handled before this SPA catch-all, so the endpoint is not rewritten to
+# index.html.
 [[redirects]]
   from = "/*"
   to = "/index.html"
