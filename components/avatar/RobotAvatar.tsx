@@ -537,6 +537,19 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
           motion.current.gesture = { name: gesture, start: performance.now() / 1000 };
         },
         isSpeaking: () => motion.current.speaking,
+        getLiveAudioSink: () => {
+          const analyser = ensureAudioGraph();
+          const ctx = audioCtxRef.current;
+          if (!analyser || !ctx) return null;
+          if (ctx.state === 'suspended') void ctx.resume();
+          // Live voice is analysed for real amplitude-based lip-sync.
+          usingAnalyserRef.current = true;
+          return { context: ctx, node: analyser };
+        },
+        setSpeaking: (on: boolean) => {
+          motion.current.speaking = on;
+          if (!on) motion.current.mouth = 0;
+        },
       }),
       [i18n.language],
     );

@@ -18,6 +18,19 @@ export type AvatarExpression =
 export type AvatarGesture = 'wave' | 'nod' | 'cheer' | 'shrug' | 'think';
 
 /**
+ * The avatar's own Web Audio graph, handed to the live voice session so Kiwi's
+ * streamed speech plays through the SAME analyser that drives the mouth — giving
+ * real amplitude-based lip-sync for the live voice, exactly like pre-recorded
+ * clips.
+ */
+export interface LiveAudioSink {
+  /** The avatar's AudioContext (already resumed on a user gesture). */
+  context: AudioContext;
+  /** Connect live playback nodes here (the lip-sync analyser). */
+  node: AudioNode;
+}
+
+/**
  * Imperative handle exposed by <RobotAvatar/> via ref, so any tab/lesson can
  * drive it: speak a line, set a mood, or play a gesture.
  */
@@ -37,6 +50,15 @@ export interface AvatarHandle {
   playGesture: (gesture: AvatarGesture) => void;
   /** Whether speech is currently playing. */
   isSpeaking: () => boolean;
+  /**
+   * Live voice mode: return the avatar's audio graph so an external live audio
+   * stream (Gemini Live) can be played through the same lip-sync analyser.
+   * Ensures/resumes the audio context and switches the mouth to amplitude mode.
+   * Returns null if Web Audio isn't available.
+   */
+  getLiveAudioSink?: () => LiveAudioSink | null;
+  /** Force the "speaking" animation state on/off (used by live voice mode). */
+  setSpeaking?: (on: boolean) => void;
 }
 
 export interface PlayClipOptions {

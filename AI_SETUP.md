@@ -71,3 +71,55 @@ roughly cents per child per chat session. Monitor and cap usage in the console.
 Default is `claude-haiku-4-5` (fast, cheap, strong on Hebrew + Arabic, very
 safety-conscious for children). To try another Claude model, set
 `ANTHROPIC_MODEL`.
+
+---
+
+# Live voice (Gemini Live) — Kiwi that really listens
+
+Kiwi's front page uses **Gemini Live** for a real, two-way spoken conversation:
+Kiwi opens the chat by itself, listens continuously, and **stops the moment the
+child speaks** (barge-in). It understands and speaks **Hebrew and everyday spoken
+Arabic**. If no Gemini key is set (or the browser can't connect), the page
+**falls back automatically** to the existing scripted conversation — so the app
+always works.
+
+## 1. Get a Gemini API key (free)
+- Go to **https://aistudio.google.com/apikey** and sign in with any Google
+  account (a normal Gmail works — no credit card needed to start).
+- Click **Create API key** → **Create API key in new project**.
+- Copy the key (starts with `AIza…`). Keep it private — never paste it in code
+  or the browser.
+
+## 2. Add it to your host
+**Vercel** → Project **kidfin** → Settings → **Environment Variables** → Add:
+
+| Key | Value |
+|-----|-------|
+| `GEMINI_API_KEY` | *your key* |
+| `GEMINI_LIVE_MODEL` *(optional)* | a Live model id (default native-audio 2.5 Flash) |
+| `GEMINI_LIVE_VOICE` *(optional)* | a prebuilt voice name (default `Aoede`) |
+
+**Netlify** (if used) → **Environment variables** → add the same.
+
+Then **redeploy** so the function picks up the variable.
+
+## How it stays safe & on-budget
+- The real key lives **only on the server**. The browser gets a **short-lived,
+  single-use "ephemeral token"** (from `/api/gemini-token`) locked to Kiwi's
+  model and kid-safe instructions — it can't be reused or repurposed.
+- The token endpoint has the **same abuse protection as chat**: same-origin
+  check + optional per-IP rate limit (`LIVE_RATE_LIMIT`, default 10/min), both
+  fail-open.
+- **Google spend:** the free tier has hard rate limits, so you can't overspend
+  unless you deliberately upgrade to paid billing. If you do go paid, set a
+  budget/quota in Google Cloud.
+
+## If Kiwi's live voice doesn't start
+- **"model not found" / connect fails:** Gemini preview model ids rotate. Set
+  `GEMINI_LIVE_MODEL` to the current Live model id from
+  https://ai.google.dev/gemini-api/docs/models — no code change needed.
+- **No mic permission:** the child's browser must allow the microphone; Kiwi
+  shows a gentle "allow the microphone" note and typing still works in scripted
+  fallback.
+- **No key yet:** the page quietly runs the scripted conversation until
+  `GEMINI_API_KEY` is set.

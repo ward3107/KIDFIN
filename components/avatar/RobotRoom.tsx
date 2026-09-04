@@ -1,16 +1,25 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { MascotConversation } from './MascotConversation';
+import { LiveConversation } from './LiveConversation';
 
 /**
  * The app's front door. On open the child sees only the robot, and the robot
  * starts the conversation by itself — no start button, no navigation, nothing
- * else to figure out (see MascotConversation's autoStart). This is what loads
- * at the root URL; the rest of the app lives behind "…/#app" for teachers.
+ * else to figure out. This is what loads at the root URL; the rest of the app
+ * lives behind "…/#app" for teachers.
+ *
+ * Kiwi tries LIVE voice first (Gemini Live — real two-way talking that listens
+ * and stops when the child speaks). If live voice isn't available (no key set
+ * yet, offline, or the browser can't connect), it silently falls back to the
+ * scripted conversation, so the app always works.
  */
 export const RobotRoom: React.FC<{ childName?: string }> = () => {
   const { i18n } = useTranslation();
   const ar = (i18n.language || 'he').startsWith('ar');
+
+  // Start in live voice mode; drop to scripted if live voice can't run here.
+  const [mode, setMode] = React.useState<'live' | 'scripted'>('live');
 
   // Fill the viewport so the robot is as large as the screen comfortably allows.
   const [avatarHeight, setAvatarHeight] = React.useState(420);
@@ -43,7 +52,16 @@ export const RobotRoom: React.FC<{ childName?: string }> = () => {
       </button>
 
       <div className="mx-auto w-full max-w-md">
-        <MascotConversation height={avatarHeight} autoStart bare />
+        {mode === 'live' ? (
+          <LiveConversation
+            height={avatarHeight}
+            autoStart
+            bare
+            onFallback={() => setMode('scripted')}
+          />
+        ) : (
+          <MascotConversation height={avatarHeight} autoStart bare />
+        )}
       </div>
     </div>
   );
