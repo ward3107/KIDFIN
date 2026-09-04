@@ -1,6 +1,6 @@
 import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Mic, MicOff } from 'lucide-react';
+import { Mic, MicOff, Send } from 'lucide-react';
 import type { AvatarHandle } from './avatarTypes';
 import type { Lang } from '../../services/dialogue/conversation';
 import type { GeminiLiveSession, LiveStatus } from '../../services/live/geminiLive';
@@ -114,6 +114,15 @@ export const LiveConversation: React.FC<{
     };
   }, [autoStart, start]);
 
+  // Watchdog: if a reply never arrives (dropped packet, model silence), don't
+  // leave the child staring at "Kiwi is thinking…" forever — hand the turn back
+  // so they can simply press "talk" again.
+  useEffect(() => {
+    if (status !== 'thinking') return;
+    const t = setTimeout(() => setStatus('ready'), 15000);
+    return () => clearTimeout(t);
+  }, [status]);
+
   // Tear down the session on unmount.
   useEffect(
     () => () => {
@@ -123,9 +132,13 @@ export const LiveConversation: React.FC<{
     [],
   );
 
-  const listening = status === 'listening' || status === 'live';
+  const listening = status === 'listening';
   const speaking = status === 'speaking';
   const connecting = status === 'connecting';
+  const thinking = status === 'thinking';
+
+  const talk = () => sessionRef.current?.beginTurn();
+  const send = () => sessionRef.current?.endTurn();
 
   return (
     <div
@@ -180,7 +193,7 @@ export const LiveConversation: React.FC<{
         </div>
       )}
 
-      {/* Live status */}
+      {/* Live status + push-to-talk button */}
       <div className="mt-3 flex flex-col items-center gap-2">
         {connecting && (
           <div className="text-sm text-indigo-500 animate-pulse">
@@ -192,11 +205,38 @@ export const LiveConversation: React.FC<{
             🔊 {lang === 'ar' ? 'كيوي يتحدث…' : 'קיווי מדבר…'}
           </div>
         )}
-        {listening && (
-          <div className="flex items-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-white shadow-lg animate-pulse">
-            <Mic size={18} /> {lang === 'ar' ? 'أنا أستمع… تكلم!' : 'אני מקשיב… דבר!'}
+        {thinking && (
+          <div className="text-sm text-indigo-500 animate-pulse">
+            {lang === 'ar' ? 'كيوي يفكّر…' : 'קיווי חושב…'}
           </div>
         )}
+
+        {/* The big button. Push-to-talk so background noise never triggers Kiwi:
+            the child taps to talk, then taps again to send it to Kiwi. */}
+        {!connecting && !micDenied && (
+          listening ? (
+            <button
+              onClick={send}
+              className="flex items-center gap-2 rounded-full bg-emerald-600 px-8 py-4 text-lg font-black text-white shadow-lg shadow-emerald-200 transition active:scale-95"
+            >
+              <Send size={22} /> {lang === 'ar' ? 'أرسل لكيوي ✋' : 'שלח לקיווי ✋'}
+            </button>
+          ) : (
+            <button
+              onClick={talk}
+              disabled={thinking}
+              className="flex items-center gap-2 rounded-full bg-indigo-600 px-8 py-4 text-lg font-black text-white shadow-lg shadow-indigo-200 transition active:scale-95 disabled:opacity-40"
+            >
+              <Mic size={22} /> {lang === 'ar' ? 'اضغط لتتكلّم' : 'לחצו כדי לדבר'}
+            </button>
+          )
+        )}
+        {listening && (
+          <div className="text-xs text-rose-500 animate-pulse">
+            {lang === 'ar' ? '🔴 أنا أسمعك… اضغط "أرسل" عند الانتهاء' : '🔴 אני שומע… לחצו "שלח" בסיום'}
+          </div>
+        )}
+
         {micDenied && (
           <p className="text-center text-xs text-amber-700">
             <MicOff size={12} className="inline" />{' '}

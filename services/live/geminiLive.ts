@@ -27,7 +27,14 @@ import {
   resample,
 } from './pcm';
 
-export type LiveStatus = 'connecting' | 'live' | 'listening' | 'speaking' | 'error' | 'closed';
+export type LiveStatus =
+  | 'connecting'
+  | 'ready' // connected, mic idle — waiting for the child to press "talk"
+  | 'listening' // child is holding/opened the turn; their speech is streaming
+  | 'thinking' // child sent the turn; waiting for Kiwi's reply
+  | 'speaking' // Kiwi is talking
+  | 'error'
+  | 'closed';
 
 export interface LiveCallbacks {
   onStatus?: (status: LiveStatus) => void;
@@ -67,6 +74,10 @@ export class GeminiLiveSession {
   private processor: ScriptProcessorNode | null = null;
   private muteGain: GainNode | null = null;
   private stopped = false;
+  // Push-to-talk: the child's mic is streamed to Gemini ONLY between beginTurn()
+  // and endTurn(). This is why background chatter in a classroom no longer keeps
+  // the mic "listening" — nothing is sent unless the child is holding a turn.
+  private turnActive = false;
 
   // Playback scheduling for Kiwi's returned audio.
   private nextStartTime = 0;
@@ -130,7 +141,18 @@ export class GeminiLiveSession {
           onopen: () => {
             if (this.stopped) return;
             this.beginMicStreaming();
-            this.emit('listening');
+            // Kiwi leads: nudge the model to greet first (no audio needed). This
+            // is a stage direction, not shown to the child and not transcribed.
+            try {
+              this.session?.sendClientContent({
+                turns:
+                  'Begin the conversation now: greet the child warmly and ask their name. Keep it to one short sentence.',
+                turnComplete: true,
+              });
+              this.emit('thinking');
+            } catch {
+              this.emit('ready');
+            }
           },
           onmessage: (msg: LiveServerMessage) => this.onMessage(msg),
           onerror: () => this.fail('connection'),
@@ -146,6 +168,12 @@ export class GeminiLiveSession {
           },
           inputAudioTranscription: {},
           outputAudioTranscription: {},
+          // Push-to-talk: turn OFF Gemini's automatic voice detection so ambient
+          // classroom noise can't trigger or hold a turn. The client sends
+          // explicit activityStart/activityEnd markers instead (begin/endTurn).
+          realtimeInputConfig: {
+            automaticActivityDetection: { disabled: true },
+          },
         },
       });
     } catch {
@@ -167,7 +195,8 @@ export class GeminiLiveSession {
       this.muteGain.gain.value = 0; // keep the node pulling without audible passthrough
 
       this.processor.onaudioprocess = (e: AudioProcessingEvent) => {
-        if (this.stopped || !this.session) return;
+        // Only stream while the child is holding a turn (push-to-talk).
+        if (this.stopped || !this.session || !this.turnActive) return;
         const input = e.inputBuffer.getChannelData(0);
         const down = resample(input, ctx.sampleRate, GEMINI_INPUT_RATE);
         const pcm = floatTo16BitPCM(down);
@@ -193,10 +222,9 @@ export class GeminiLiveSession {
     const content = msg.serverContent;
     if (!content) return;
 
-    // Barge-in: the child started talking — drop everything Kiwi had queued.
+    // Barge-in: the model reports its turn was interrupted — drop queued audio.
     if (content.interrupted) {
       this.flushPlayback();
-      this.emit('listening');
     }
 
     // Transcripts (for captions / "what you said").
@@ -246,7 +274,8 @@ export class GeminiLiveSession {
       // When the last scheduled chunk finishes, Kiwi is done talking → listening.
       if (this.playing.size === 0 && !this.stopped) {
         this.setSpeaking(false);
-        this.emit('listening');
+        // Back to idle: the child presses "talk" to take the next turn.
+        this.emit(this.turnActive ? 'listening' : 'ready');
       }
     };
   }
@@ -275,6 +304,34 @@ export class GeminiLiveSession {
 
   /** Set by the caller to reflect Kiwi's speaking state onto the avatar. */
   onSpeakingChange: ((on: boolean) => void) | null = null;
+
+  /**
+   * Child pressed "talk": open a turn. If Kiwi is mid-sentence, interrupt it.
+   * Mic audio now streams to Gemini until endTurn().
+   */
+  beginTurn() {
+    if (this.stopped || !this.session || this.turnActive) return;
+    this.flushPlayback(); // stop Kiwi if it was still talking (barge-in)
+    this.turnActive = true;
+    try {
+      this.session.sendRealtimeInput({ activityStart: {} });
+      this.emit('listening');
+    } catch {
+      this.turnActive = false;
+    }
+  }
+
+  /** Child pressed "send": close the turn so Kiwi can reply. */
+  endTurn() {
+    if (this.stopped || !this.session || !this.turnActive) return;
+    this.turnActive = false;
+    try {
+      this.session.sendRealtimeInput({ activityEnd: {} });
+      this.emit('thinking');
+    } catch {
+      this.emit('ready');
+    }
+  }
 
   private fail(code: string) {
     if (this.stopped) return;

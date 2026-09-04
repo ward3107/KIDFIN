@@ -7,8 +7,8 @@
  * then opens the Live WebSocket directly with that token. The token is locked to
  * Kiwi's model + kid-safe system instruction, so it can't be repurposed.
  *
- * Abuse protection mirrors /api/chat: same-origin check + per-IP rate limit,
- * both fail-open, with the Google/Anthropic spend caps as the hard backstop.
+ * Abuse protection: same-origin check + per-IP rate limit, both fail-open, with
+ * the Google free-tier limits / spend cap as the hard backstop.
  *
  * Vercel Edge Function, reachable at /api/gemini-token (file-based routing).
  */
@@ -123,6 +123,9 @@ export default async function handler(req: Request): Promise<Response> {
             },
             inputAudioTranscription: {},
             outputAudioTranscription: {},
+            realtimeInputConfig: {
+              automaticActivityDetection: { disabled: true },
+            },
           },
         },
       },
