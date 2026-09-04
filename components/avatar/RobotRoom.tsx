@@ -9,17 +9,25 @@ import { LiveConversation } from './LiveConversation';
  * else to figure out. This is what loads at the root URL; the rest of the app
  * lives behind "…/#app" for teachers.
  *
- * Kiwi tries LIVE voice first (Gemini Live — real two-way talking that listens
- * and stops when the child speaks). If live voice isn't available (no key set
- * yet, offline, or the browser can't connect), it silently falls back to the
- * scripted conversation, so the app always works.
+ * DEFAULT = the scripted, natural-voice robot: polished, reliable, and it works
+ * every time (no microphone, no ambient-noise problems). This is what the
+ * customer and the children see.
+ *
+ * LIVE voice (Gemini Live — real two-way talking) is still in BETA while we tune
+ * it, so it is opt-in at "…/#live" rather than the default. If live voice can't
+ * run there (no key, offline, mic denied), it falls back to the scripted robot.
  */
 export const RobotRoom: React.FC<{ childName?: string }> = () => {
   const { i18n } = useTranslation();
   const ar = (i18n.language || 'he').startsWith('ar');
 
-  // Start in live voice mode; drop to scripted if live voice can't run here.
-  const [mode, setMode] = React.useState<'live' | 'scripted'>('live');
+  // Live voice is opt-in via the "#live" URL; everyone else gets the reliable
+  // scripted robot. (Kept in state so a failed live start can drop to scripted.)
+  const wantsLive =
+    typeof window !== 'undefined' && /(?:^|[#/])live$/.test(window.location.hash);
+  const [mode, setMode] = React.useState<'live' | 'scripted'>(
+    wantsLive ? 'live' : 'scripted',
+  );
 
   // Fill the viewport so the robot is as large as the screen comfortably allows.
   const [avatarHeight, setAvatarHeight] = React.useState(420);
@@ -50,6 +58,12 @@ export const RobotRoom: React.FC<{ childName?: string }> = () => {
       >
         ⚙
       </button>
+
+      {mode === 'live' && (
+        <div className="absolute top-2 left-1/2 z-10 -translate-x-1/2 rounded-full bg-amber-400/90 px-3 py-1 text-xs font-bold text-amber-950 shadow">
+          {ar ? 'صوت مباشر (تجريبي)' : 'קול חי (בטא)'}
+        </div>
+      )}
 
       <div className="mx-auto w-full max-w-md">
         {mode === 'live' ? (
