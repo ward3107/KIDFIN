@@ -114,6 +114,15 @@ export const LiveConversation: React.FC<{
     };
   }, [autoStart, start]);
 
+  // Watchdog: if a reply never arrives (dropped packet, model silence), don't
+  // leave the child staring at "Kiwi is thinking…" forever — hand the turn back
+  // so they can simply press "talk" again.
+  useEffect(() => {
+    if (status !== 'thinking') return;
+    const t = setTimeout(() => setStatus('ready'), 15000);
+    return () => clearTimeout(t);
+  }, [status]);
+
   // Tear down the session on unmount.
   useEffect(
     () => () => {
