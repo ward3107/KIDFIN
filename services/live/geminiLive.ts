@@ -83,12 +83,37 @@ export class GeminiLiveSession {
   private nextStartTime = 0;
   private readonly playing = new Set<AudioBufferSourceNode>();
 
+  // Reply watchdog: if a turn is sent (or the opening greeting is requested) and
+  // no audio comes back in time, hand control back to the child instead of
+  // leaving them stuck on "thinking…". This is what makes "sometimes he doesn't
+  // respond" recoverable.
+  private replyTimer: ReturnType<typeof setTimeout> | null = null;
+  private static readonly REPLY_TIMEOUT_MS = 12000;
+
   constructor(opts: LiveSessionOptions) {
     this.opts = opts;
   }
 
   private emit(status: LiveStatus) {
     this.opts.callbacks?.onStatus?.(status);
+  }
+
+  /** Start (or restart) the "did a reply ever come?" timer. */
+  private armReplyWatchdog() {
+    this.clearReplyWatchdog();
+    this.replyTimer = setTimeout(() => {
+      // No audio arrived in time — don't leave the child staring at "thinking".
+      if (this.stopped || this.playing.size > 0) return;
+      this.setSpeaking(false);
+      this.emit('ready');
+    }, GeminiLiveSession.REPLY_TIMEOUT_MS);
+  }
+
+  private clearReplyWatchdog() {
+    if (this.replyTimer) {
+      clearTimeout(this.replyTimer);
+      this.replyTimer = null;
+    }
   }
 
   async start(): Promise<void> {
@@ -150,6 +175,7 @@ export class GeminiLiveSession {
                 turnComplete: true,
               });
               this.emit('thinking');
+              this.armReplyWatchdog();
             } catch {
               this.emit('ready');
             }
@@ -162,6 +188,10 @@ export class GeminiLiveSession {
         },
         config: {
           responseModalities: [Modality.AUDIO],
+          // Hard cap so Kiwi physically cannot ramble on ("talking non-stop").
+          // The child can always tap "talk" to interrupt too.
+          maxOutputTokens: 512,
+          temperature: 0.8,
           systemInstruction: kiwiSystemInstruction(this.opts.lang),
           speechConfig: {
             voiceConfig: { prebuiltVoiceConfig: { voiceName: DEFAULT_LIVE_VOICE } },
@@ -256,6 +286,9 @@ export class GeminiLiveSession {
       return;
     }
 
+    // A reply is arriving — cancel the "no response" watchdog.
+    this.clearReplyWatchdog();
+
     const src = ctx.createBufferSource();
     src.buffer = buffer;
     src.connect(this.opts.sink.node);
@@ -311,6 +344,7 @@ export class GeminiLiveSession {
    */
   beginTurn() {
     if (this.stopped || !this.session || this.turnActive) return;
+    this.clearReplyWatchdog();
     this.flushPlayback(); // stop Kiwi if it was still talking (barge-in)
     this.turnActive = true;
     try {
@@ -328,6 +362,7 @@ export class GeminiLiveSession {
     try {
       this.session.sendRealtimeInput({ activityEnd: {} });
       this.emit('thinking');
+      this.armReplyWatchdog();
     } catch {
       this.emit('ready');
     }
@@ -348,6 +383,7 @@ export class GeminiLiveSession {
   stop() {
     if (this.stopped) return;
     this.stopped = true;
+    this.clearReplyWatchdog();
     this.flushPlayback();
     try {
       if (this.processor) this.processor.onaudioprocess = null;

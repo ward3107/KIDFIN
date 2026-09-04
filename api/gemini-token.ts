@@ -117,6 +117,8 @@ export default async function handler(req: Request): Promise<Response> {
           model,
           config: {
             responseModalities: [Modality.AUDIO],
+            maxOutputTokens: 512,
+            temperature: 0.8,
             systemInstruction: kiwiSystemInstruction(lang),
             speechConfig: {
               voiceConfig: { prebuiltVoiceConfig: { voiceName } },

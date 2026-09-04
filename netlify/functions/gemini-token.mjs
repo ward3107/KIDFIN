@@ -154,6 +154,8 @@ export default async (req) => {
           model,
           config: {
             responseModalities: [Modality.AUDIO],
+            maxOutputTokens: 512,
+            temperature: 0.8,
             systemInstruction: kiwiSystemInstruction(lang),
             speechConfig: {
               voiceConfig: { prebuiltVoiceConfig: { voiceName } },
