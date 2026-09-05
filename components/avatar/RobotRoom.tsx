@@ -1,7 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { MascotConversation } from './MascotConversation';
-import { LiveConversation } from './LiveConversation';
+import { TalkConversation } from './TalkConversation';
 
 /**
  * The app's front door. On open the child sees only the robot, and the robot
@@ -67,7 +67,7 @@ export const RobotRoom: React.FC<{ childName?: string }> = () => {
 
       <div className="mx-auto w-full max-w-md">
         {mode === 'live' ? (
-          <LiveConversation
+          <TalkConversation
             height={avatarHeight}
             autoStart
             bare
