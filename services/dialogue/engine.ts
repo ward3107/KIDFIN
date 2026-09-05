@@ -32,9 +32,11 @@ export const nextTurnId = (
       const words = opt.keywords[lang] ?? [];
       if (words.some((w) => said.includes(normalize(w)))) return opt.next;
     }
-    return turn.fallbackNext ?? turn.next;
   }
-  return turn.next;
+  // No keyword matched (or the turn listens with no options, like the name
+  // question) → move on warmly via fallbackNext, then next. This is what keeps
+  // the robot from going silent after it asks the child's name.
+  return turn.fallbackNext ?? turn.next;
 };
 
 /** URL of the pre-generated natural-voice clip for a turn in a language. */
