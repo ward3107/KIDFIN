@@ -47,7 +47,7 @@ const Root: React.FC = () => {
   // Default (and legacy "#robot"): the robot is the front door.
   return (
     <Suspense fallback={fallback}>
-      <RobotRoom />
+      <RobotRoom key={route} />
     </Suspense>
   );
 };

@@ -2,6 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { MascotConversation } from './MascotConversation';
 import { TalkConversation } from './TalkConversation';
+const RealtimeConversation = React.lazy(() => import('./RealtimeConversation'));
 
 /**
  * The app's front door. On open the child sees only the robot, and the robot
@@ -20,6 +21,7 @@ import { TalkConversation } from './TalkConversation';
 export const RobotRoom: React.FC<{ childName?: string }> = () => {
   const { i18n } = useTranslation();
   const ar = (i18n.language || 'he').startsWith('ar');
+  const realtimeDemo = typeof window !== 'undefined' && /(?:^|[#/])realtime$/.test(window.location.hash);
 
   // Live voice is opt-in via the "#live" URL; everyone else gets the reliable
   // scripted robot. (Kept in state so a failed live start can drop to scripted.)
@@ -66,7 +68,7 @@ export const RobotRoom: React.FC<{ childName?: string }> = () => {
       )}
 
       <div className="mx-auto w-full max-w-md">
-        {mode === 'live' ? (
+        {realtimeDemo ? <RealtimeConversation height={avatarHeight} /> : mode === 'live' ? (
           <TalkConversation
             height={avatarHeight}
             autoStart
