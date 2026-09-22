@@ -26,13 +26,17 @@ export function motionPose(motion: ConversationMotion, time: number) {
   const celebrate = motion.phase === 'speaking' && motion.delivery === 'celebrate';
   let left = 0;
   let right = 0;
+  let legLeft = 0;
+  let legRight = 0;
   let nod = 0;
 
   if (moving) {
-    left = energy * (0.15 + 0.26 * Math.max(0, Math.sin(time * 3.2)));
-    right = energy * (0.12 + 0.3 * Math.max(0, Math.sin(time * 2.7 + 1.3)));
-    if (celebrate) { left += 0.32; right += 0.32; }
-    if (question) right += 0.16;
+    left = energy * (0.24 + 0.5 * Math.max(0, Math.sin(time * 3.2)));
+    right = energy * (0.2 + 0.56 * Math.max(0, Math.sin(time * 2.7 + 1.3)));
+    legLeft = energy * 0.09 * Math.sin(time * 2.15);
+    legRight = -energy * 0.09 * Math.sin(time * 2.15);
+    if (celebrate) { left += 0.55; right += 0.55; legLeft += 0.1; legRight -= 0.1; }
+    if (question) { right += 0.3; legRight -= 0.04; }
     if (motion.phase === 'listening') nod = 0.035 * Math.pow(Math.max(0, Math.sin(time * 0.85)), 8);
     if (motion.phase === 'speaking') nod = energy * 0.055 * Math.sin(time * 4.5);
 
@@ -44,12 +48,16 @@ export function motionPose(motion: ConversationMotion, time: number) {
       if (motion.gesture.name === 'nod') nod += envelope * 0.13 * Math.sin(age * 12);
       if (motion.gesture.name === 'shrug') { left += envelope * 0.4; right += envelope * 0.4; }
       if (motion.gesture.name === 'think') right += envelope * 0.55;
+      if (motion.gesture.name === 'cheer') { legLeft += envelope * 0.16; legRight -= envelope * 0.16; }
+      if (motion.gesture.name === 'wave') legRight += envelope * 0.06;
     }
   }
 
   return {
     left,
     right,
+    legLeft,
+    legRight,
     nod,
     tilt: moving ? motion.phase === 'thinking' ? 0.13 : question ? 0.1 : motion.phase === 'listening' ? 0.035 : 0 : 0,
     bob: moving ? 0.006 * Math.sin(time * 1.4) : 0,
