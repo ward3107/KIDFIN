@@ -22,6 +22,9 @@ type UiCopy = {
   adult: string;
   disclosure: string;
   start: string;
+  checkingAccess: string;
+  rememberedAccess: string;
+  suggestions: string;
   muted: string;
   mute: string;
   unmute: string;
@@ -46,12 +49,15 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     adult: 'אני מבוגר/ת ובודק/ת את ההדגמה עם מידע מומצא בלבד. גרסה זו אינה מיועדת עדיין לשימוש עצמאי של ילדים.',
     disclosure: 'קיווי הוא דמות בינה מלאכותית. הקול יישלח ל־OpenAI לעיבוד. משך ההדגמה עד חמש דקות.',
     start: 'התחלת שיחה',
+    checkingAccess: 'בודק גישה מאובטחת…',
+    rememberedAccess: 'הגישה נשמרה במכשיר הזה. אפשר להתחיל מיד ולדבר בכל שפה.',
+    suggestions: 'אפשר לענות בקול או לבחור:',
     muted: 'המיקרופון מושתק',
     mute: 'השתקת מיקרופון',
     unmute: 'הפעלת מיקרופון',
     end: 'סיום שיחה',
-    tip: 'אפשר לדבר בשקט ובטבעיות, להחליף שפה ולקטוע את קיווי בזמן שהוא מדבר.',
-    status: { idle: 'מוכן לשיחה', connecting: 'מתחבר…', listening: 'קיווי מקשיב', thinking: 'קיווי חושב…', speaking: 'קיווי מדבר — אפשר לקטוע אותו' },
+    tip: 'אפשר לדבר בשקט ובטבעיות ולהחליף שפה. בזמן שקיווי מדבר, מחכים שיסיים את המשפט.',
+    status: { idle: 'מוכן לשיחה', connecting: 'מתחבר…', listening: 'קיווי מקשיב', thinking: 'קיווי חושב…', speaking: 'קיווי מדבר' },
     errors: {
       notConfigured: 'השיחה החיה עדיין לא הוגדרה בשרת.',
       unauthorized: 'קוד הכניסה אינו נכון.',
@@ -68,12 +74,15 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     adult: 'أنا بالغ وأختبر العرض باستخدام معلومات خيالية فقط. هذه النسخة ليست جاهزة بعد لاستخدام الأطفال بشكل مستقل.',
     disclosure: 'كيوي شخصية ذكاء اصطناعي. سيُرسل الصوت إلى OpenAI للمعالجة. مدة العرض حتى خمس دقائق.',
     start: 'ابدأ المحادثة',
+    checkingAccess: 'جارٍ التحقق من الدخول الآمن…',
+    rememberedAccess: 'تم حفظ الدخول على هذا الجهاز. ابدأ الآن وتحدث بأي لغة.',
+    suggestions: 'أجب بصوتك أو اختر:',
     muted: 'الميكروفون مغلق',
     mute: 'كتم الميكروفون',
     unmute: 'تشغيل الميكروفون',
     end: 'إنهاء المحادثة',
-    tip: 'تحدث بهدوء وبشكل طبيعي، بدّل اللغة أو قاطع كيوي أثناء حديثه.',
-    status: { idle: 'جاهز للمحادثة', connecting: 'جارٍ الاتصال…', listening: 'كيوي يستمع', thinking: 'كيوي يفكّر…', speaking: 'كيوي يتحدث — يمكنك مقاطعته' },
+    tip: 'تحدث بهدوء وبشكل طبيعي وبدّل اللغة. انتظر حتى ينهي كيوي جملته.',
+    status: { idle: 'جاهز للمحادثة', connecting: 'جارٍ الاتصال…', listening: 'كيوي يستمع', thinking: 'كيوي يفكّر…', speaking: 'كيوي يتحدث' },
     errors: {
       notConfigured: 'لم يتم إعداد المحادثة المباشرة بعد.',
       unauthorized: 'رمز الدخول غير صحيح.',
@@ -90,12 +99,15 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     adult: 'I am an adult testing this demo with fictional information only. This version is not yet for independent use by children.',
     disclosure: 'Kiwi is an AI character. Audio is sent to OpenAI for processing. The demo lasts up to five minutes.',
     start: 'Start conversation',
+    checkingAccess: 'Checking secure access…',
+    rememberedAccess: 'Access is remembered on this device. Start now and speak any language.',
+    suggestions: 'Answer aloud or choose:',
     muted: 'Microphone muted',
     mute: 'Mute microphone',
     unmute: 'Turn microphone on',
     end: 'End conversation',
-    tip: 'Speak quietly and naturally, switch languages, or interrupt Kiwi while it is talking.',
-    status: { idle: 'Ready to talk', connecting: 'Connecting…', listening: 'Kiwi is listening', thinking: 'Kiwi is thinking…', speaking: 'Kiwi is speaking — you can interrupt' },
+    tip: 'Speak quietly and naturally, and switch languages whenever you like. Wait for Kiwi to finish each sentence.',
+    status: { idle: 'Ready to talk', connecting: 'Connecting…', listening: 'Kiwi is listening', thinking: 'Kiwi is thinking…', speaking: 'Kiwi is speaking' },
     errors: {
       notConfigured: 'Live conversation has not been configured on the server yet.',
       unauthorized: 'The access code is incorrect.',
@@ -112,12 +124,15 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     adult: 'Я взрослый пользователь и проверяю демонстрацию только с вымышленными данными. Эта версия пока не предназначена для самостоятельного использования детьми.',
     disclosure: 'Киви — персонаж с искусственным интеллектом. Аудио отправляется в OpenAI для обработки. Демонстрация длится до пяти минут.',
     start: 'Начать разговор',
+    checkingAccess: 'Проверяем безопасный доступ…',
+    rememberedAccess: 'Доступ сохранён на этом устройстве. Начните и говорите на любом языке.',
+    suggestions: 'Ответьте голосом или выберите:',
     muted: 'Микрофон выключен',
     mute: 'Выключить микрофон',
     unmute: 'Включить микрофон',
     end: 'Завершить разговор',
-    tip: 'Говорите тихо и естественно, меняйте язык или перебивайте Киви во время ответа.',
-    status: { idle: 'Готов к разговору', connecting: 'Подключение…', listening: 'Киви слушает', thinking: 'Киви думает…', speaking: 'Киви говорит — его можно перебить' },
+    tip: 'Говорите тихо и естественно, меняйте язык и дождитесь, пока Киви закончит фразу.',
+    status: { idle: 'Готов к разговору', connecting: 'Подключение…', listening: 'Киви слушает', thinking: 'Киви думает…', speaking: 'Киви говорит' },
     errors: {
       notConfigured: 'Живой разговор ещё не настроен на сервере.',
       unauthorized: 'Неверный код доступа.',
@@ -136,42 +151,90 @@ const LANGUAGE_OPTIONS: Array<{ value: RealtimeLanguage; label: string }> = [
   { value: 'ru', label: 'Русский' },
 ];
 
+type AccessStatus = 'checking' | 'required' | 'granted';
+const LANGUAGE_KEY = 'kiwi:realtime-language:v1';
+
+const initialLanguage = (): RealtimeLanguage => {
+  if (typeof window === 'undefined') return 'he';
+  try {
+    const saved = window.localStorage.getItem(LANGUAGE_KEY);
+    if (saved === 'he' || saved === 'ar' || saved === 'en' || saved === 'ru') return saved;
+  } catch {
+    // Storage can be unavailable in strict privacy modes; browser language is enough.
+  }
+  const browser = (navigator.languages?.[0] || navigator.language || '').toLowerCase();
+  if (browser.startsWith('ar')) return 'ar';
+  if (browser.startsWith('ru')) return 'ru';
+  if (browser.startsWith('en')) return 'en';
+  return 'he';
+};
+
 export default function RealtimeConversation({ height = 420 }: { height?: number }) {
   const avatar = useRef<AvatarHandle>(null);
   const phaseRef = useRef<VoicePhase>('idle');
   const deliveryRef = useRef<Delivery>('calm');
   const call = useRef<KiwiRealtime | null>(null);
-  const [lang, setLang] = useState<RealtimeLanguage>('he');
+  const [lang, setLang] = useState<RealtimeLanguage>(initialLanguage);
   const [phase, setPhase] = useState<VoicePhase>('idle');
   const [caption, setCaption] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [accessCode, setAccessCode] = useState('');
+  const [accessStatus, setAccessStatus] = useState<AccessStatus>('checking');
   const [adult, setAdult] = useState(false);
   const [muted, setMuted] = useState(false);
   const copy = COPY[lang];
   const rtl = lang === 'he' || lang === 'ar';
   const active = phase !== 'idle';
 
-  useEffect(() => () => { call.current?.stop(); }, []);
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch('/api/kiwi-realtime', {
+      method: 'GET',
+      credentials: 'same-origin',
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+      .then(async response => response.ok ? response.json() as Promise<{ authorized?: boolean }> : { authorized: false })
+      .then(result => setAccessStatus(result.authorized ? 'granted' : 'required'))
+      .catch(error => {
+        if (error instanceof DOMException && error.name === 'AbortError') return;
+        setAccessStatus('required');
+      });
+    return () => {
+      controller.abort();
+      call.current?.stop();
+    };
+  }, []);
+
+  const chooseLanguage = (next: RealtimeLanguage) => {
+    setLang(next);
+    try { window.localStorage.setItem(LANGUAGE_KEY, next); } catch { /* no-op */ }
+  };
 
   const stop = () => {
     call.current?.stop();
     call.current = null;
     setCaption('');
+    setSuggestions([]);
     setMuted(false);
     avatar.current?.setConversation?.('idle');
   };
 
-  const start = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (call.current || !adult || !accessCode) return;
+  const start = (event?: React.SyntheticEvent) => {
+    event?.preventDefault();
+    const needsCode = accessStatus !== 'granted';
+    if (call.current || accessStatus === 'checking' || (needsCode && (!adult || !accessCode))) return;
     setError('');
     setCaption('');
+    setSuggestions([]);
     setMuted(false);
     const session = new KiwiRealtime({
       phase: next => {
+        const previous = phaseRef.current;
         setPhase(next);
         phaseRef.current = next;
+        if (next === 'listening' && previous === 'connecting') setAccessStatus('granted');
         if (next !== 'speaking') deliveryRef.current = 'calm';
         avatar.current?.setConversation?.(next, deliveryRef.current);
         avatar.current?.setExpression(next === 'thinking' ? 'thinking' : 'happy');
@@ -182,12 +245,20 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
         deliveryRef.current = deliveryFromText(text);
         avatar.current?.setConversation?.(phaseRef.current, deliveryRef.current);
       },
-      error: setError,
+      options: setSuggestions,
+      error: code => {
+        if (code === 'unauthorized') setAccessStatus('required');
+        setError(code);
+      },
     });
     call.current = session;
     const code = accessCode;
     setAccessCode('');
-    void session.start(code, lang, avatar.current?.getLiveAudioSink?.() || null);
+    void session.start(needsCode ? code : '', lang, avatar.current?.getLiveAudioSink?.() || null);
+  };
+
+  const chooseSuggestion = (suggestion: string) => {
+    if (call.current?.sendText(suggestion)) setSuggestions([]);
   };
 
   const errorText = error === 'not_configured'
@@ -213,15 +284,28 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
         </AvatarBoundary>
         <p role="status" className="min-h-7 font-bold text-indigo-800">{muted ? copy.muted : copy.status[phase]}</p>
         <p aria-live="polite" className="mx-auto min-h-12 max-w-2xl px-3 text-base text-slate-800 sm:text-lg">{caption}</p>
+        {active && suggestions.length > 0 && <div className="mx-auto mt-2 max-w-2xl px-3" aria-label={copy.suggestions}>
+          <p className="mb-2 text-sm font-semibold text-indigo-800">{copy.suggestions}</p>
+          <div className="flex flex-wrap justify-center gap-2">
+            {suggestions.map((suggestion, index) => <button
+              key={`${index}-${suggestion}`}
+              type="button"
+              disabled={phase !== 'listening'}
+              onClick={() => chooseSuggestion(suggestion)}
+              className="min-h-12 rounded-full border-2 border-indigo-300 bg-white px-5 py-2.5 font-semibold text-indigo-900 shadow-sm transition hover:border-indigo-500 hover:bg-indigo-50 disabled:cursor-wait disabled:opacity-50"
+            >{suggestion}</button>)}
+          </div>
+        </div>}
       </div>
 
       <div className="mx-auto w-full max-w-md">
         {error && <p role="alert" className="mb-3 rounded-2xl bg-amber-50 p-3 text-amber-900 shadow-sm">{errorText}</p>}
-        {!active ? <form onSubmit={start} className="flex flex-col gap-3 rounded-3xl bg-white/85 p-4 text-start shadow-lg backdrop-blur-sm sm:p-6">
+        {accessStatus === 'checking' && !active ? <div role="status" className="rounded-3xl bg-white/75 p-5 font-semibold text-indigo-800 shadow-md backdrop-blur-sm">{copy.checkingAccess}</div>
+          : !active && accessStatus === 'required' ? <form onSubmit={start} className="flex flex-col gap-3 rounded-3xl bg-white/85 p-4 text-start shadow-lg backdrop-blur-sm sm:p-6">
           <label className="font-semibold">{copy.language}
             <select
               value={lang}
-              onChange={e => setLang(e.target.value as RealtimeLanguage)}
+              onChange={e => chooseLanguage(e.target.value as RealtimeLanguage)}
               className="mt-1 block min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2"
             >
               {LANGUAGE_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
@@ -236,7 +320,10 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
           </label>
           <p className="text-xs text-slate-600">{copy.disclosure}</p>
           <button disabled={!adult || !accessCode} className="min-h-12 rounded-full bg-indigo-700 px-5 py-3 font-bold text-white disabled:opacity-40">{copy.start}</button>
-        </form> : <div className="rounded-3xl bg-white/75 p-4 shadow-md backdrop-blur-sm sm:p-5">
+        </form> : !active ? <div className="rounded-3xl bg-white/80 p-4 shadow-md backdrop-blur-sm sm:p-5">
+          <p className="mb-4 text-sm text-slate-700">{copy.rememberedAccess}</p>
+          <button type="button" onClick={start} className="min-h-12 w-full rounded-full bg-indigo-700 px-5 py-3 font-bold text-white shadow-sm hover:bg-indigo-800">{copy.start}</button>
+        </div> : <div className="rounded-3xl bg-white/75 p-4 shadow-md backdrop-blur-sm sm:p-5">
           <p className="mb-4 text-sm text-slate-700">{copy.tip}</p>
           <div className="flex flex-wrap justify-center gap-3">
             <button disabled={phase === 'connecting'} onClick={() => { call.current?.setMuted(!muted); setMuted(!muted); }} className="min-h-12 rounded-full border border-indigo-300 bg-white px-5 disabled:opacity-40">{muted ? copy.unmute : copy.mute}</button>

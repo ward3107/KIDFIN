@@ -1,9 +1,18 @@
 import { realtimeInstructions, type RealtimeLanguage } from '../services/live/realtimePersona';
 
 export const config = { runtime: 'edge' };
-const json = (error: string, status: number) => new Response(JSON.stringify({ error }), {
-  status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+const SESSION_COOKIE = '__Host-kiwi_demo_session';
+const SESSION_MAX_AGE = 30 * 24 * 60 * 60;
+
+const jsonResponse = (body: object, status = 200) => new Response(JSON.stringify(body), {
+  status,
+  headers: {
+    'Content-Type': 'application/json',
+    'Cache-Control': 'no-store',
+    'Vary': 'Cookie',
+  },
 });
+const json = (error: string, status: number) => jsonResponse({ error }, status);
 
 async function matchesSecret(a: string, b: string): Promise<boolean> {
   const digest = async (s: string) => new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)));
@@ -13,9 +22,55 @@ async function matchesSecret(a: string, b: string): Promise<boolean> {
   return difference === 0;
 }
 
+const encodeBase64Url = (bytes: Uint8Array) => {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+};
+
+async function signSession(expires: number, secret: string): Promise<string> {
+  const payload = `v1.${expires}`;
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  );
+  const signature = new Uint8Array(await crypto.subtle.sign(
+    'HMAC',
+    key,
+    new TextEncoder().encode(`kiwi-demo:${payload}`),
+  ));
+  return `${payload}.${encodeBase64Url(signature)}`;
+}
+
+function readCookie(req: Request, name: string): string | null {
+  for (const part of (req.headers.get('cookie') || '').split(';')) {
+    const [key, ...value] = part.trim().split('=');
+    if (key === name) return value.join('=') || null;
+  }
+  return null;
+}
+
+async function hasValidSession(req: Request, secret: string): Promise<boolean> {
+  const token = readCookie(req, SESSION_COOKIE);
+  if (!token) return false;
+  const [version, expiresText, signature, ...extra] = token.split('.');
+  const expires = Number(expiresText);
+  if (version !== 'v1' || extra.length || !signature || !Number.isInteger(expires) || expires <= Math.floor(Date.now() / 1000)) return false;
+  const expected = await signSession(expires, secret);
+  return matchesSecret(token, expected);
+}
+
+async function sessionCookie(secret: string): Promise<string> {
+  const expires = Math.floor(Date.now() / 1000) + SESSION_MAX_AGE;
+  const token = await signSession(expires, secret);
+  return `${SESSION_COOKIE}=${token}; Max-Age=${SESSION_MAX_AGE}; Path=/; HttpOnly; Secure; SameSite=Strict`;
+}
+
 /** Protected adult demo only. No transcript/audio logging or durable memory. */
 export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== 'POST') return json('method_not_allowed', 405);
   if (process.env.KIWI_REALTIME_ENABLED !== 'true') return json('not_configured', 503);
   const apiKey = process.env.OPENAI_API_KEY;
   const secret = process.env.KIWI_DEMO_ACCESS_CODE;
@@ -23,6 +78,12 @@ export default async function handler(req: Request): Promise<Response> {
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
   const origins = (process.env.KIWI_REALTIME_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
   if (!apiKey || !secret || secret.length < 16 || !redis || !redisToken || !origins.length) return json('not_configured', 503);
+  if (req.method === 'GET') {
+    const origin = req.headers.get('origin');
+    if (origin && !origins.includes(origin)) return json('forbidden', 403);
+    return jsonResponse({ authorized: await hasValidSession(req, secret) });
+  }
+  if (req.method !== 'POST') return json('method_not_allowed', 405);
   if (!origins.includes(req.headers.get('origin') || '')) return json('forbidden', 403);
   if (!req.headers.get('content-type')?.startsWith('application/json')) return json('bad_request', 400);
   // Global, distributed admission limit also covers failed access-code attempts.
@@ -57,7 +118,10 @@ export default async function handler(req: Request): Promise<Response> {
     let offset = 0;
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length; }
     const payload = JSON.parse(new TextDecoder().decode(bytes));
-    if (typeof payload.accessCode !== 'string' || !(await matchesSecret(payload.accessCode, secret))) return json('unauthorized', 401);
+    const rememberedSession = await hasValidSession(req, secret);
+    const validAccessCode = typeof payload.accessCode === 'string'
+      && await matchesSecret(payload.accessCode, secret);
+    if (!rememberedSession && !validAccessCode) return json('unauthorized', 401);
     if (payload.adultDemo !== true) return json('adult_demo_required', 403);
     if (typeof payload.sdp !== 'string' || !payload.sdp.startsWith('v=0') || payload.sdp.length > 32_000 || !['he', 'ar', 'en', 'ru'].includes(payload.lang)) return json('bad_request', 400);
     const language = payload.lang as RealtimeLanguage;
@@ -65,7 +129,26 @@ export default async function handler(req: Request): Promise<Response> {
     const session = {
       type: 'realtime', model: process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1',
       instructions: realtimeInstructions(language),
-      output_modalities: ['audio'], max_output_tokens: 300,
+      output_modalities: ['audio'], max_output_tokens: 420,
+      tools: [{
+        type: 'function',
+        name: 'show_reply_options',
+        description: 'Show two to four short, age-appropriate reply choices in the speaker\'s current language. Use when choices would help the student continue, and always use it when offering explicit alternatives. Include a normal spoken reply in the same response before calling this tool.',
+        parameters: {
+          type: 'object',
+          properties: {
+            options: {
+              type: 'array',
+              minItems: 2,
+              maxItems: 4,
+              items: { type: 'string', maxLength: 80 },
+            },
+          },
+          required: ['options'],
+          additionalProperties: false,
+        },
+      }],
+      tool_choice: 'auto',
       audio: {
         input: {
           // Phones/headsets use close-talk filtering; laptops and room mics use
@@ -78,9 +161,12 @@ export default async function handler(req: Request): Promise<Response> {
             threshold: 0.28,
             prefix_padding_ms: 600,
             // Leave room for natural hesitation without making replies sluggish.
-            silence_duration_ms: 850,
+            silence_duration_ms: 1050,
             create_response: true,
-            interrupt_response: true,
+            // The browser also gates its microphone during Kiwi's turn. Keeping
+            // interruption off prevents speaker echo from cutting off the last
+            // words of a response while still allowing natural VAD turns.
+            interrupt_response: false,
           },
         },
         output: { voice: 'marin' },
@@ -94,6 +180,8 @@ export default async function handler(req: Request): Promise<Response> {
       signal: AbortSignal.timeout(20_000),
     });
     if (!upstream.ok) return json('voice_service_unavailable', 502);
-    return new Response(await upstream.text(), { headers: { 'Content-Type': 'application/sdp', 'Cache-Control': 'no-store' } });
+    const headers = new Headers({ 'Content-Type': 'application/sdp', 'Cache-Control': 'no-store' });
+    if (!rememberedSession) headers.set('Set-Cookie', await sessionCookie(secret));
+    return new Response(await upstream.text(), { headers });
   } catch { return json('session_failed', 502); }
 }

@@ -6,8 +6,26 @@ export type VoicePhase = 'idle' | 'connecting' | 'listening' | 'thinking' | 'spe
 export interface VoiceEvents {
   phase: (phase: VoicePhase) => void;
   caption: (text: string) => void;
+  options: (options: string[]) => void;
   error: (code: string) => void;
 }
+
+type RealtimeOutputItem = {
+  type?: string;
+  name?: string;
+  call_id?: string;
+  arguments?: string;
+};
+
+type RealtimeServerEvent = {
+  type?: string;
+  delta?: string;
+  transcript?: string;
+  response?: {
+    status?: string;
+    output?: RealtimeOutputItem[];
+  };
+};
 
 /** One disposable WebRTC call. Never retains an access code or a transcript. */
 export class KiwiRealtime {
@@ -21,6 +39,11 @@ export class KiwiRealtime {
   private caption = '';
   private timer: ReturnType<typeof setTimeout> | undefined;
   private connectionTimer: ReturnType<typeof setTimeout> | undefined;
+  private micReleaseTimer: ReturnType<typeof setTimeout> | undefined;
+  private userMuted = false;
+  private assistantTurnActive = false;
+  private outputPlaying = false;
+  private handledCalls = new Set<string>();
 
   constructor(private events: VoiceEvents) {}
 
@@ -37,6 +60,7 @@ export class KiwiRealtime {
       } });
       if (this.closed) { stream.getTracks().forEach(t => t.stop()); return; }
       this.mic = stream;
+      this.syncMicrophone();
       const peer = new RTCPeerConnection();
       this.peer = peer;
       stream.getTracks().forEach(track => peer.addTrack(track, stream));
@@ -77,6 +101,7 @@ export class KiwiRealtime {
         : 'far_field';
       const response = await fetch('/api/kiwi-realtime', {
         method: 'POST', signal: this.abort.signal,
+        credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sdp: offer.sdp, lang, micProfile, accessCode, adultDemo: true }),
       });
@@ -92,7 +117,7 @@ export class KiwiRealtime {
     }
   }
 
-  receive(event: { type?: string; delta?: string; transcript?: string; response?: { status?: string } }) {
+  receive(event: RealtimeServerEvent) {
     if (this.closed) return;
     switch (event.type) {
       case 'session.created':
@@ -100,6 +125,7 @@ export class KiwiRealtime {
         this.events.phase('listening');
         // One brief greeting only. The server-owned persona explicitly forbids
         // reintroducing Kiwi or repeating its role on later turns.
+        this.beginAssistantTurn();
         this.send({ type: 'response.create' });
         // Demo UX limit, not a server-enforced billing cap.
         this.timer = setTimeout(() => this.fail('demo_finished'), 5 * 60_000);
@@ -108,12 +134,25 @@ export class KiwiRealtime {
         this.events.phase('listening');
         this.caption = '';
         this.events.caption('');
+        this.events.options([]);
         break;
-      case 'input_audio_buffer.speech_stopped': this.events.phase('thinking'); break;
-      case 'response.created': this.caption = ''; break;
-      case 'output_audio_buffer.started': this.events.phase('speaking'); break;
+      case 'input_audio_buffer.speech_stopped':
+        this.events.phase('thinking');
+        this.beginAssistantTurn();
+        break;
+      case 'response.created':
+        this.caption = '';
+        this.beginAssistantTurn();
+        break;
+      case 'output_audio_buffer.started':
+        this.outputPlaying = true;
+        this.syncMicrophone();
+        this.events.phase('speaking');
+        break;
       case 'output_audio_buffer.stopped':
-      case 'output_audio_buffer.cleared': this.events.phase('listening'); break;
+      case 'output_audio_buffer.cleared':
+        this.releaseMicrophoneAfterEcho();
+        break;
       case 'response.output_audio_transcript.delta':
         this.caption += event.delta || '';
         this.events.caption(this.caption);
@@ -123,16 +162,100 @@ export class KiwiRealtime {
         break;
       case 'response.done':
         if (event.response?.status === 'failed') this.fail('voice_service_unavailable');
+        else {
+          this.assistantTurnActive = false;
+          this.handleFunctionCalls(event.response?.output || []);
+          this.syncMicrophone();
+          if (!this.outputPlaying) this.events.phase('listening');
+        }
         break;
       case 'error': this.fail('voice_service_unavailable'); break;
     }
   }
 
-  private send(event: object) {
-    if (this.channel?.readyState === 'open') this.channel.send(JSON.stringify(event));
+  private handleFunctionCalls(output: RealtimeOutputItem[]) {
+    for (const item of output) {
+      if (item.type !== 'function_call' || item.name !== 'show_reply_options' || !item.call_id) continue;
+      if (this.handledCalls.has(item.call_id)) continue;
+      this.handledCalls.add(item.call_id);
+      let options: string[] = [];
+      try {
+        const parsed = JSON.parse(item.arguments || '{}') as { options?: unknown };
+        if (Array.isArray(parsed.options)) {
+          options = [...new Set(parsed.options
+            .filter((value): value is string => typeof value === 'string')
+            .map(value => value.replace(/\s+/g, ' ').trim().slice(0, 80))
+            .filter(Boolean))].slice(0, 4);
+        }
+      } catch {
+        options = [];
+      }
+      const shown = options.length >= 2;
+      this.events.options(shown ? options : []);
+      this.send({
+        type: 'conversation.item.create',
+        item: {
+          type: 'function_call_output',
+          call_id: item.call_id,
+          output: JSON.stringify({ shown }),
+        },
+      });
+    }
   }
 
-  setMuted(muted: boolean) { this.mic?.getAudioTracks().forEach(t => { t.enabled = !muted; }); }
+  private send(event: object): boolean {
+    if (this.channel?.readyState !== 'open') return false;
+    this.channel.send(JSON.stringify(event));
+    return true;
+  }
+
+  sendText(text: string): boolean {
+    const clean = text.replace(/\s+/g, ' ').trim().slice(0, 200);
+    if (!clean || this.channel?.readyState !== 'open' || this.outputPlaying) return false;
+    this.events.options([]);
+    this.caption = '';
+    this.events.caption('');
+    this.events.phase('thinking');
+    this.beginAssistantTurn();
+    const created = this.send({
+      type: 'conversation.item.create',
+      item: {
+        type: 'message',
+        role: 'user',
+        content: [{ type: 'input_text', text: clean }],
+      },
+    });
+    if (created) this.send({ type: 'response.create' });
+    return created;
+  }
+
+  setMuted(muted: boolean) {
+    this.userMuted = muted;
+    this.syncMicrophone();
+  }
+
+  private beginAssistantTurn() {
+    clearTimeout(this.micReleaseTimer);
+    this.assistantTurnActive = true;
+    this.syncMicrophone();
+  }
+
+  private releaseMicrophoneAfterEcho() {
+    clearTimeout(this.micReleaseTimer);
+    // Keep the track gated for a fraction of a second so the tail of the
+    // loudspeaker output cannot be mistaken for a new child utterance.
+    this.outputPlaying = true;
+    this.micReleaseTimer = setTimeout(() => {
+      this.outputPlaying = false;
+      this.syncMicrophone();
+      if (!this.assistantTurnActive) this.events.phase('listening');
+    }, 220);
+  }
+
+  private syncMicrophone() {
+    const enabled = !this.userMuted && !this.assistantTurnActive && !this.outputPlaying;
+    this.mic?.getAudioTracks().forEach(track => { track.enabled = enabled; });
+  }
 
   private fail(code: string) {
     if (this.closed) return;
@@ -146,6 +269,7 @@ export class KiwiRealtime {
     this.abort.abort();
     clearTimeout(this.timer);
     clearTimeout(this.connectionTimer);
+    clearTimeout(this.micReleaseTimer);
     this.mic?.getTracks().forEach(t => t.stop());
     this.source?.disconnect();
     if (this.audio) { this.audio.pause(); this.audio.srcObject = null; }

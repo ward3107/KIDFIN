@@ -359,8 +359,11 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
               sum += v * v;
             }
             const rms = Math.sqrt(sum / data.length);
-            const level = Math.min(1, rms * 3.4); // gain up to a usable range
-            m.mouth = m.mouth * 0.55 + level * 0.45; // smooth
+            // Realtime speech is normalized quite softly. Remove the tiny
+            // analyser noise floor, then raise the useful speech range so lip
+            // motion remains readable on a phone-sized character.
+            const level = Math.min(1, Math.max(0, (rms - 0.006) * 9.5));
+            m.mouth = m.mouth * 0.48 + level * 0.52;
           } else {
             // No analyser (e.g. Web Speech fallback): natural-looking cadence.
             m.mouth = 0.55 + 0.45 * Math.abs(Math.sin(performance.now() / 90));

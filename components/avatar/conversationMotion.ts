@@ -20,73 +20,97 @@ export function deliveryFromText(text: string): Delivery {
 
 export function motionPose(motion: ConversationMotion, time: number) {
   const rawEnergy = Number.isFinite(motion.energy) ? motion.energy : 0;
-  // Audio amplitude drives emphasis, but keep a small floor while speaking so
-  // body language remains visible between syllables and with quiet output.
+  // Audio amplitude drives emphasis, with a visible floor for quiet voices.
   const energy = motion.phase === 'speaking'
-    ? Math.max(0.24, Math.min(1, Math.max(0, rawEnergy)))
+    ? Math.max(0.38, Math.min(1, Math.max(0, rawEnergy)))
     : 0;
-  const moving = !motion.reduced;
+  // Reduced-motion keeps communicative cues (mouth, gaze and a small nod)
+  // instead of freezing the character completely.
+  const motionScale = motion.reduced ? 0.22 : 1;
   const question = motion.phase === 'speaking' && motion.delivery === 'question';
   const celebrate = motion.phase === 'speaking' && motion.delivery === 'celebrate';
-  let left = 0;
-  let right = 0;
+  let left: number;
+  let right: number;
   let legLeft = 0;
   let legRight = 0;
-  let nod = 0;
+  let nod: number;
+  let tilt = 0;
+  let turn = 0;
+  let sway: number;
+  let armForward = 0;
 
-  if (moving) {
-    if (motion.phase === 'speaking') {
-      left = energy * (0.24 + 0.5 * Math.max(0, Math.sin(time * 3.2)));
-      right = energy * (0.2 + 0.56 * Math.max(0, Math.sin(time * 2.7 + 1.3)));
-      legLeft = energy * 0.09 * Math.sin(time * 2.15);
-      legRight = -energy * 0.09 * Math.sin(time * 2.15);
-    } else if (motion.phase === 'listening') {
-      // Attentive, low-amplitude movement: open hands, weight shift and nods.
-      left = 0.045 + 0.025 * Math.sin(time * 1.15);
-      right = 0.05 + 0.025 * Math.sin(time * 1.05 + 1.2);
-      legLeft = 0.025 * Math.sin(time * 0.9);
-      legRight = -legLeft;
-    } else if (motion.phase === 'thinking') {
-      // A small asymmetric pose reads as thought without becoming distracting.
-      left = 0.04;
-      right = 0.2 + 0.035 * Math.sin(time * 1.8);
-      legLeft = 0.018;
-      legRight = -0.018;
-    } else {
-      // Never look completely frozen while idle.
-      left = 0.012 + 0.008 * Math.sin(time * 0.8);
-      right = 0.012 + 0.008 * Math.sin(time * 0.8 + 1.5);
-    }
-    if (celebrate) { left += 0.55; right += 0.55; legLeft += 0.1; legRight -= 0.1; }
-    if (question) { right += 0.3; legRight -= 0.04; }
-    if (motion.phase === 'listening') nod = 0.055 * Math.pow(Math.max(0, Math.sin(time * 0.85)), 8);
-    if (motion.phase === 'thinking') nod = -0.025 + 0.012 * Math.sin(time * 1.25);
-    if (motion.phase === 'speaking') nod = energy * 0.055 * Math.sin(time * 4.5);
-
-    if (motion.gesture && motion.gesture.age >= 0 && motion.gesture.age < 1.4) {
-      const age = motion.gesture.age;
-      const envelope = Math.sin(Math.PI * age / 1.4);
-      if (motion.gesture.name === 'wave') right += envelope * (0.85 + 0.16 * Math.sin(age * 15));
-      if (motion.gesture.name === 'cheer') { left += envelope * 0.8; right += envelope * 0.8; }
-      if (motion.gesture.name === 'nod') nod += envelope * 0.13 * Math.sin(age * 12);
-      if (motion.gesture.name === 'shrug') { left += envelope * 0.4; right += envelope * 0.4; }
-      if (motion.gesture.name === 'think') right += envelope * 0.55;
-      if (motion.gesture.name === 'cheer') { legLeft += envelope * 0.16; legRight -= envelope * 0.16; }
-      if (motion.gesture.name === 'wave') legRight += envelope * 0.06;
-    }
+  if (motion.phase === 'speaking') {
+    const leftBeat = 0.5 + 0.5 * Math.sin(time * 3.15);
+    const rightBeat = 0.5 + 0.5 * Math.sin(time * 2.7 + 1.35);
+    left = 0.12 + energy * (0.3 + 0.42 * leftBeat);
+    right = 0.1 + energy * (0.28 + 0.48 * rightBeat);
+    legLeft = energy * 0.14 * Math.sin(time * 1.75);
+    legRight = -legLeft;
+    nod = energy * (0.07 * Math.sin(time * 4.1) + 0.025 * Math.sin(time * 1.7));
+    turn = energy * 0.055 * Math.sin(time * 1.45);
+    sway = energy * 0.055 * Math.sin(time * 1.35);
+    armForward = energy * (0.12 + 0.09 * Math.sin(time * 3.7));
+  } else if (motion.phase === 'listening') {
+    left = 0.08 + 0.045 * Math.sin(time * 1.15);
+    right = 0.09 + 0.045 * Math.sin(time * 1.05 + 1.2);
+    legLeft = 0.045 * Math.sin(time * 0.8);
+    legRight = -legLeft;
+    nod = 0.085 * Math.pow(Math.max(0, Math.sin(time * 0.8)), 10);
+    tilt = 0.045;
+    turn = 0.025 * Math.sin(time * 0.65);
+    sway = 0.025 * Math.sin(time * 0.7);
+  } else if (motion.phase === 'thinking') {
+    left = 0.08;
+    right = 0.32 + 0.055 * Math.sin(time * 1.8);
+    legLeft = 0.035;
+    legRight = -0.035;
+    nod = -0.045 + 0.02 * Math.sin(time * 1.25);
+    tilt = 0.16;
+    turn = -0.055;
+    sway = 0.035;
+    armForward = 0.12;
+  } else {
+    left = 0.025 + 0.015 * Math.sin(time * 0.8);
+    right = 0.025 + 0.015 * Math.sin(time * 0.8 + 1.5);
+    nod = 0.012 * Math.sin(time * 0.55);
+    sway = 0.012 * Math.sin(time * 0.6);
   }
 
+  if (celebrate) { left += 0.48; right += 0.48; legLeft += 0.12; legRight -= 0.12; }
+  if (question) { right += 0.34; legRight -= 0.05; tilt += 0.11; }
+
+  if (motion.gesture && motion.gesture.age >= 0 && motion.gesture.age < 1.4) {
+    const age = motion.gesture.age;
+    const envelope = Math.sin(Math.PI * age / 1.4);
+    if (motion.gesture.name === 'wave') right += envelope * (0.85 + 0.16 * Math.sin(age * 15));
+    if (motion.gesture.name === 'cheer') { left += envelope * 0.8; right += envelope * 0.8; }
+    if (motion.gesture.name === 'nod') nod += envelope * 0.13 * Math.sin(age * 12);
+    if (motion.gesture.name === 'shrug') { left += envelope * 0.4; right += envelope * 0.4; }
+    if (motion.gesture.name === 'think') { right += envelope * 0.55; armForward += envelope * 0.2; }
+    if (motion.gesture.name === 'cheer') { legLeft += envelope * 0.16; legRight -= envelope * 0.16; }
+    if (motion.gesture.name === 'wave') legRight += envelope * 0.06;
+  }
+
+  const mouth = motion.phase === 'speaking'
+    ? Math.min(1, energy * (0.82 + 0.28 * Math.abs(Math.sin(time * 9.7))))
+    : 0;
+
   return {
-    left,
-    right,
-    legLeft,
-    legRight,
-    nod,
-    tilt: moving ? motion.phase === 'thinking' ? 0.13 : question ? 0.1 : motion.phase === 'listening' ? 0.035 : 0 : 0,
-    bob: moving ? (motion.phase === 'speaking' ? 0.012 : 0.007) * Math.sin(time * 1.4) : 0,
-    mouth: energy,
+    left: left * motionScale,
+    right: right * motionScale,
+    legLeft: legLeft * motionScale,
+    legRight: legRight * motionScale,
+    nod: nod * motionScale,
+    tilt: tilt * motionScale,
+    turn: turn * motionScale,
+    sway: sway * motionScale,
+    armForward: armForward * motionScale,
+    bob: (motion.phase === 'speaking' ? 0.024 : 0.012) * Math.sin(time * 1.4) * motionScale,
+    mouth,
     smile: celebrate ? 0.65 : motion.phase === 'speaking' ? 0.25 : 0.12,
-    round: question ? energy * 0.25 : 0,
-    brow: motion.phase === 'thinking' || question ? 0.025 : energy * 0.012,
+    round: motion.phase === 'speaking'
+      ? Math.min(0.6, energy * (question ? 0.38 : 0.18) * (0.55 + 0.45 * Math.sin(time * 6.3) ** 2))
+      : 0,
+    brow: (motion.phase === 'thinking' || question ? 0.04 : energy * 0.02) * motionScale,
   };
 }
