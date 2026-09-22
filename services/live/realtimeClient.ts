@@ -72,10 +72,13 @@ export class KiwiRealtime {
       const offer = await peer.createOffer();
       if (this.closed) return;
       await peer.setLocalDescription(offer);
+      const micProfile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent)
+        ? 'near_field'
+        : 'far_field';
       const response = await fetch('/api/kiwi-realtime', {
         method: 'POST', signal: this.abort.signal,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sdp: offer.sdp, lang, accessCode, adultDemo: true }),
+        body: JSON.stringify({ sdp: offer.sdp, lang, micProfile, accessCode, adultDemo: true }),
       });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
