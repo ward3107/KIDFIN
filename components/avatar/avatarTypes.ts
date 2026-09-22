@@ -6,6 +6,8 @@
  * scripted vs AI) can be wired in later without changing the renderer.
  */
 
+import type { ConversationPhase, Delivery } from './conversationMotion';
+
 /** Emotional states the avatar can express. */
 export type AvatarExpression =
   | 'neutral'
@@ -35,6 +37,8 @@ export interface LiveAudioSink {
  * drive it: speak a line, set a mood, or play a gesture.
  */
 export interface AvatarHandle {
+  /** Select the live conversational pose and semantic delivery style. */
+  setConversation?: (phase: ConversationPhase, delivery?: Delivery) => void;
   /** Speak text aloud (Web Speech) and animate the "talking" motion. */
   speak: (text: string, opts?: SpeakOptions) => void;
   /**

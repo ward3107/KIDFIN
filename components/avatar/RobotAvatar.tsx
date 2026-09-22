@@ -25,6 +25,8 @@ import type {
 import { sanitizeForSpeech, speechLang } from '../../utils/speechText';
 import { buildArmRig } from './armRig';
 import { blinkAmount, blinkDuration, buildFaceRig, browPose } from './faceRig';
+import { ExpressiveRobotModel } from './ExpressiveRobotModel';
+import type { ConversationPhase, Delivery } from './conversationMotion';
 
 const MODEL_URL = '/models/robot.glb';
 
@@ -60,7 +62,9 @@ const pickVoice = (
 };
 
 /** Mutable state shared from the DOM layer (speak/expression) into the R3F loop. */
-interface AvatarMotionState {
+export interface AvatarMotionState {
+  phase: ConversationPhase;
+  delivery: Delivery;
   speaking: boolean;
   /** Rising while speaking, decaying to 0 when silent — drives the "talking" pulse. */
   mouth: number;
@@ -70,6 +74,8 @@ interface AvatarMotionState {
 }
 
 interface RobotAvatarProps {
+  /** Render the new Blender-authored character used by the realtime demo. */
+  expressive?: boolean;
   /** Height of the canvas box. Defaults to a comfortable portrait card. */
   height?: number | string;
   /** Allow click-drag orbiting (default true). */
@@ -144,7 +150,7 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
     let raiseR = 0;
     let armFwd = 0;
     if (m.gesture) {
-      const age = t - m.gesture.start;
+      const age = performance.now() / 1000 - m.gesture.start;
       if (age > 1) {
         m.gesture = null;
       } else {
@@ -288,10 +294,12 @@ const RobotModel: React.FC<{ motion: React.MutableRefObject<AvatarMotionState> }
 /* -------------------------------------------------------------------------- */
 
 export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
-  ({ height = 420, interactive = true, className }, ref) => {
+  ({ height = 420, interactive = true, className, expressive = false }, ref) => {
     const { i18n } = useTranslation();
 
     const motion = useRef<AvatarMotionState>({
+      phase: 'idle',
+      delivery: 'calm',
       speaking: false,
       mouth: 0,
       expression: 'neutral',
@@ -546,8 +554,18 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
           usingAnalyserRef.current = true;
           return { context: ctx, node: analyser };
         },
+        setConversation: (phase, delivery = 'calm') => {
+          motion.current.phase = phase;
+          motion.current.delivery = delivery;
+          motion.current.speaking = phase === 'speaking';
+          if (phase !== 'speaking') {
+            motion.current.mouth = 0;
+            motion.current.gesture = null;
+          }
+        },
         setSpeaking: (on: boolean) => {
           motion.current.speaking = on;
+          motion.current.phase = on ? 'speaking' : 'listening';
           if (!on) motion.current.mouth = 0;
         },
       }),
@@ -567,6 +585,7 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
         {/* Animated mouth — opens with the live voice level. mouthElRef is the
             scaled wrapper; the inner layers give it lips, teeth and a tongue. */}
         <div
+          hidden={expressive}
           ref={mouthElRef}
           aria-hidden
           style={{
@@ -641,7 +660,9 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
           <directionalLight position={[0, 2, -5]} intensity={0.35} />
           <Suspense fallback={null}>
             <Bounds fit clip observe margin={1.15}>
-              <RobotModel motion={motion} />
+              {expressive
+                ? <ExpressiveRobotModel motion={motion} />
+                : <RobotModel motion={motion} />}
             </Bounds>
           </Suspense>
           <ContactShadows
