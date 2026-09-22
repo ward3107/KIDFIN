@@ -255,7 +255,7 @@ export const MascotConversation: React.FC<{
             </div>
           }
         >
-          <RobotAvatar ref={avatar} height={height} interactive={false} />
+          <RobotAvatar expressive ref={avatar} height={height} interactive={false} />
         </Suspense>
       </div>
 
