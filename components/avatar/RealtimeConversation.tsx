@@ -1,5 +1,6 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import type { AvatarHandle } from './avatarTypes';
+import { deliveryFromText, type Delivery } from './conversationMotion';
 import { KiwiRealtime, type VoicePhase } from '../../services/live/realtimeClient';
 
 const RobotAvatar = React.lazy(() => import('./RobotAvatar').then(m => ({ default: m.RobotAvatar })));
@@ -12,6 +13,9 @@ class AvatarBoundary extends React.Component<{ children: React.ReactNode }, { fa
 
 export default function RealtimeConversation({ height = 420 }: { height?: number }) {
   const avatar = useRef<AvatarHandle>(null);
+  const phaseRef = useRef<VoicePhase>('idle');
+  const deliveryRef = useRef<Delivery>('calm');
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const call = useRef<KiwiRealtime | null>(null);
   const [lang, setLang] = useState<'he' | 'ar'>('he');
   const [phase, setPhase] = useState<VoicePhase>('idle');
@@ -20,29 +24,51 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
   const [accessCode, setAccessCode] = useState('');
   const [adult, setAdult] = useState(false);
   const [muted, setMuted] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
   const ar = lang === 'ar';
   const active = phase !== 'idle';
 
-  useEffect(() => () => { call.current?.stop(); }, []);
+  useEffect(() => () => {
+    call.current?.stop();
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+  }, []);
+
+  const preview = (delivery: Delivery, nextPhase: VoicePhase) => {
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    setPreviewing(true);
+    avatar.current?.setConversation?.(nextPhase, delivery);
+    previewTimer.current = setTimeout(() => {
+      avatar.current?.setConversation?.('idle');
+      setPreviewing(false);
+    }, 4500);
+  };
 
   const stop = () => {
     call.current?.stop(); call.current = null;
     setCaption(''); setMuted(false);
-    avatar.current?.setSpeaking?.(false);
+    avatar.current?.setConversation?.('idle');
   };
 
   const start = (event: React.FormEvent) => {
     event.preventDefault();
     if (call.current || !adult || !accessCode) return;
+    if (previewTimer.current) clearTimeout(previewTimer.current);
+    setPreviewing(false);
     setError(''); setCaption(''); setMuted(false);
     const session = new KiwiRealtime({
       phase: next => {
         setPhase(next);
-        avatar.current?.setSpeaking?.(next === 'speaking');
+        phaseRef.current = next;
+        if (next !== 'speaking') deliveryRef.current = 'calm';
+        avatar.current?.setConversation?.(next, deliveryRef.current);
         avatar.current?.setExpression(next === 'thinking' ? 'thinking' : 'happy');
         if (next === 'idle') call.current = null;
       },
-      caption: setCaption,
+      caption: text => {
+        setCaption(text);
+        deliveryRef.current = deliveryFromText(text);
+        avatar.current?.setConversation?.(phaseRef.current, deliveryRef.current);
+      },
       error: setError,
     });
     call.current = session;
@@ -67,11 +93,21 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
   return <section dir="rtl" className="py-10 text-center">
     <p className="text-sm font-semibold text-indigo-800">{ar ? 'تجربة محادثة طبيعية للبالغين' : 'הדגמת שיחה טבעית למבוגרים'}</p>
     <AvatarBoundary><Suspense fallback={<div style={{ height }} className="grid place-items-center text-7xl">🤖</div>}>
-      <RobotAvatar ref={avatar} height={height} interactive={false} />
+      <RobotAvatar expressive ref={avatar} height={height} interactive={false} />
     </Suspense></AvatarBoundary>
     <p role="status" className="min-h-8 font-bold text-indigo-800">{muted ? (ar ? 'الميكروفون مغلق' : 'המיקרופון מושתק') : labels[phase]}</p>
     <p className="min-h-16 px-3 text-lg text-slate-800">{caption}</p>
     {error && <p role="alert" className="my-3 rounded-xl bg-amber-50 p-3 text-amber-900">{errorText}</p>}
+    {!active && <div className="my-4 rounded-xl bg-slate-50 p-3">
+      <p className="mb-2 text-sm">{ar ? 'معاينة الحركة بدون صوت' : 'תצוגת תנועה ללא קול'}</p>
+      <div className="flex flex-wrap justify-center gap-2">
+        <button type="button" onClick={() => preview('calm', 'listening')} className="min-h-11 rounded-lg border bg-white px-3">{ar ? 'استماع' : 'הקשבה'}</button>
+        <button type="button" onClick={() => preview('explain', 'speaking')} className="min-h-11 rounded-lg border bg-white px-3">{ar ? 'شرح' : 'הסבר'}</button>
+        <button type="button" onClick={() => preview('question', 'speaking')} className="min-h-11 rounded-lg border bg-white px-3">{ar ? 'سؤال' : 'שאלה'}</button>
+        <button type="button" onClick={() => preview('celebrate', 'speaking')} className="min-h-11 rounded-lg border bg-white px-3">{ar ? 'تشجيع' : 'עידוד'}</button>
+      </div>
+      {previewing && <p role="status" className="mt-2 text-sm">{ar ? 'معاينة قصيرة — بدون ميكروفون' : 'הדגמה קצרה — ללא מיקרופון'}</p>}
+    </div>}
     {!active ? <form onSubmit={start} className="flex flex-col gap-3 rounded-2xl bg-white/80 p-5 text-right shadow-sm">
       <label className="font-semibold">{ar ? 'لغة البداية' : 'שפת פתיחה'}
         <select value={lang} onChange={e => setLang(e.target.value as 'he' | 'ar')} className="mx-3 rounded-lg border p-2">
