@@ -1,5 +1,7 @@
 import type { LiveAudioSink } from '../../components/avatar/avatarTypes';
+import type { RealtimeLanguage } from './realtimePersona';
 
+export type { RealtimeLanguage };
 export type VoicePhase = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking';
 export interface VoiceEvents {
   phase: (phase: VoicePhase) => void;
@@ -22,13 +24,16 @@ export class KiwiRealtime {
 
   constructor(private events: VoiceEvents) {}
 
-  async start(accessCode: string, lang: 'he' | 'ar', sink: LiveAudioSink | null) {
+  async start(accessCode: string, lang: RealtimeLanguage, sink: LiveAudioSink | null) {
     this.events.phase('connecting');
     try {
       if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === 'undefined') throw new Error('unsupported');
       this.connectionTimer = setTimeout(() => this.fail('connection_timeout'), 35_000);
       const stream = await navigator.mediaDevices.getUserMedia({ audio: {
-        echoCancellation: true, noiseSuppression: true, autoGainControl: true,
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+        channelCount: 1,
       } });
       if (this.closed) { stream.getTracks().forEach(t => t.stop()); return; }
       this.mic = stream;
@@ -90,6 +95,8 @@ export class KiwiRealtime {
       case 'session.created':
         clearTimeout(this.connectionTimer);
         this.events.phase('listening');
+        // One brief greeting only. The server-owned persona explicitly forbids
+        // reintroducing Kiwi or repeating its role on later turns.
         this.send({ type: 'response.create' });
         // Demo UX limit, not a server-enforced billing cap.
         this.timer = setTimeout(() => this.fail('demo_finished'), 5 * 60_000);

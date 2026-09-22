@@ -1,4 +1,4 @@
-import { realtimeInstructions } from '../services/live/realtimePersona';
+import { realtimeInstructions, type RealtimeLanguage } from '../services/live/realtimePersona';
 
 export const config = { runtime: 'edge' };
 const json = (error: string, status: number) => new Response(JSON.stringify({ error }), {
@@ -59,13 +59,27 @@ export default async function handler(req: Request): Promise<Response> {
     const payload = JSON.parse(new TextDecoder().decode(bytes));
     if (typeof payload.accessCode !== 'string' || !(await matchesSecret(payload.accessCode, secret))) return json('unauthorized', 401);
     if (payload.adultDemo !== true) return json('adult_demo_required', 403);
-    if (typeof payload.sdp !== 'string' || !payload.sdp.startsWith('v=0') || payload.sdp.length > 32_000 || !['he', 'ar'].includes(payload.lang)) return json('bad_request', 400);
+    if (typeof payload.sdp !== 'string' || !payload.sdp.startsWith('v=0') || payload.sdp.length > 32_000 || !['he', 'ar', 'en', 'ru'].includes(payload.lang)) return json('bad_request', 400);
+    const language = payload.lang as RealtimeLanguage;
     const session = {
       type: 'realtime', model: process.env.OPENAI_REALTIME_MODEL || 'gpt-realtime-2.1',
-      instructions: realtimeInstructions(payload.lang),
+      instructions: realtimeInstructions(language),
       output_modalities: ['audio'], max_output_tokens: 300,
       audio: {
-        input: { turn_detection: { type: 'semantic_vad', eagerness: 'low', create_response: true, interrupt_response: true } },
+        input: {
+          noise_reduction: { type: 'near_field' },
+          turn_detection: {
+            type: 'server_vad',
+            // Lower than the 0.5 default so quieter children and soft-spoken
+            // adults start a turn without having to raise their voice.
+            threshold: 0.28,
+            prefix_padding_ms: 600,
+            // Leave room for natural hesitation without making replies sluggish.
+            silence_duration_ms: 850,
+            create_response: true,
+            interrupt_response: true,
+          },
+        },
         output: { voice: 'marin' },
       },
     };

@@ -34,11 +34,17 @@ export const RobotRoom: React.FC<{ childName?: string }> = () => {
     wantsLive ? 'live' : 'scripted',
   );
 
-  // Fill the viewport so the robot is as large as the screen comfortably allows.
+  // Keep the complete character visible on phones while giving it a proper
+  // stage on larger screens. The surrounding page can scroll on short screens.
   const [avatarHeight, setAvatarHeight] = React.useState(420);
   React.useEffect(() => {
-    const resize = () =>
-      setAvatarHeight(Math.round(Math.min(Math.max(window.innerHeight * 0.52, 320), 560)));
+    const resize = () => {
+      const mobile = window.innerWidth < 768;
+      const next = mobile
+        ? Math.min(Math.max(window.innerHeight * 0.4, 260), 400)
+        : Math.min(Math.max(Math.min(window.innerHeight * 0.7, window.innerWidth * 0.52), 440), 700);
+      setAvatarHeight(Math.round(next));
+    };
     resize();
     window.addEventListener('resize', resize);
     return () => window.removeEventListener('resize', resize);
@@ -53,7 +59,7 @@ export const RobotRoom: React.FC<{ childName?: string }> = () => {
   return (
     <div
       dir="rtl"
-      className="relative flex min-h-dvh w-full flex-col items-center justify-center overflow-hidden bg-gradient-to-b from-indigo-100 via-indigo-50 to-purple-100 px-3"
+      className="relative flex min-h-dvh w-full flex-col items-center justify-start overflow-x-hidden overflow-y-auto bg-gradient-to-b from-indigo-100 via-indigo-50 to-purple-100 px-3 py-2 lg:justify-center lg:px-5"
     >
       <button
         onClick={toApp}
@@ -70,7 +76,7 @@ export const RobotRoom: React.FC<{ childName?: string }> = () => {
         </div>
       )}
 
-      <div className="mx-auto w-full max-w-md">
+      <div className={`mx-auto w-full ${realtimeDemo ? 'max-w-6xl' : 'max-w-md'}`}>
         {realtimeDemo ? <RealtimeConversation height={avatarHeight} /> : mode === 'live' ? (
           <TalkConversation
             height={avatarHeight}
