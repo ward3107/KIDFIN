@@ -446,9 +446,12 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
 
           u.onstart = () => {
             motion.current.speaking = true;
+            motion.current.phase = 'speaking';
           };
           const end = () => {
             motion.current.speaking = false;
+            motion.current.mouth = 0;
+            if (motion.current.phase === 'speaking') motion.current.phase = 'idle';
             opts?.onDone?.();
           };
           u.onend = end;
@@ -467,6 +470,8 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
 
           const finish = () => {
             motion.current.speaking = false;
+            motion.current.mouth = 0;
+            if (motion.current.phase === 'speaking') motion.current.phase = 'idle';
             opts?.onDone?.();
           };
 
@@ -488,6 +493,7 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
             if (match) u.voice = match;
             u.onstart = () => {
               motion.current.speaking = true;
+              motion.current.phase = 'speaking';
             };
             u.onend = finish;
             u.onerror = finish;
@@ -517,6 +523,7 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
 
             audio.onplaying = () => {
               motion.current.speaking = true;
+              motion.current.phase = 'speaking';
             };
             audio.onended = () => {
               stopAudioClip();
@@ -537,6 +544,8 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
           }
           stopAudioClip();
           motion.current.speaking = false;
+          motion.current.mouth = 0;
+          motion.current.phase = 'idle';
         },
         setExpression: (expression: AvatarExpression) => {
           motion.current.expression = expression;
