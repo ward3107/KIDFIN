@@ -8,7 +8,6 @@ import React, {
 } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import {
-  Bounds,
   ContactShadows,
   OrbitControls,
   useGLTF,
@@ -657,7 +656,7 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
         <Canvas
           dpr={[1, 1.75]}
           shadows
-          camera={{ position: [0, 0.4, 4.2], fov: 40 }}
+          camera={{ position: [0, 2, 7], fov: 35, near: 0.1, far: 100 }}
           gl={{ antialias: true, alpha: true }}
         >
           {/* Self-contained lighting — no remote HDR, so the robot always renders
@@ -668,14 +667,12 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
           <directionalLight position={[-4, 2, -2]} intensity={0.45} />
           <directionalLight position={[0, 2, -5]} intensity={0.35} />
           <Suspense fallback={null}>
-            <Bounds fit clip observe margin={1.15}>
-              {expressive
-                ? <ExpressiveRobotModel motion={motion} />
-                : <RobotModel motion={motion} />}
-            </Bounds>
+            {expressive
+              ? <ExpressiveRobotModel motion={motion} />
+              : <RobotModel motion={motion} />}
           </Suspense>
           <ContactShadows
-            position={[0, -1.15, 0]}
+            position={[0, 0, 0]}
             opacity={0.35}
             scale={6}
             blur={2.4}
@@ -683,13 +680,13 @@ export const RobotAvatar = forwardRef<AvatarHandle, RobotAvatarProps>(
           />
           {interactive && (
             <OrbitControls
+              target={[0, 2, 0]}
               enablePan={false}
-              minDistance={2.5}
-              maxDistance={6}
+              minDistance={4.5}
+              maxDistance={10}
               minPolarAngle={Math.PI / 3}
               maxPolarAngle={Math.PI / 1.9}
-              autoRotate={!motion.current.reducedMotion}
-              autoRotateSpeed={0.6}
+              autoRotate={false}
             />
           )}
         </Canvas>
