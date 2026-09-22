@@ -2,6 +2,7 @@ import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react
 import { useTranslation } from 'react-i18next';
 import { Mic, MicOff, Play, Send } from 'lucide-react';
 import type { AvatarHandle } from './avatarTypes';
+import { deliveryFromText } from './conversationMotion';
 import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import {
   audioUrl,
@@ -84,6 +85,7 @@ export const MascotConversation: React.FC<{
   const advanceOnHeard = useCallback(
     (text: string) => {
       clearListenTimer();
+      avatar.current?.setConversation?.('thinking');
       setChildSaid(text);
       const turn = getTurn(turnId);
       if (!turn) return;
@@ -99,6 +101,7 @@ export const MascotConversation: React.FC<{
   const beginListening = useCallback(
     (turnIdForFallback: string) => {
       setPhase('listening');
+      avatar.current?.setConversation?.('listening');
       if (recognition.supported) {
         recognition.start();
         // Safety: if the child says nothing, gently continue after a while.
@@ -126,6 +129,7 @@ export const MascotConversation: React.FC<{
       setCaption(text);
 
       const runClip = (a: AvatarHandle) => {
+        a.setConversation?.('speaking', deliveryFromText(text));
         a.setExpression(turn.expression);
         if (turn.gesture) a.playGesture(turn.gesture);
         a.playClip(audioUrl(turn.audioKey, lang), {
@@ -135,6 +139,7 @@ export const MascotConversation: React.FC<{
           onDone: () => {
             if (turn.end) {
               setPhase('done');
+              a.setConversation?.('idle');
             } else if (turnListens(turn)) {
               beginListening(turn.id);
             } else if (turn.next) {
@@ -255,7 +260,7 @@ export const MascotConversation: React.FC<{
             </div>
           }
         >
-          <RobotAvatar expressive ref={avatar} height={height} interactive={false} />
+          <RobotAvatar expressive ref={avatar} height={height} interactive />
         </Suspense>
       </div>
 
