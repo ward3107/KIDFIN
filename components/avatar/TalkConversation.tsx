@@ -197,7 +197,7 @@ export const TalkConversation: React.FC<{
             </div>
           }
         >
-          <RobotAvatar expressive ref={avatar} height={height} interactive={false} />
+          <RobotAvatar expressive ref={avatar} height={height} interactive />
         </Suspense>
       </div>
 
