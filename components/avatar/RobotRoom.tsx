@@ -21,12 +21,15 @@ const RealtimeConversation = React.lazy(() => import('./RealtimeConversation'));
 export const RobotRoom: React.FC<{ childName?: string }> = () => {
   const { i18n } = useTranslation();
   const ar = (i18n.language || 'he').startsWith('ar');
-  const realtimeDemo = typeof window !== 'undefined' && /(?:^|[#/])realtime$/.test(window.location.hash);
+  const hash = typeof window !== 'undefined' ? window.location.hash : '';
+  // Natural Realtime conversation is now the production default. Keep the
+  // deterministic scripted flow available at #scripted as a safe fallback.
+  const realtimeDemo = !/(?:^|[#/])scripted$/.test(hash);
 
   // Live voice is opt-in via the "#live" URL; everyone else gets the reliable
   // scripted robot. (Kept in state so a failed live start can drop to scripted.)
   const wantsLive =
-    typeof window !== 'undefined' && /(?:^|[#/])live$/.test(window.location.hash);
+    typeof window !== 'undefined' && /(?:^|[#/])live$/.test(hash);
   const [mode, setMode] = React.useState<'live' | 'scripted'>(
     wantsLive ? 'live' : 'scripted',
   );
