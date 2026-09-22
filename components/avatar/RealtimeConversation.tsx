@@ -93,7 +93,7 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
   return <section dir="rtl" className="py-10 text-center">
     <p className="text-sm font-semibold text-indigo-800">{ar ? 'تجربة محادثة طبيعية للبالغين' : 'הדגמת שיחה טבעית למבוגרים'}</p>
     <AvatarBoundary><Suspense fallback={<div style={{ height }} className="grid place-items-center text-7xl">🤖</div>}>
-      <RobotAvatar expressive ref={avatar} height={height} interactive={false} />
+      <RobotAvatar expressive ref={avatar} height={height} interactive />
     </Suspense></AvatarBoundary>
     <p role="status" className="min-h-8 font-bold text-indigo-800">{muted ? (ar ? 'الميكروفون مغلق' : 'המיקרופון מושתק') : labels[phase]}</p>
     <p className="min-h-16 px-3 text-lg text-slate-800">{caption}</p>
