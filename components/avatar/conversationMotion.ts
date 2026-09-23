@@ -20,19 +20,20 @@ export function deliveryFromText(text: string): Delivery {
 
 export function motionPose(motion: ConversationMotion, time: number) {
   const rawEnergy = Number.isFinite(motion.energy) ? motion.energy : 0;
-  // Audio amplitude drives emphasis, with a visible floor for quiet voices.
+  // Audio amplitude drives only the mouth. Body gestures use slow conversational
+  // timing so syllables and microphone noise can never make the character twitch.
   const energy = motion.phase === 'speaking'
     ? Math.max(0.38, Math.min(1, Math.max(0, rawEnergy)))
     : 0;
   // Reduced-motion keeps communicative cues (mouth, gaze and a small nod)
   // instead of freezing the character completely.
-  const motionScale = motion.reduced ? 0.65 : 1;
+  const motionScale = motion.reduced ? 0.55 : 1;
   const question = motion.phase === 'speaking' && motion.delivery === 'question';
   const celebrate = motion.phase === 'speaking' && motion.delivery === 'celebrate';
   let left: number;
   let right: number;
-  let legLeft = 0;
-  let legRight = 0;
+  const legLeft = 0;
+  const legRight = 0;
   let nod: number;
   let tilt = 0;
   let turn = 0;
@@ -42,94 +43,79 @@ export function motionPose(motion: ConversationMotion, time: number) {
   let elbowRight: number;
   let wristLeft: number;
   let wristRight: number;
-  let liftLeft = 0;
-  let liftRight = 0;
+  const liftLeft = 0;
+  const liftRight = 0;
 
   if (motion.phase === 'speaking') {
-    const leftBeat = 0.5 + 0.5 * Math.sin(time * 3.15);
-    const rightBeat = 0.5 + 0.5 * Math.sin(time * 2.7 + 1.35);
-    const step = Math.sin(time * 1.75);
-    left = 0.34 + energy * (0.42 + 0.44 * leftBeat);
-    right = 0.32 + energy * (0.4 + 0.5 * rightBeat);
-    elbowLeft = 0.28 + energy * (0.3 + 0.2 * Math.sin(time * 3.7 + 0.5));
-    elbowRight = 0.26 + energy * (0.32 + 0.21 * Math.sin(time * 3.35 + 1.8));
-    wristLeft = energy * (0.32 * Math.sin(time * 4.8 + 0.3) + 0.12 * Math.sin(time * 2.1));
-    wristRight = energy * (0.34 * Math.sin(time * 4.45 + 1.6) + 0.12 * Math.sin(time * 1.9 + 0.7));
-    legLeft = energy * 0.55 * step;
-    legRight = -legLeft;
-    liftLeft = energy * 0.22 * Math.max(0, step);
-    liftRight = energy * 0.22 * Math.max(0, -step);
-    nod = energy * (0.14 * Math.sin(time * 4.1) + 0.055 * Math.sin(time * 1.7));
-    turn = energy * 0.11 * Math.sin(time * 1.45);
-    sway = energy * 0.09 * Math.sin(time * 1.35);
-    armForward = energy * (0.18 + 0.13 * Math.sin(time * 3.7));
+    const phrase = 0.5 + 0.5 * Math.sin(time * 0.58);
+    const leftPhrase = 0.5 + 0.5 * Math.sin(time * 0.62 + 0.4);
+    const rightPhrase = 0.5 + 0.5 * Math.sin(time * 0.56 + 2.1);
+    left = 0.12 + 0.09 * leftPhrase;
+    right = 0.11 + 0.09 * rightPhrase;
+    elbowLeft = 0.16 + 0.09 * leftPhrase;
+    elbowRight = 0.16 + 0.09 * rightPhrase;
+    wristLeft = 0.04 * Math.sin(time * 0.85 + 0.3) + 0.025 * Math.sin(time * 0.37);
+    wristRight = 0.04 * Math.sin(time * 0.8 + 1.6) + 0.025 * Math.sin(time * 0.34 + 0.7);
+    nod = 0.025 * Math.sin(time * 0.8) + 0.012 * Math.sin(time * 0.33);
+    turn = 0.028 * Math.sin(time * 0.38);
+    sway = 0.018 * Math.sin(time * 0.31);
+    armForward = 0.035 + 0.025 * phrase;
   } else if (motion.phase === 'listening') {
-    const step = Math.sin(time * 0.8);
-    left = 0.14 + 0.065 * Math.sin(time * 1.15);
-    right = 0.15 + 0.065 * Math.sin(time * 1.05 + 1.2);
-    elbowLeft = 0.12;
-    elbowRight = 0.14;
-    wristLeft = 0.08 * Math.sin(time * 1.35);
-    wristRight = 0.08 * Math.sin(time * 1.25 + 1.1);
-    legLeft = 0.08 * step;
-    legRight = -legLeft;
-    liftLeft = 0.025 * Math.max(0, step);
-    liftRight = 0.025 * Math.max(0, -step);
-    nod = 0.12 * Math.pow(Math.max(0, Math.sin(time * 0.8)), 10);
-    tilt = 0.06;
-    turn = 0.045 * Math.sin(time * 0.65);
-    sway = 0.04 * Math.sin(time * 0.7);
+    left = 0.08 + 0.02 * Math.sin(time * 0.35);
+    right = 0.08 + 0.02 * Math.sin(time * 0.32 + 1.2);
+    elbowLeft = 0.1;
+    elbowRight = 0.1;
+    wristLeft = 0.018 * Math.sin(time * 0.42);
+    wristRight = 0.018 * Math.sin(time * 0.4 + 1.1);
+    nod = 0.018 * Math.sin(time * 0.38);
+    tilt = 0.025;
+    turn = 0.02 * Math.sin(time * 0.3);
+    sway = 0.01 * Math.sin(time * 0.28);
   } else if (motion.phase === 'thinking') {
-    left = 0.15;
-    right = 0.48 + 0.08 * Math.sin(time * 1.8);
-    elbowLeft = 0.12;
-    elbowRight = 0.4;
-    wristLeft = 0.04;
-    wristRight = 0.18;
-    legLeft = 0.07;
-    legRight = -0.07;
-    liftLeft = 0.02;
-    nod = -0.07 + 0.03 * Math.sin(time * 1.25);
-    tilt = 0.2;
-    turn = -0.08;
-    sway = 0.055;
-    armForward = 0.18;
+    left = 0.09;
+    right = 0.22 + 0.025 * Math.sin(time * 0.4);
+    elbowLeft = 0.1;
+    elbowRight = 0.23;
+    wristLeft = 0.02;
+    wristRight = 0.07;
+    nod = -0.035 + 0.012 * Math.sin(time * 0.36);
+    tilt = 0.1;
+    turn = -0.04;
+    sway = 0.018;
+    armForward = 0.09;
   } else {
-    left = 0.045 + 0.025 * Math.sin(time * 0.8);
-    right = 0.045 + 0.025 * Math.sin(time * 0.8 + 1.5);
-    elbowLeft = 0.06;
-    elbowRight = 0.06;
-    wristLeft = 0.035 * Math.sin(time * 0.9);
-    wristRight = 0.035 * Math.sin(time * 0.85 + 1.4);
-    nod = 0.02 * Math.sin(time * 0.55);
-    sway = 0.018 * Math.sin(time * 0.6);
+    left = 0.04 + 0.008 * Math.sin(time * 0.25);
+    right = 0.04 + 0.008 * Math.sin(time * 0.24 + 1.5);
+    elbowLeft = 0.05;
+    elbowRight = 0.05;
+    wristLeft = 0.01 * Math.sin(time * 0.28);
+    wristRight = 0.01 * Math.sin(time * 0.27 + 1.4);
+    nod = 0.008 * Math.sin(time * 0.24);
+    sway = 0.006 * Math.sin(time * 0.22);
   }
 
   if (celebrate) {
-    left += 0.48; right += 0.48;
-    elbowLeft += 0.18; elbowRight += 0.18;
-    legLeft += 0.15; legRight -= 0.15;
+    left += 0.12; right += 0.12;
+    elbowLeft += 0.08; elbowRight += 0.08;
   }
-  if (question) { right += 0.34; elbowRight += 0.16; legRight -= 0.06; tilt += 0.11; }
+  if (question) { right += 0.12; elbowRight += 0.08; tilt += 0.05; }
 
-  if (motion.gesture && motion.gesture.age >= 0 && motion.gesture.age < 1.4) {
+  if (motion.gesture && motion.gesture.age >= 0 && motion.gesture.age < 2.2) {
     const age = motion.gesture.age;
-    const envelope = Math.sin(Math.PI * age / 1.4);
+    const envelope = Math.sin(Math.PI * age / 2.2);
     if (motion.gesture.name === 'wave') {
-      right += envelope * (0.85 + 0.16 * Math.sin(age * 15));
-      elbowRight += envelope * (0.32 + 0.18 * Math.sin(age * 15));
-      wristRight += envelope * 0.65 * Math.sin(age * 18);
+      right += envelope * (0.28 + 0.03 * Math.sin(age * 5.5));
+      elbowRight += envelope * 0.14;
+      wristRight += envelope * 0.18 * Math.sin(age * 5.5);
     }
     if (motion.gesture.name === 'cheer') {
-      left += envelope * 0.8; right += envelope * 0.8;
-      elbowLeft += envelope * 0.22; elbowRight += envelope * 0.22;
-      wristLeft += envelope * 0.22; wristRight -= envelope * 0.22;
+      left += envelope * 0.25; right += envelope * 0.25;
+      elbowLeft += envelope * 0.1; elbowRight += envelope * 0.1;
+      wristLeft += envelope * 0.06; wristRight -= envelope * 0.06;
     }
-    if (motion.gesture.name === 'nod') nod += envelope * 0.13 * Math.sin(age * 12);
-    if (motion.gesture.name === 'shrug') { left += envelope * 0.4; right += envelope * 0.4; }
-    if (motion.gesture.name === 'think') { right += envelope * 0.55; armForward += envelope * 0.2; }
-    if (motion.gesture.name === 'cheer') { legLeft += envelope * 0.16; legRight -= envelope * 0.16; }
-    if (motion.gesture.name === 'wave') legRight += envelope * 0.06;
+    if (motion.gesture.name === 'nod') nod += envelope * 0.05 * Math.sin(age * 4.5);
+    if (motion.gesture.name === 'shrug') { left += envelope * 0.15; right += envelope * 0.15; }
+    if (motion.gesture.name === 'think') { right += envelope * 0.2; armForward += envelope * 0.08; }
   }
 
   const mouth = motion.phase === 'speaking'
@@ -152,12 +138,12 @@ export function motionPose(motion: ConversationMotion, time: number) {
     wristRight: wristRight * motionScale,
     liftLeft: liftLeft * motionScale,
     liftRight: liftRight * motionScale,
-    bob: (motion.phase === 'speaking' ? 0.024 : 0.012) * Math.sin(time * 1.4) * motionScale,
+    bob: (motion.phase === 'speaking' ? 0.006 : 0.004) * Math.sin(time * 0.45) * motionScale,
     mouth,
     smile: celebrate ? 0.65 : motion.phase === 'speaking' ? 0.25 : 0.12,
     round: motion.phase === 'speaking'
       ? Math.min(0.6, energy * (question ? 0.38 : 0.18) * (0.55 + 0.45 * Math.sin(time * 6.3) ** 2))
       : 0,
-    brow: (motion.phase === 'thinking' || question ? 0.04 : energy * 0.02) * motionScale,
+    brow: (motion.phase === 'thinking' || question ? 0.025 : motion.phase === 'speaking' ? 0.01 : 0) * motionScale,
   };
 }

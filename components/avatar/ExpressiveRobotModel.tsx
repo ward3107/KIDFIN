@@ -98,19 +98,20 @@ export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObjec
       reduced: state.reducedMotion,
       gesture: state.gesture ? { name: state.gesture.name, age: time - state.gesture.start } : null,
     }, time);
-    const alpha = 1 - Math.exp(-12 * Math.min(delta, 0.1));
+    const bodyAlpha = 1 - Math.exp(-4 * Math.min(delta, 0.1));
+    const faceAlpha = 1 - Math.exp(-12 * Math.min(delta, 0.1));
     const rotate = (name: string, axis: 'x' | 'y' | 'z', value: number) => {
       const object = rig.nodes.get(name);
       if (!object) return;
       object.rotation[axis] = THREE.MathUtils.lerp(
-        object.rotation[axis], rig.rests.get(object)!.rotation[axis] + value, alpha,
+        object.rotation[axis], rig.rests.get(object)!.rotation[axis] + value, bodyAlpha,
       );
     };
     const move = (name: string, axis: 'x' | 'y' | 'z', value: number) => {
       const object = rig.nodes.get(name);
       if (!object) return;
       object.position[axis] = THREE.MathUtils.lerp(
-        object.position[axis], rig.rests.get(object)!.position[axis] + value, alpha,
+        object.position[axis], rig.rests.get(object)!.position[axis] + value, bodyAlpha,
       );
     };
 
@@ -140,14 +141,14 @@ export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObjec
     const torso = rig.nodes.get('KIWI_Torso');
     if (torso) {
       const rest = rig.rests.get(torso)!;
-      torso.position.y = THREE.MathUtils.lerp(torso.position.y, rest.position.y + pose.bob, alpha);
-      torso.position.x = THREE.MathUtils.lerp(torso.position.x, rest.position.x + pose.sway * 0.32, alpha);
-      torso.rotation.z = THREE.MathUtils.lerp(torso.rotation.z, rest.rotation.z - pose.sway, alpha);
+      torso.position.y = THREE.MathUtils.lerp(torso.position.y, rest.position.y + pose.bob, bodyAlpha);
+      torso.position.x = THREE.MathUtils.lerp(torso.position.x, rest.position.x + pose.sway * 0.32, bodyAlpha);
+      torso.rotation.z = THREE.MathUtils.lerp(torso.rotation.z, rest.rotation.z - pose.sway, bodyAlpha);
     }
     for (const name of ['KIWI_Brow_L', 'KIWI_Brow_R']) {
       const brow = rig.nodes.get(name);
       if (brow) brow.position.y = THREE.MathUtils.lerp(
-        brow.position.y, rig.rests.get(brow)!.position.y + pose.brow, alpha,
+        brow.position.y, rig.rests.get(brow)!.position.y + pose.brow, bodyAlpha,
       );
     }
 
@@ -159,7 +160,7 @@ export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObjec
             : name === 'mouthRound' ? Math.min(0.7, pose.round)
               : name === 'smile' ? pose.smile : 0;
         mesh.morphTargetInfluences![index] = THREE.MathUtils.lerp(
-          mesh.morphTargetInfluences![index], target, alpha,
+          mesh.morphTargetInfluences![index], target, faceAlpha,
         );
       }
     }
