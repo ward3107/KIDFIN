@@ -14,7 +14,15 @@ export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObjec
     const nodes = new Map<string, THREE.Object3D>();
     const morphs: THREE.Mesh[] = [];
     model.traverse((object) => {
-      nodes.set(cleanName(object.name), object);
+      nodes.set(object.name, object);
+      const baseName = cleanName(object.name);
+      const current = nodes.get(baseName);
+      // Blender often gives a control group and a visible mesh nearly the same
+      // name. Prefer the group so rotations move the whole limb, not only the
+      // decorative joint mesh.
+      if (!current || (!(current instanceof THREE.Group) && object instanceof THREE.Group)) {
+        nodes.set(baseName, object);
+      }
       if (object instanceof THREE.Mesh && object.morphTargetInfluences) {
         morphs.push(object);
         object.material = Array.isArray(object.material)
@@ -56,17 +64,27 @@ export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObjec
     makePivot('KIWI_Leg_pivot_L', 'KIWI_CONTROLS', [-0.34, 0.8, 0], ['KIWI_Hip_L', 'KIWI_Leg_L', 'KIWI_Foot_L', 'KIWI_Sole_L']);
     makePivot('KIWI_Leg_pivot_R', 'KIWI_CONTROLS', [0.34, 0.8, 0], ['KIWI_Hip_R', 'KIWI_Leg_R', 'KIWI_Foot_R', 'KIWI_Sole_R']);
     makePivot('KIWI_Elbow_pivot_L', 'KIWI_Shoulder_L', [-0.16, -0.5, 0], [
-      'KIWI_Elbow_L', 'KIWI_Forearm_L', 'KIWI_Palm_L', 'KIWI_Thumb_L',
-      'KIWI_Finger_L0', 'KIWI_Finger_L1', 'KIWI_Finger_L2',
+      'KIWI_Elbow_L', 'KIWI_Forearm_L',
     ]);
     makePivot('KIWI_Elbow_pivot_R', 'KIWI_Shoulder_R', [0.16, -0.5, 0], [
-      'KIWI_Elbow_R', 'KIWI_Forearm_R', 'KIWI_Palm_R', 'KIWI_Thumb_R',
-      'KIWI_Finger_R0', 'KIWI_Finger_R1', 'KIWI_Finger_R2',
+      'KIWI_Elbow_R', 'KIWI_Forearm_R',
     ]);
+    makePivot('KIWI_Wrist_pivot_L', 'KIWI_Elbow_pivot_L', [-0.03, -0.36, 0], [
+      'KIWI_Palm_L', 'KIWI_Thumb_L', 'KIWI_Finger_L0', 'KIWI_Finger_L1', 'KIWI_Finger_L2',
+    ]);
+    makePivot('KIWI_Wrist_pivot_R', 'KIWI_Elbow_pivot_R', [0.03, -0.36, 0], [
+      'KIWI_Palm_R', 'KIWI_Thumb_R', 'KIWI_Finger_R0', 'KIWI_Finger_R1', 'KIWI_Finger_R2',
+    ]);
+    const requiredControls = [
+      'KIWI_Shoulder_L', 'KIWI_Shoulder_R', 'KIWI_Elbow_pivot_L', 'KIWI_Elbow_pivot_R',
+      'KIWI_Wrist_pivot_L', 'KIWI_Wrist_pivot_R', 'KIWI_Leg_pivot_L', 'KIWI_Leg_pivot_R',
+      'KIWI_Head_pivot',
+    ];
+    const missingControls = requiredControls.filter(name => !nodes.has(name));
+    if (missingControls.length) console.warn('[KiwiAvatar] Missing rig controls', missingControls);
     const rests = new Map([...nodes.values()].map((object) => [object, {
       rotation: object.rotation.clone(),
       position: object.position.clone(),
-      scale: object.scale.clone(),
     }]));
     return { model, nodes, morphs, rests };
   }, [scene]);
@@ -104,12 +122,16 @@ export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObjec
     rotate('KIWI_Shoulder_R', 'x', pose.armForward);
     rotate('KIWI_Elbow_pivot_L', 'z', pose.elbowLeft);
     rotate('KIWI_Elbow_pivot_R', 'z', -pose.elbowRight);
+    rotate('KIWI_Wrist_pivot_L', 'z', pose.wristLeft);
+    rotate('KIWI_Wrist_pivot_R', 'z', -pose.wristRight);
+    rotate('KIWI_Wrist_pivot_L', 'x', pose.wristLeft * 0.45);
+    rotate('KIWI_Wrist_pivot_R', 'x', pose.wristRight * 0.45);
     // Side-to-side hip rotation is visible from the front; a smaller forward
     // component adds a natural weight shift instead of a marching motion.
     rotate('KIWI_Leg_pivot_L', 'z', pose.legLeft * 0.95);
     rotate('KIWI_Leg_pivot_R', 'z', pose.legRight * 0.95);
-    rotate('KIWI_Leg_pivot_L', 'x', pose.legLeft * 0.5);
-    rotate('KIWI_Leg_pivot_R', 'x', pose.legRight * 0.5);
+    rotate('KIWI_Leg_pivot_L', 'x', pose.legLeft * 0.62);
+    rotate('KIWI_Leg_pivot_R', 'x', pose.legRight * 0.62);
     move('KIWI_Leg_pivot_L', 'y', pose.liftLeft);
     move('KIWI_Leg_pivot_R', 'y', pose.liftRight);
     rotate('KIWI_Head_pivot', 'x', pose.nod);

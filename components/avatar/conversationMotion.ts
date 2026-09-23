@@ -26,7 +26,7 @@ export function motionPose(motion: ConversationMotion, time: number) {
     : 0;
   // Reduced-motion keeps communicative cues (mouth, gaze and a small nod)
   // instead of freezing the character completely.
-  const motionScale = motion.reduced ? 0.55 : 1;
+  const motionScale = motion.reduced ? 0.65 : 1;
   const question = motion.phase === 'speaking' && motion.delivery === 'question';
   const celebrate = motion.phase === 'speaking' && motion.delivery === 'celebrate';
   let left: number;
@@ -40,6 +40,8 @@ export function motionPose(motion: ConversationMotion, time: number) {
   let armForward = 0;
   let elbowLeft: number;
   let elbowRight: number;
+  let wristLeft: number;
+  let wristRight: number;
   let liftLeft = 0;
   let liftRight = 0;
 
@@ -47,14 +49,16 @@ export function motionPose(motion: ConversationMotion, time: number) {
     const leftBeat = 0.5 + 0.5 * Math.sin(time * 3.15);
     const rightBeat = 0.5 + 0.5 * Math.sin(time * 2.7 + 1.35);
     const step = Math.sin(time * 1.75);
-    left = 0.22 + energy * (0.38 + 0.42 * leftBeat);
-    right = 0.2 + energy * (0.36 + 0.48 * rightBeat);
-    elbowLeft = 0.16 + energy * (0.2 + 0.14 * Math.sin(time * 3.7 + 0.5));
-    elbowRight = 0.14 + energy * (0.22 + 0.14 * Math.sin(time * 3.35 + 1.8));
-    legLeft = energy * 0.28 * step;
+    left = 0.34 + energy * (0.42 + 0.44 * leftBeat);
+    right = 0.32 + energy * (0.4 + 0.5 * rightBeat);
+    elbowLeft = 0.28 + energy * (0.3 + 0.2 * Math.sin(time * 3.7 + 0.5));
+    elbowRight = 0.26 + energy * (0.32 + 0.21 * Math.sin(time * 3.35 + 1.8));
+    wristLeft = energy * (0.32 * Math.sin(time * 4.8 + 0.3) + 0.12 * Math.sin(time * 2.1));
+    wristRight = energy * (0.34 * Math.sin(time * 4.45 + 1.6) + 0.12 * Math.sin(time * 1.9 + 0.7));
+    legLeft = energy * 0.55 * step;
     legRight = -legLeft;
-    liftLeft = energy * 0.12 * Math.max(0, step);
-    liftRight = energy * 0.12 * Math.max(0, -step);
+    liftLeft = energy * 0.22 * Math.max(0, step);
+    liftRight = energy * 0.22 * Math.max(0, -step);
     nod = energy * (0.14 * Math.sin(time * 4.1) + 0.055 * Math.sin(time * 1.7));
     turn = energy * 0.11 * Math.sin(time * 1.45);
     sway = energy * 0.09 * Math.sin(time * 1.35);
@@ -65,6 +69,8 @@ export function motionPose(motion: ConversationMotion, time: number) {
     right = 0.15 + 0.065 * Math.sin(time * 1.05 + 1.2);
     elbowLeft = 0.12;
     elbowRight = 0.14;
+    wristLeft = 0.08 * Math.sin(time * 1.35);
+    wristRight = 0.08 * Math.sin(time * 1.25 + 1.1);
     legLeft = 0.08 * step;
     legRight = -legLeft;
     liftLeft = 0.025 * Math.max(0, step);
@@ -78,6 +84,8 @@ export function motionPose(motion: ConversationMotion, time: number) {
     right = 0.48 + 0.08 * Math.sin(time * 1.8);
     elbowLeft = 0.12;
     elbowRight = 0.4;
+    wristLeft = 0.04;
+    wristRight = 0.18;
     legLeft = 0.07;
     legRight = -0.07;
     liftLeft = 0.02;
@@ -91,6 +99,8 @@ export function motionPose(motion: ConversationMotion, time: number) {
     right = 0.045 + 0.025 * Math.sin(time * 0.8 + 1.5);
     elbowLeft = 0.06;
     elbowRight = 0.06;
+    wristLeft = 0.035 * Math.sin(time * 0.9);
+    wristRight = 0.035 * Math.sin(time * 0.85 + 1.4);
     nod = 0.02 * Math.sin(time * 0.55);
     sway = 0.018 * Math.sin(time * 0.6);
   }
@@ -108,10 +118,12 @@ export function motionPose(motion: ConversationMotion, time: number) {
     if (motion.gesture.name === 'wave') {
       right += envelope * (0.85 + 0.16 * Math.sin(age * 15));
       elbowRight += envelope * (0.32 + 0.18 * Math.sin(age * 15));
+      wristRight += envelope * 0.65 * Math.sin(age * 18);
     }
     if (motion.gesture.name === 'cheer') {
       left += envelope * 0.8; right += envelope * 0.8;
       elbowLeft += envelope * 0.22; elbowRight += envelope * 0.22;
+      wristLeft += envelope * 0.22; wristRight -= envelope * 0.22;
     }
     if (motion.gesture.name === 'nod') nod += envelope * 0.13 * Math.sin(age * 12);
     if (motion.gesture.name === 'shrug') { left += envelope * 0.4; right += envelope * 0.4; }
@@ -136,6 +148,8 @@ export function motionPose(motion: ConversationMotion, time: number) {
     armForward: armForward * motionScale,
     elbowLeft: elbowLeft * motionScale,
     elbowRight: elbowRight * motionScale,
+    wristLeft: wristLeft * motionScale,
+    wristRight: wristRight * motionScale,
     liftLeft: liftLeft * motionScale,
     liftRight: liftRight * motionScale,
     bob: (motion.phase === 'speaking' ? 0.024 : 0.012) * Math.sin(time * 1.4) * motionScale,

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { KiwiRealtime } from '../services/live/realtimeClient';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
-const events = () => ({ phase: vi.fn(), caption: vi.fn(), error: vi.fn() });
+const events = () => ({ phase: vi.fn(), caption: vi.fn(), options: vi.fn(), error: vi.fn() });
 
 describe('voice lifecycle', () => {
   it('drives speaking from playback rather than text and returns to listening on interruption', () => {
@@ -15,6 +15,7 @@ describe('voice lifecycle', () => {
     call.receive({ type: 'input_audio_buffer.speech_started' });
     expect(handlers.phase).toHaveBeenLastCalledWith('listening');
     expect(handlers.caption).toHaveBeenLastCalledWith('');
+    expect(handlers.options).toHaveBeenLastCalledWith([]);
     call.stop();
     call.receive({ type: 'output_audio_buffer.started' });
     expect(handlers.phase).toHaveBeenLastCalledWith('idle');
