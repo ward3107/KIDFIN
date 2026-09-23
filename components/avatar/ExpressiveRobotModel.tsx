@@ -4,8 +4,7 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { AvatarMotionState } from './RobotAvatar';
 import { motionPose } from './conversationMotion';
-
-const cleanName = (name: string) => name.replace(/\.\d+$/, '');
+import { normalizeRigNodeName } from './rigNames';
 
 export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObject<AvatarMotionState> }) {
   const { scene } = useGLTF('/models/kiwi-expressive.glb');
@@ -15,7 +14,7 @@ export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObjec
     const morphs: THREE.Mesh[] = [];
     model.traverse((object) => {
       nodes.set(object.name, object);
-      const baseName = cleanName(object.name);
+      const baseName = normalizeRigNodeName(object.name);
       const current = nodes.get(baseName);
       // Blender often gives a control group and a visible mesh nearly the same
       // name. Prefer the group so rotations move the whole limb, not only the
@@ -28,7 +27,7 @@ export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObjec
         object.material = Array.isArray(object.material)
           ? object.material.map(material => material.clone())
           : object.material.clone();
-        if (cleanName(object.name) === 'KIWI_Expressive_mouth') {
+        if (normalizeRigNodeName(object.name) === 'KIWI_Expressive_mouth') {
           const materials = Array.isArray(object.material) ? object.material : [object.material];
           for (const material of materials) {
             if (material instanceof THREE.MeshStandardMaterial) {
