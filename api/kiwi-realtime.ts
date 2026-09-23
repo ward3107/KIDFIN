@@ -156,17 +156,16 @@ export default async function handler(req: Request): Promise<Response> {
           noise_reduction: { type: micProfile },
           turn_detection: {
             type: 'server_vad',
-            // Lower than the 0.5 default so quieter children and soft-spoken
-            // adults start a turn without having to raise their voice.
-            threshold: 0.28,
+            // Laptop/room microphones need a little more sensitivity for quiet
+            // children; close phone/headset microphones keep the safer level.
+            threshold: micProfile === 'far_field' ? 0.22 : 0.28,
             prefix_padding_ms: 600,
-            // Leave room for natural hesitation without making replies sluggish.
-            silence_duration_ms: 1050,
+            // Preserve short hesitations while making completed turns feel fast.
+            silence_duration_ms: 800,
             create_response: true,
-            // The browser also gates its microphone during Kiwi's turn. Keeping
-            // interruption off prevents speaker echo from cutting off the last
-            // words of a response while still allowing natural VAD turns.
-            interrupt_response: false,
+            // WebRTC manages playback truncation, so genuine user speech can
+            // stop Kiwi immediately and become the next turn.
+            interrupt_response: true,
           },
         },
         output: { voice: 'marin' },

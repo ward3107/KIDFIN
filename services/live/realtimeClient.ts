@@ -39,7 +39,7 @@ export class KiwiRealtime {
   private caption = '';
   private timer: ReturnType<typeof setTimeout> | undefined;
   private connectionTimer: ReturnType<typeof setTimeout> | undefined;
-  private micReleaseTimer: ReturnType<typeof setTimeout> | undefined;
+  private playbackSettleTimer: ReturnType<typeof setTimeout> | undefined;
   private userMuted = false;
   private assistantTurnActive = false;
   private outputPlaying = false;
@@ -151,7 +151,7 @@ export class KiwiRealtime {
         break;
       case 'output_audio_buffer.stopped':
       case 'output_audio_buffer.cleared':
-        this.releaseMicrophoneAfterEcho();
+        this.settlePlaybackAfterEcho();
         break;
       case 'response.output_audio_transcript.delta':
         this.caption += event.delta || '';
@@ -235,17 +235,17 @@ export class KiwiRealtime {
   }
 
   private beginAssistantTurn() {
-    clearTimeout(this.micReleaseTimer);
+    clearTimeout(this.playbackSettleTimer);
     this.assistantTurnActive = true;
     this.syncMicrophone();
   }
 
-  private releaseMicrophoneAfterEcho() {
-    clearTimeout(this.micReleaseTimer);
-    // Keep the track gated for a fraction of a second so the tail of the
-    // loudspeaker output cannot be mistaken for a new child utterance.
+  private settlePlaybackAfterEcho() {
+    clearTimeout(this.playbackSettleTimer);
+    // Keep playback state stable for a fraction of a second while the audible
+    // tail settles. The microphone remains live throughout for barge-in.
     this.outputPlaying = true;
-    this.micReleaseTimer = setTimeout(() => {
+    this.playbackSettleTimer = setTimeout(() => {
       this.outputPlaying = false;
       this.syncMicrophone();
       if (!this.assistantTurnActive) this.events.phase('listening');
@@ -253,7 +253,12 @@ export class KiwiRealtime {
   }
 
   private syncMicrophone() {
-    const enabled = !this.userMuted && !this.assistantTurnActive && !this.outputPlaying;
+    // Keep WebRTC input live while Kiwi is speaking. Server VAD uses the live
+    // track to detect a real user interruption and cancels/truncates the
+    // response automatically. Browser echo cancellation and server-side noise
+    // reduction protect against loudspeaker echo; gating here makes barge-in
+    // impossible and causes the assistant to appear deaf.
+    const enabled = !this.userMuted;
     this.mic?.getAudioTracks().forEach(track => { track.enabled = enabled; });
   }
 
@@ -269,7 +274,7 @@ export class KiwiRealtime {
     this.abort.abort();
     clearTimeout(this.timer);
     clearTimeout(this.connectionTimer);
-    clearTimeout(this.micReleaseTimer);
+    clearTimeout(this.playbackSettleTimer);
     this.mic?.getTracks().forEach(t => t.stop());
     this.source?.disconnect();
     if (this.audio) { this.audio.pause(); this.audio.srcObject = null; }

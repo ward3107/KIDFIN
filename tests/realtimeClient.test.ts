@@ -20,6 +20,25 @@ describe('voice lifecycle', () => {
     call.receive({ type: 'output_audio_buffer.started' });
     expect(handlers.phase).toHaveBeenLastCalledWith('idle');
   });
+  it('keeps the microphone live for barge-in and only disables it on explicit mute', () => {
+    const track = { enabled: false };
+    const call = new KiwiRealtime(events());
+    Object.assign(call, {
+      mic: { getAudioTracks: () => [track] },
+    });
+
+    call.setMuted(false);
+    expect(track.enabled).toBe(true);
+    call.receive({ type: 'response.created' });
+    expect(track.enabled).toBe(true);
+    call.receive({ type: 'output_audio_buffer.started' });
+    expect(track.enabled).toBe(true);
+
+    call.setMuted(true);
+    expect(track.enabled).toBe(false);
+    call.setMuted(false);
+    expect(track.enabled).toBe(true);
+  });
   it('releases a microphone granted after the user already cancelled', async () => {
     let grant!: (stream: MediaStream) => void;
     const track = { stop: vi.fn() };
