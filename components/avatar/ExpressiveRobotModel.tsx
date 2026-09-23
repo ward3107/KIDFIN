@@ -34,22 +34,35 @@ export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObjec
       }
     });
     model.updateMatrixWorld(true);
-    const controls = nodes.get('KIWI_CONTROLS');
-    const makeLegPivot = (name: string, x: number, parts: string[]) => {
-      if (!controls) return;
+    const makePivot = (
+      name: string,
+      parentName: string,
+      position: [number, number, number],
+      parts: string[],
+    ) => {
+      const parent = nodes.get(parentName);
+      if (!parent) return;
       const pivot = new THREE.Group();
       pivot.name = name;
-      pivot.position.set(x, 0.8, 0);
-      controls.add(pivot);
-      pivot.updateMatrixWorld(true);
+      pivot.position.set(...position);
+      parent.add(pivot);
+      model.updateMatrixWorld(true);
       for (const part of parts) {
         const object = nodes.get(part);
         if (object) pivot.attach(object);
       }
       nodes.set(name, pivot);
     };
-    makeLegPivot('KIWI_Leg_pivot_L', -0.34, ['KIWI_Hip_L', 'KIWI_Leg_L', 'KIWI_Foot_L', 'KIWI_Sole_L']);
-    makeLegPivot('KIWI_Leg_pivot_R', 0.34, ['KIWI_Hip_R', 'KIWI_Leg_R', 'KIWI_Foot_R', 'KIWI_Sole_R']);
+    makePivot('KIWI_Leg_pivot_L', 'KIWI_CONTROLS', [-0.34, 0.8, 0], ['KIWI_Hip_L', 'KIWI_Leg_L', 'KIWI_Foot_L', 'KIWI_Sole_L']);
+    makePivot('KIWI_Leg_pivot_R', 'KIWI_CONTROLS', [0.34, 0.8, 0], ['KIWI_Hip_R', 'KIWI_Leg_R', 'KIWI_Foot_R', 'KIWI_Sole_R']);
+    makePivot('KIWI_Elbow_pivot_L', 'KIWI_Shoulder_L', [-0.16, -0.5, 0], [
+      'KIWI_Elbow_L', 'KIWI_Forearm_L', 'KIWI_Palm_L', 'KIWI_Thumb_L',
+      'KIWI_Finger_L0', 'KIWI_Finger_L1', 'KIWI_Finger_L2',
+    ]);
+    makePivot('KIWI_Elbow_pivot_R', 'KIWI_Shoulder_R', [0.16, -0.5, 0], [
+      'KIWI_Elbow_R', 'KIWI_Forearm_R', 'KIWI_Palm_R', 'KIWI_Thumb_R',
+      'KIWI_Finger_R0', 'KIWI_Finger_R1', 'KIWI_Finger_R2',
+    ]);
     const rests = new Map([...nodes.values()].map((object) => [object, {
       rotation: object.rotation.clone(),
       position: object.position.clone(),
@@ -76,18 +89,29 @@ export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObjec
         object.rotation[axis], rig.rests.get(object)!.rotation[axis] + value, alpha,
       );
     };
+    const move = (name: string, axis: 'x' | 'y' | 'z', value: number) => {
+      const object = rig.nodes.get(name);
+      if (!object) return;
+      object.position[axis] = THREE.MathUtils.lerp(
+        object.position[axis], rig.rests.get(object)!.position[axis] + value, alpha,
+      );
+    };
 
     // Blender's Y axis becomes negative Z in the exported Y-up model.
     rotate('KIWI_Shoulder_L', 'z', -pose.left);
     rotate('KIWI_Shoulder_R', 'z', pose.right);
     rotate('KIWI_Shoulder_L', 'x', pose.armForward);
     rotate('KIWI_Shoulder_R', 'x', pose.armForward);
+    rotate('KIWI_Elbow_pivot_L', 'z', pose.elbowLeft);
+    rotate('KIWI_Elbow_pivot_R', 'z', -pose.elbowRight);
     // Side-to-side hip rotation is visible from the front; a smaller forward
     // component adds a natural weight shift instead of a marching motion.
-    rotate('KIWI_Leg_pivot_L', 'z', pose.legLeft * 0.72);
-    rotate('KIWI_Leg_pivot_R', 'z', pose.legRight * 0.72);
-    rotate('KIWI_Leg_pivot_L', 'x', pose.legLeft * 0.38);
-    rotate('KIWI_Leg_pivot_R', 'x', pose.legRight * 0.38);
+    rotate('KIWI_Leg_pivot_L', 'z', pose.legLeft * 0.95);
+    rotate('KIWI_Leg_pivot_R', 'z', pose.legRight * 0.95);
+    rotate('KIWI_Leg_pivot_L', 'x', pose.legLeft * 0.5);
+    rotate('KIWI_Leg_pivot_R', 'x', pose.legRight * 0.5);
+    move('KIWI_Leg_pivot_L', 'y', pose.liftLeft);
+    move('KIWI_Leg_pivot_R', 'y', pose.liftRight);
     rotate('KIWI_Head_pivot', 'x', pose.nod);
     rotate('KIWI_Head_pivot', 'y', pose.turn);
     rotate('KIWI_Head_pivot', 'z', -pose.tilt);
@@ -110,31 +134,16 @@ export function ExpressiveRobotModel({ motion }: { motion: React.MutableRefObjec
     for (const mesh of rig.morphs) {
       for (const [name, index] of Object.entries(mesh.morphTargetDictionary || {})) {
         const target = name.startsWith('blink') ? blink
-          : name === 'mouthOpen' ? Math.min(1, pose.mouth * 1.55 + (state.phase === 'speaking' ? 0.1 : 0))
-            : name === 'mouthRound' ? Math.min(1, pose.round * 1.25)
+          : name === 'mouthOpen' ? Math.min(0.92, pose.mouth * 1.05 + (state.phase === 'speaking' ? 0.05 : 0))
+            : name === 'mouthRound' ? Math.min(0.7, pose.round)
               : name === 'smile' ? pose.smile : 0;
         mesh.morphTargetInfluences![index] = THREE.MathUtils.lerp(
           mesh.morphTargetInfluences![index], target, alpha,
         );
       }
     }
-
-    // The authored mouth has visemes, but a little whole-mesh stretch makes
-    // quieter syllables readable on a phone without looking like a flat decal.
-    const mouth = rig.nodes.get('KIWI_Expressive_mouth');
-    if (mouth) {
-      const rest = rig.rests.get(mouth)!;
-      mouth.scale.y = THREE.MathUtils.lerp(
-        mouth.scale.y,
-        rest.scale.y * (1 + pose.mouth * 0.34),
-        alpha,
-      );
-      mouth.scale.x = THREE.MathUtils.lerp(
-        mouth.scale.x,
-        rest.scale.x * (1 + pose.round * 0.12 - pose.mouth * 0.04),
-        alpha,
-      );
-    }
+    // Do not scale the mouth object itself. Its vertices are authored far from
+    // the object's origin, so object scaling also translates it toward the eyes.
   });
 
   return <primitive object={rig.model} />;
