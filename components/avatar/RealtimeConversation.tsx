@@ -56,7 +56,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     mute: 'השתקת מיקרופון',
     unmute: 'הפעלת מיקרופון',
     end: 'סיום שיחה',
-    tip: 'אפשר לדבר בשקט ובטבעיות ולהחליף שפה. בזמן שקיווי מדבר, מחכים שיסיים את המשפט.',
+    tip: 'אפשר לדבר בשקט ובטבעיות ולהחליף שפה. אפשר לדבר גם כשקיווי מדברת — היא תעצור ותקשיב.',
     status: { idle: 'מוכן לשיחה', connecting: 'מתחבר…', listening: 'קיווי מקשיב', thinking: 'קיווי חושב…', speaking: 'קיווי מדבר' },
     errors: {
       notConfigured: 'השיחה החיה עדיין לא הוגדרה בשרת.',
@@ -81,7 +81,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     mute: 'كتم الميكروفون',
     unmute: 'تشغيل الميكروفون',
     end: 'إنهاء المحادثة',
-    tip: 'تحدث بهدوء وبشكل طبيعي وبدّل اللغة. انتظر حتى ينهي كيوي جملته.',
+    tip: 'تحدث بهدوء وبشكل طبيعي وبدّل اللغة متى شئت. يمكنك التحدث أثناء كلام كيوي — ستتوقف وتستمع.',
     status: { idle: 'جاهز للمحادثة', connecting: 'جارٍ الاتصال…', listening: 'كيوي يستمع', thinking: 'كيوي يفكّر…', speaking: 'كيوي يتحدث' },
     errors: {
       notConfigured: 'لم يتم إعداد المحادثة المباشرة بعد.',
@@ -106,7 +106,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     mute: 'Mute microphone',
     unmute: 'Turn microphone on',
     end: 'End conversation',
-    tip: 'Speak quietly and naturally, and switch languages whenever you like. Wait for Kiwi to finish each sentence.',
+    tip: 'Speak quietly and naturally, and switch languages whenever you like. You can talk while Kiwi is speaking—she will stop and listen.',
     status: { idle: 'Ready to talk', connecting: 'Connecting…', listening: 'Kiwi is listening', thinking: 'Kiwi is thinking…', speaking: 'Kiwi is speaking' },
     errors: {
       notConfigured: 'Live conversation has not been configured on the server yet.',
@@ -131,7 +131,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     mute: 'Выключить микрофон',
     unmute: 'Включить микрофон',
     end: 'Завершить разговор',
-    tip: 'Говорите тихо и естественно, меняйте язык и дождитесь, пока Киви закончит фразу.',
+    tip: 'Говорите тихо и естественно и меняйте язык когда захотите. Можно заговорить, пока Киви говорит — она остановится и выслушает.',
     status: { idle: 'Готов к разговору', connecting: 'Подключение…', listening: 'Киви слушает', thinking: 'Киви думает…', speaking: 'Киви говорит' },
     errors: {
       notConfigured: 'Живой разговор ещё не настроен на сервере.',
