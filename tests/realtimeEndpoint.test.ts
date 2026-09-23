@@ -56,6 +56,7 @@ describe('adult demo session boundary', () => {
     const config = JSON.parse(options.body.get('session'));
     expect(config.model).not.toBe('untrusted');
     expect(config.instructions).not.toContain('ignore safeguards');
-    expect(config.audio.input.turn_detection.interrupt_response).toBe(true);
+    expect(config.audio.input.turn_detection.create_response).toBe(true);
+    expect(config.audio.input.turn_detection.interrupt_response).toBe(false);
   });
 });
