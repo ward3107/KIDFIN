@@ -1,9 +1,11 @@
 # Kiwi natural voice: adult evaluation
 
-Open `/#realtime` on a Vercel deployment containing this change. The root
-URL (the hands-free showcase, also at `/#demo`), the `/#scripted` experience
-and the legacy `/#live` route are separate. This new route uses
-OpenAI Realtime over WebRTC, not the Gemini turn endpoint.
+The Realtime conversation is the root URL (also `/#realtime`). It opens with no
+access code and no language picker: one Start tap (needed for the microphone),
+then Kiwi talks in the browser's language and follows language switches. The
+hands-free showcase (`/#demo`), the `/#scripted` experience and the legacy
+`/#live` route are separate. This route uses OpenAI Realtime over WebRTC, not
+the Gemini turn endpoint.
 
 ## Configure the Vercel project
 
@@ -15,21 +17,20 @@ then redeploy. Never prefix secrets with `VITE_` or commit their values.
 | `KIWI_REALTIME_ENABLED` | `true` to enable the adult demo; otherwise disabled |
 | `OPENAI_API_KEY` | API project key with active billing and Realtime access |
 | `OPENAI_REALTIME_MODEL` | Optional; default `gpt-realtime-2.1`. Confirm account availability. |
-| `KIWI_DEMO_ACCESS_CODE` | Random secret of at least 16 characters, shared only with adult evaluators |
 | `KIWI_REALTIME_ORIGINS` | Exact allowed origins, comma-separated, including scheme, without trailing slash |
 | `UPSTASH_REDIS_REST_URL` | Existing Upstash REST endpoint |
 | `UPSTASH_REDIS_REST_TOKEN` | Existing Upstash REST token |
 
 Redis is mandatory: no paid calls are made if rate limiting is unavailable.
-There is a global limit of 10 session admission attempts per minute (including
-bad codes). This protects a small private demonstration, not a public launch.
+There is no access code: anyone who can open the site can start a paid call.
+The only spend guard is a global limit of 10 session admission attempts per
+minute. This suits a small shared demonstration, not a public launch.
 The five-minute timer is a client UX limit, **not a hard billing cap**. Apply
 provider budget controls and monitor usage. Public launch needs per-user
 authorization, distributed concurrent-session quotas and server-controlled
 session lifetimes. Origin matching alone is not authentication.
 
-The code is entered into a password form and used for one session request. It is
-not saved in browser storage. No microphone starts until Start is pressed. Stop,
+No microphone starts until Start is pressed. Stop,
 unmount, connection failures and the demo timeout release microphone tracks.
 The backend never returns the provider key and sets `Cache-Control: no-store`.
 
@@ -47,7 +48,7 @@ The backend never returns the provider key and sets `Cache-Control: no-store`.
 
 Record measured response latency, interruption delay, contextual correctness,
 Hebrew/Arabic naturalness and provider cost per completed minute. Automated tests
-exercise access controls and lifecycle behavior; they cannot establish voice
+exercise admission limits and lifecycle behavior; they cannot establish voice
 quality or child safety. No live API call has been verified without credentials.
 
 Mouth movement uses the existing audio-amplitude analyser, not phoneme-accurate

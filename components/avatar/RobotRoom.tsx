@@ -10,13 +10,13 @@ const RealtimeConversation = React.lazy(() => import('./RealtimeConversation'));
  * else to figure out. This is what loads at the root URL; the rest of the app
  * lives behind "…/#app" for teachers.
  *
- * DEFAULT (root URL, also "…/#demo") = the hands-free showcase: the link to
- * share with people who just want to see Kiwi. No access code, no language
- * picker, no microphone and no typing — the robot plays a whole sample
- * conversation by itself, with the child's answers shown on screen.
+ * DEFAULT (root URL) = the free, natural Realtime conversation with Kiwi.
+ * No access code and no language picker: one tap on "start" (needed for the
+ * microphone) and Kiwi talks and responds freely in the speaker's language.
  *
- * Other routes, for adults testing the real thing:
- * - "…/#realtime": natural Realtime conversation (access code required).
+ * Other routes:
+ * - "…/#demo": hands-free showcase — Kiwi plays a sample conversation by itself,
+ *   with the child's answers shown on screen (no microphone needed).
  * - "…/#scripted": the interactive scripted robot (mic or typing).
  * - "…/#live": Gemini Live voice (BETA); falls back to the scripted robot if it
  *   can't run (no key, offline, mic denied).
@@ -26,12 +26,11 @@ export const RobotRoom: React.FC<{ childName?: string }> = () => {
   const ar = (i18n.language || 'he').startsWith('ar');
   const hash = typeof window !== 'undefined' ? window.location.hash : '';
   const routeIs = (name: string) => new RegExp(`(?:^|[#/])${name}$`).test(hash);
-  // The natural Realtime conversation (access code + language) lives at
-  // #realtime, and the interactive scripted flow at #scripted / #live.
-  const realtimeDemo = routeIs('realtime');
-  // Default: the hands-free showcase, so a shared link needs no code, no
-  // microphone and no typing — Kiwi talks through a sample conversation.
-  const showcase = !realtimeDemo && !routeIs('scripted') && !routeIs('live');
+  // Hands-free showcase: Kiwi talks through a sample conversation by itself.
+  const showcase = routeIs('demo');
+  // Default (and "#realtime"): the free Realtime conversation. The interactive
+  // scripted flow stays at #scripted / #live.
+  const realtimeDemo = !showcase && !routeIs('scripted') && !routeIs('live');
 
   // Live voice is opt-in via the "#live" URL; everyone else gets the reliable
   // scripted robot. (Kept in state so a failed live start can drop to scripted.)

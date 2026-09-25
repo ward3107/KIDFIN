@@ -45,7 +45,7 @@ describe('voice lifecycle', () => {
     vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: () => new Promise<MediaStream>(r => { grant = r; }) } });
     vi.stubGlobal('RTCPeerConnection', vi.fn());
     const call = new KiwiRealtime(events());
-    const starting = call.start('code', 'he', null);
+    const starting = call.start('he', null);
     call.stop();
     grant({ getTracks: () => [track] } as unknown as MediaStream);
     await starting;

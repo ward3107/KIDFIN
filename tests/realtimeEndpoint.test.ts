@@ -2,24 +2,22 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import handler from '../api/kiwi-realtime';
 
-const secret = 'fictional-demo-code-123456';
 const request = (changes: Record<string, unknown> = {}, origin = 'https://demo.example') => new Request('https://demo.example/api/kiwi-realtime', {
   method: 'POST', headers: { origin, 'Content-Type': 'application/json' },
-  body: JSON.stringify({ sdp: 'v=0\r\n', lang: 'he', accessCode: secret, adultDemo: true, ...changes }),
+  body: JSON.stringify({ sdp: 'v=0\r\n', lang: 'he', ...changes }),
 });
 const limiter = (count = 1) => new Response(JSON.stringify([{ result: count }, { result: 1 }]));
 
 beforeEach(() => {
   vi.stubEnv('KIWI_REALTIME_ENABLED', 'true');
   vi.stubEnv('OPENAI_API_KEY', 'server-secret');
-  vi.stubEnv('KIWI_DEMO_ACCESS_CODE', secret);
   vi.stubEnv('KIWI_REALTIME_ORIGINS', 'https://demo.example');
   vi.stubEnv('UPSTASH_REDIS_REST_URL', 'https://redis.example');
   vi.stubEnv('UPSTASH_REDIS_REST_TOKEN', 'redis-secret');
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
-describe('adult demo session boundary', () => {
+describe('open demo session boundary', () => {
   it('makes no upstream calls when disabled or from an untrusted origin', async () => {
     const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
     expect((await handler(request({}, 'https://evil.example'))).status).toBe(403);
@@ -27,11 +25,22 @@ describe('adult demo session boundary', () => {
     expect((await handler(request())).status).toBe(503);
     expect(fetch).not.toHaveBeenCalled();
   });
-  it('requires a valid access code and adult demo acknowledgement before billing', async () => {
-    const fetch = vi.fn().mockImplementation(async () => limiter()); vi.stubGlobal('fetch', fetch);
-    expect((await handler(request({ accessCode: 'wrong' }))).status).toBe(401);
-    expect((await handler(request({ adultDemo: false }))).status).toBe(403);
-    expect(fetch.mock.calls.every(([url]) => url === 'https://redis.example/pipeline')).toBe(true);
+  it('starts a call without any access code, after the admission limiter', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(limiter()).mockResolvedValueOnce(new Response('v=0\r\nanswer'));
+    vi.stubGlobal('fetch', fetch);
+    const result = await handler(request());
+    expect(result.status).toBe(200);
+    expect(result.headers.get('set-cookie')).toBeNull();
+    expect(fetch.mock.calls.map(([url]) => url)).toEqual([
+      'https://redis.example/pipeline',
+      'https://api.openai.com/v1/realtime/calls',
+    ]);
+  });
+  it('rejects non-POST requests without calling any service', async () => {
+    const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
+    const get = new Request('https://demo.example/api/kiwi-realtime', { headers: { origin: 'https://demo.example' } });
+    expect((await handler(get)).status).toBe(405);
+    expect(fetch).not.toHaveBeenCalled();
   });
   it('fails closed on limiter failure and exhaustion', async () => {
     const fetch = vi.fn().mockResolvedValueOnce(new Response('', { status: 500 })).mockResolvedValueOnce(limiter(11));
