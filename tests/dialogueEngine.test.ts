@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CONVERSATION } from '../services/dialogue/conversation';
+import {
+  CONVERSATION,
+  CONVERSATION_START,
+  DEMO_CHILD_REPLIES,
+} from '../services/dialogue/conversation';
 import { getTurn, nextTurnId, turnListens } from '../services/dialogue/engine';
 
 describe('nextTurnId', () => {
@@ -29,6 +33,35 @@ describe('nextTurnId', () => {
         expect(nextTurnId(turn, 'שלום כלשהו', 'he')).toBeTruthy();
         expect(nextTurnId(turn, 'أي كلام', 'ar')).toBeTruthy();
       }
+    }
+  });
+});
+
+describe('hands-free demo replies', () => {
+  it('walks the whole conversation from greeting to goodbye in both languages', () => {
+    for (const lang of ['he', 'ar'] as const) {
+      const visited: string[] = [];
+      let id: string | undefined = CONVERSATION_START;
+      while (id && visited.length < 20) {
+        visited.push(id);
+        const turn = getTurn(id)!;
+        if (turn.end) break;
+        if (turnListens(turn)) {
+          const reply = DEMO_CHILD_REPLIES[id];
+          expect(reply, `demo reply for ${id}`).toBeTruthy();
+          id = nextTurnId(turn, reply[lang], lang);
+        } else {
+          id = turn.next;
+        }
+      }
+      expect(visited).toEqual([
+        'greet',
+        'nice_to_meet',
+        'feel_good',
+        'lesson_share',
+        'share_good',
+        'bye',
+      ]);
     }
   });
 });

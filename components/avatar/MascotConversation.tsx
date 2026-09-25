@@ -11,7 +11,11 @@ import {
   turnListens,
   turnText,
 } from '../../services/dialogue/engine';
-import { CONVERSATION_START, type Lang } from '../../services/dialogue/conversation';
+import {
+  CONVERSATION_START,
+  DEMO_CHILD_REPLIES,
+  type Lang,
+} from '../../services/dialogue/conversation';
 
 // Lazy-load the 3D avatar so three.js stays code-split.
 const RobotAvatar = React.lazy(() =>
@@ -52,13 +56,19 @@ const canAutoplay = async (): Promise<boolean> => {
  * blocks audio before any interaction, a full-screen "touch anywhere" catch
  * (not a button) starts it on the child's first touch — the least friction the
  * browser allows.
+ *
+ * With `demo`, nobody has to talk or type: whenever the robot listens, a sample
+ * child answer appears on screen and the conversation moves on by itself. This
+ * is the shareable "just watch" link (…/#demo).
  */
 export const MascotConversation: React.FC<{
   height?: number;
   autoStart?: boolean;
   /** Strip the card frame/background so the robot sits directly on the page. */
   bare?: boolean;
-}> = ({ height = 300, autoStart = false, bare = false }) => {
+  /** Hands-free showcase: play sample child answers instead of listening. */
+  demo?: boolean;
+}> = ({ height = 300, autoStart = false, bare = false, demo = false }) => {
   const { i18n } = useTranslation();
   const lang: Lang = (i18n.language || 'he').startsWith('ar') ? 'ar' : 'he';
 
@@ -71,6 +81,7 @@ export const MascotConversation: React.FC<{
   const [typed, setTyped] = useState('');
   const [awaitingTap, setAwaitingTap] = useState(false);
   const listenTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const clearListenTimer = () => {
     if (listenTimer.current) {
@@ -78,6 +89,12 @@ export const MascotConversation: React.FC<{
       listenTimer.current = null;
     }
   };
+
+  const clearDemoTimers = () => {
+    demoTimers.current.forEach(clearTimeout);
+    demoTimers.current = [];
+  };
+  useEffect(() => clearDemoTimers, []);
 
   // Forward-declared so speak/afterSpeak can reference each other.
   const playTurnRef = useRef<(id: string) => void>(() => {});
@@ -102,6 +119,23 @@ export const MascotConversation: React.FC<{
     (turnIdForFallback: string) => {
       setPhase('listening');
       avatar.current?.setConversation?.('listening');
+      if (demo) {
+        // Show a sample answer as if the child said it, then carry on.
+        const turn = getTurn(turnIdForFallback);
+        const reply = DEMO_CHILD_REPLIES[turnIdForFallback]?.[lang] ?? '';
+        setChildSaid('');
+        clearDemoTimers();
+        demoTimers.current.push(
+          setTimeout(() => setChildSaid(reply), 1200),
+          setTimeout(() => {
+            avatar.current?.setConversation?.('thinking');
+            const nid = turn ? nextTurnId(turn, reply, lang) : undefined;
+            if (nid) playTurnRef.current(nid);
+            else setPhase('idle');
+          }, 3200),
+        );
+        return;
+      }
       if (recognition.supported) {
         recognition.start();
         // Safety: if the child says nothing, gently continue after a while.
@@ -115,7 +149,7 @@ export const MascotConversation: React.FC<{
         }, 9000);
       }
     },
-    [recognition],
+    [recognition, demo, lang],
   );
 
   const playTurn = useCallback(
@@ -123,7 +157,8 @@ export const MascotConversation: React.FC<{
       const turn = getTurn(id);
       if (!turn) return;
       setTurnId(id);
-      setChildSaid('');
+      // In the demo, keep the child's sample answer visible while Kiwi reacts.
+      if (!demo) setChildSaid('');
       setPhase('speaking');
       const text = turnText(turn, lang);
       setCaption(text);
@@ -171,7 +206,7 @@ export const MascotConversation: React.FC<{
         }, 50);
       }
     },
-    [lang, beginListening],
+    [lang, beginListening, demo],
   );
   playTurnRef.current = playTurn;
 
@@ -204,6 +239,8 @@ export const MascotConversation: React.FC<{
   const restart = () => {
     recognition.stop();
     clearListenTimer();
+    clearDemoTimers();
+    setChildSaid('');
     playTurn(CONVERSATION_START);
   };
 
@@ -223,6 +260,14 @@ export const MascotConversation: React.FC<{
     advanceOnHeard(text);
   };
 
+  const tapLabel = demo
+    ? lang === 'ar'
+      ? 'المس الشاشة لمشاهدة كيوي'
+      : 'געו במסך כדי לצפות בקיווי'
+    : lang === 'ar'
+      ? 'المس الشاشة لتتحدث مع كيوي'
+      : 'געו במסך כדי לדבר עם קיווי';
+
   return (
     <div
       className={
@@ -239,13 +284,11 @@ export const MascotConversation: React.FC<{
           onPointerDown={start}
           role="button"
           tabIndex={0}
-          aria-label={lang === 'ar' ? 'المس الشاشة لتتحدث مع كيوي' : 'געו במסך כדי לדבר עם קיווי'}
+          aria-label={tapLabel}
           className="fixed inset-0 z-50 flex cursor-pointer flex-col items-center justify-center gap-5 bg-indigo-950/45 text-white backdrop-blur-sm"
         >
-          <div className="text-7xl animate-bounce">👋</div>
-          <div className="px-6 text-center text-2xl font-black drop-shadow">
-            {lang === 'ar' ? 'المس الشاشة لتتحدث مع كيوي' : 'געו במסך כדי לדבר עם קיווי'}
-          </div>
+          <div className="text-7xl animate-bounce">{demo ? '▶️' : '👋'}</div>
+          <div className="px-6 text-center text-2xl font-black drop-shadow">{tapLabel}</div>
         </div>
       )}
 
@@ -283,11 +326,18 @@ export const MascotConversation: React.FC<{
       </div>
 
       {/* What the child said */}
-      {childSaid && (
-        <div className="mt-2 text-center text-xs text-indigo-500">
-          {lang === 'ar' ? 'قلت:' : 'אמרת:'} “{childSaid}”
-        </div>
-      )}
+      {childSaid &&
+        (demo ? (
+          <div className="mt-2 flex justify-center">
+            <div className="rounded-2xl bg-emerald-100 px-4 py-2 text-center text-base font-semibold text-emerald-900 shadow-sm">
+              🧒 {lang === 'ar' ? 'الطفل:' : 'הילד:'} “{childSaid}”
+            </div>
+          </div>
+        ) : (
+          <div className="mt-2 text-center text-xs text-indigo-500">
+            {lang === 'ar' ? 'قلت:' : 'אמרת:'} “{childSaid}”
+          </div>
+        ))}
 
       {/* Live state / controls */}
       <div className="mt-3 flex flex-col items-center gap-2">
@@ -304,13 +354,19 @@ export const MascotConversation: React.FC<{
           <div className="text-sm text-indigo-500">🔊 {lang === 'ar' ? 'كيوي يتحدث…' : 'קיווי מדבר…'}</div>
         )}
 
-        {started && phase === 'listening' && (
+        {started && phase === 'listening' && demo && !childSaid && (
+          <div className="text-sm text-indigo-500 animate-pulse">
+            👂 {lang === 'ar' ? 'كيوي يستمع…' : 'קיווי מקשיב…'}
+          </div>
+        )}
+
+        {started && phase === 'listening' && !demo && (
           <div className="flex items-center gap-2 rounded-full bg-rose-500 px-5 py-2.5 text-white shadow-lg animate-pulse">
             <Mic size={18} /> {lang === 'ar' ? 'أنا أستمع… تكلم!' : 'אני מקשיב… דבר!'}
           </div>
         )}
 
-        {started && phase === 'listening' && !recognition.supported && (
+        {started && phase === 'listening' && !demo && !recognition.supported && (
           <button
             onClick={() => advanceOnHeard('')}
             className="rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow"
@@ -319,14 +375,14 @@ export const MascotConversation: React.FC<{
           </button>
         )}
 
-        {started && phase === 'listening' && recognition.supported && (
+        {started && phase === 'listening' && !demo && recognition.supported && (
           <button onClick={talkAgain} className="text-xs text-indigo-500 underline">
             {lang === 'ar' ? 'لم يسمعني؟ حاول ثانية' : 'לא שמע? נסה שוב'}
           </button>
         )}
 
         {/* Type instead of talking — for kids who prefer to write */}
-        {started && phase === 'listening' && (
+        {started && phase === 'listening' && !demo && (
           <form onSubmit={submitTyped} className="mt-1 flex w-full max-w-xs items-center gap-2">
             <input
               type="text"
@@ -351,7 +407,13 @@ export const MascotConversation: React.FC<{
             onClick={restart}
             className="rounded-2xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow hover:bg-indigo-700"
           >
-            {lang === 'ar' ? 'من البداية 🔄' : 'מהתחלה 🔄'}
+            {demo
+              ? lang === 'ar'
+                ? 'شاهد مرة أخرى 🔄'
+                : 'לצפות שוב 🔄'
+              : lang === 'ar'
+                ? 'من البداية 🔄'
+                : 'מהתחלה 🔄'}
           </button>
         )}
 

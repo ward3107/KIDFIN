@@ -187,3 +187,17 @@ export const CONVERSATION: Record<string, ConvoTurn> = {
 };
 
 export const CONVERSATION_START = 'greet';
+
+/**
+ * Sample child answers for the hands-free demo (…/#demo). When the robot
+ * listens on one of these turns, the demo shows this answer on screen instead
+ * of using the microphone, so someone watching a shared link sees a complete
+ * conversation without typing or speaking. Each answer matches the "good" branch
+ * keywords, so the demo shows the full flow from greeting to goodbye.
+ */
+export const DEMO_CHILD_REPLIES: Record<string, LocalizedText> = {
+  greet: { he: 'קוראים לי דני!', ar: 'اسمي سامي!' },
+  nice_to_meet: { he: 'אני מרגיש טוב, תודה!', ar: 'أنا بخير، شكرا!' },
+  lesson_share: { he: 'לשתף איתו ולשחק ביחד!', ar: 'أشارك معه ونلعب معا!' },
+  share_hint: { he: 'כן, לשתף!', ar: 'نعم، أشارك!' },
+};

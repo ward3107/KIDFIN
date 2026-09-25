@@ -17,14 +17,20 @@ const RealtimeConversation = React.lazy(() => import('./RealtimeConversation'));
  * LIVE voice (Gemini Live — real two-way talking) is still in BETA while we tune
  * it, so it is opt-in at "…/#live" rather than the default. If live voice can't
  * run there (no key, offline, mic denied), it falls back to the scripted robot.
+ *
+ * DEMO ("…/#demo") is the link to share with people who just want to see Kiwi:
+ * no access code, no microphone and no typing — the robot plays a whole sample
+ * conversation by itself, with the child's answers shown on screen.
  */
 export const RobotRoom: React.FC<{ childName?: string }> = () => {
   const { i18n } = useTranslation();
   const ar = (i18n.language || 'he').startsWith('ar');
   const hash = typeof window !== 'undefined' ? window.location.hash : '';
+  // Hands-free showcase for sharing: Kiwi talks through a sample conversation.
+  const showcase = /(?:^|[#/])demo$/.test(hash);
   // Natural Realtime conversation is now the production default. Keep the
   // deterministic scripted flow available at #scripted as a safe fallback.
-  const realtimeDemo = !/(?:^|[#/])scripted$/.test(hash);
+  const realtimeDemo = !showcase && !/(?:^|[#/])scripted$/.test(hash);
 
   // Live voice is opt-in via the "#live" URL; everyone else gets the reliable
   // scripted robot. (Kept in state so a failed live start can drop to scripted.)
@@ -61,14 +67,14 @@ export const RobotRoom: React.FC<{ childName?: string }> = () => {
       dir="rtl"
       className="relative flex min-h-dvh w-full flex-col items-center justify-start overflow-x-hidden overflow-y-auto bg-gradient-to-b from-indigo-100 via-indigo-50 to-purple-100 px-3 py-2 lg:justify-center lg:px-5"
     >
-      <button
+      {!showcase && <button
         onClick={toApp}
         aria-label={ar ? 'للمعلّم: التطبيق' : 'למורה: האפליקציה'}
         title={ar ? 'للمعلّم' : 'למורה'}
         className="absolute top-2 ltr:right-2 rtl:left-2 z-10 rounded-full p-2 text-xs text-indigo-400/50 transition hover:bg-white/60 hover:text-indigo-700"
       >
         ⚙
-      </button>
+      </button>}
 
       {mode === 'live' && (
         <div className="absolute top-2 left-1/2 z-10 -translate-x-1/2 rounded-full bg-amber-400/90 px-3 py-1 text-xs font-bold text-amber-950 shadow">
@@ -77,7 +83,9 @@ export const RobotRoom: React.FC<{ childName?: string }> = () => {
       )}
 
       <div className={`mx-auto w-full ${realtimeDemo ? 'max-w-6xl' : 'max-w-md'}`}>
-        {realtimeDemo ? <RealtimeConversation height={avatarHeight} /> : mode === 'live' ? (
+        {showcase ? (
+          <MascotConversation height={avatarHeight} autoStart bare demo />
+        ) : realtimeDemo ? <RealtimeConversation height={avatarHeight} /> : mode === 'live' ? (
           <TalkConversation
             height={avatarHeight}
             autoStart
