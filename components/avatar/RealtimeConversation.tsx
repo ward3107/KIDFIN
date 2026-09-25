@@ -17,13 +17,8 @@ class AvatarBoundary extends React.Component<{ children: React.ReactNode }, { fa
 
 type UiCopy = {
   eyebrow: string;
-  language: string;
-  code: string;
-  adult: string;
   disclosure: string;
   start: string;
-  checkingAccess: string;
-  rememberedAccess: string;
   suggestions: string;
   muted: string;
   mute: string;
@@ -33,7 +28,6 @@ type UiCopy = {
   status: Record<VoicePhase, string>;
   errors: {
     notConfigured: string;
-    unauthorized: string;
     finished: string;
     permission: string;
     busy: string;
@@ -43,14 +37,9 @@ type UiCopy = {
 
 const COPY: Record<RealtimeLanguage, UiCopy> = {
   he: {
-    eyebrow: 'הדגמת שיחה טבעית למבוגרים',
-    language: 'שפת פתיחה',
-    code: 'קוד כניסה להדגמה',
-    adult: 'אני מבוגר/ת ובודק/ת את ההדגמה עם מידע מומצא בלבד. גרסה זו אינה מיועדת עדיין לשימוש עצמאי של ילדים.',
+    eyebrow: 'שיחה חופשית עם קיווי',
     disclosure: 'קיווי הוא דמות בינה מלאכותית. הקול יישלח ל־OpenAI לעיבוד. משך ההדגמה עד חמש דקות.',
     start: 'התחלת שיחה',
-    checkingAccess: 'בודק גישה מאובטחת…',
-    rememberedAccess: 'הגישה נשמרה במכשיר הזה. אפשר להתחיל מיד ולדבר בכל שפה.',
     suggestions: 'אפשר לענות בקול או לבחור:',
     muted: 'המיקרופון מושתק',
     mute: 'השתקת מיקרופון',
@@ -60,7 +49,6 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     status: { idle: 'מוכן לשיחה', connecting: 'מתחבר…', listening: 'קיווי מקשיב', thinking: 'קיווי חושב…', speaking: 'קיווי מדבר' },
     errors: {
       notConfigured: 'השיחה החיה עדיין לא הוגדרה בשרת.',
-      unauthorized: 'קוד הכניסה אינו נכון.',
       finished: 'ההדגמה הסתיימה לאחר חמש דקות.',
       permission: 'יש לאפשר גישה למיקרופון ולנסות שוב.',
       busy: 'השירות עמוס כרגע. המתינו רגע ונסו שוב.',
@@ -68,14 +56,9 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     },
   },
   ar: {
-    eyebrow: 'تجربة محادثة طبيعية للبالغين',
-    language: 'لغة البداية',
-    code: 'رمز دخول العرض',
-    adult: 'أنا بالغ وأختبر العرض باستخدام معلومات خيالية فقط. هذه النسخة ليست جاهزة بعد لاستخدام الأطفال بشكل مستقل.',
+    eyebrow: 'محادثة حرة مع كيوي',
     disclosure: 'كيوي شخصية ذكاء اصطناعي. سيُرسل الصوت إلى OpenAI للمعالجة. مدة العرض حتى خمس دقائق.',
     start: 'ابدأ المحادثة',
-    checkingAccess: 'جارٍ التحقق من الدخول الآمن…',
-    rememberedAccess: 'تم حفظ الدخول على هذا الجهاز. ابدأ الآن وتحدث بأي لغة.',
     suggestions: 'أجب بصوتك أو اختر:',
     muted: 'الميكروفون مغلق',
     mute: 'كتم الميكروفون',
@@ -85,7 +68,6 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     status: { idle: 'جاهز للمحادثة', connecting: 'جارٍ الاتصال…', listening: 'كيوي يستمع', thinking: 'كيوي يفكّر…', speaking: 'كيوي يتحدث' },
     errors: {
       notConfigured: 'لم يتم إعداد المحادثة المباشرة بعد.',
-      unauthorized: 'رمز الدخول غير صحيح.',
       finished: 'انتهت التجربة بعد خمس دقائق.',
       permission: 'اسمح بالميكروفون ثم حاول مجدداً.',
       busy: 'الخدمة مشغولة الآن. انتظر قليلاً ثم حاول مجدداً.',
@@ -93,14 +75,9 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     },
   },
   en: {
-    eyebrow: 'Natural conversation demo for adults',
-    language: 'Starting language',
-    code: 'Demo access code',
-    adult: 'I am an adult testing this demo with fictional information only. This version is not yet for independent use by children.',
+    eyebrow: 'Free conversation with Kiwi',
     disclosure: 'Kiwi is an AI character. Audio is sent to OpenAI for processing. The demo lasts up to five minutes.',
     start: 'Start conversation',
-    checkingAccess: 'Checking secure access…',
-    rememberedAccess: 'Access is remembered on this device. Start now and speak any language.',
     suggestions: 'Answer aloud or choose:',
     muted: 'Microphone muted',
     mute: 'Mute microphone',
@@ -110,7 +87,6 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     status: { idle: 'Ready to talk', connecting: 'Connecting…', listening: 'Kiwi is listening', thinking: 'Kiwi is thinking…', speaking: 'Kiwi is speaking' },
     errors: {
       notConfigured: 'Live conversation has not been configured on the server yet.',
-      unauthorized: 'The access code is incorrect.',
       finished: 'The five-minute demo has ended.',
       permission: 'Allow microphone access and try again.',
       busy: 'The service is busy right now. Wait a moment and try again.',
@@ -118,14 +94,9 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     },
   },
   ru: {
-    eyebrow: 'Демонстрация естественного разговора для взрослых',
-    language: 'Язык начала',
-    code: 'Код доступа к демонстрации',
-    adult: 'Я взрослый пользователь и проверяю демонстрацию только с вымышленными данными. Эта версия пока не предназначена для самостоятельного использования детьми.',
+    eyebrow: 'Свободный разговор с Киви',
     disclosure: 'Киви — персонаж с искусственным интеллектом. Аудио отправляется в OpenAI для обработки. Демонстрация длится до пяти минут.',
     start: 'Начать разговор',
-    checkingAccess: 'Проверяем безопасный доступ…',
-    rememberedAccess: 'Доступ сохранён на этом устройстве. Начните и говорите на любом языке.',
     suggestions: 'Ответьте голосом или выберите:',
     muted: 'Микрофон выключен',
     mute: 'Выключить микрофон',
@@ -135,7 +106,6 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     status: { idle: 'Готов к разговору', connecting: 'Подключение…', listening: 'Киви слушает', thinking: 'Киви думает…', speaking: 'Киви говорит' },
     errors: {
       notConfigured: 'Живой разговор ещё не настроен на сервере.',
-      unauthorized: 'Неверный код доступа.',
       finished: 'Пятиминутная демонстрация завершена.',
       permission: 'Разрешите доступ к микрофону и попробуйте снова.',
       busy: 'Сервис сейчас занят. Подождите немного и попробуйте снова.',
@@ -144,14 +114,6 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
   },
 };
 
-const LANGUAGE_OPTIONS: Array<{ value: RealtimeLanguage; label: string }> = [
-  { value: 'he', label: 'עברית' },
-  { value: 'ar', label: 'العربية' },
-  { value: 'en', label: 'English' },
-  { value: 'ru', label: 'Русский' },
-];
-
-type AccessStatus = 'checking' | 'required' | 'granted';
 const LANGUAGE_KEY = 'kiwi:realtime-language:v1';
 
 const initialLanguage = (): RealtimeLanguage => {
@@ -162,10 +124,12 @@ const initialLanguage = (): RealtimeLanguage => {
   } catch {
     // Storage can be unavailable in strict privacy modes; browser language is enough.
   }
+  // Hebrew by default (many Israeli phones are set to English); Arabic and
+  // Russian phones get their own language. Kiwi still follows whatever
+  // language the speaker actually uses, English included.
   const browser = (navigator.languages?.[0] || navigator.language || '').toLowerCase();
   if (browser.startsWith('ar')) return 'ar';
   if (browser.startsWith('ru')) return 'ru';
-  if (browser.startsWith('en')) return 'en';
   return 'he';
 };
 
@@ -174,43 +138,19 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
   const phaseRef = useRef<VoicePhase>('idle');
   const deliveryRef = useRef<Delivery>('calm');
   const call = useRef<KiwiRealtime | null>(null);
-  const [lang, setLang] = useState<RealtimeLanguage>(initialLanguage);
+  // Kiwi opens in the browser's language and follows whatever language the
+  // speaker switches to, so there is no language picker.
+  const [lang] = useState<RealtimeLanguage>(initialLanguage);
   const [phase, setPhase] = useState<VoicePhase>('idle');
   const [caption, setCaption] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [error, setError] = useState('');
-  const [accessCode, setAccessCode] = useState('');
-  const [accessStatus, setAccessStatus] = useState<AccessStatus>('checking');
-  const [adult, setAdult] = useState(false);
   const [muted, setMuted] = useState(false);
   const copy = COPY[lang];
   const rtl = lang === 'he' || lang === 'ar';
   const active = phase !== 'idle';
 
-  useEffect(() => {
-    const controller = new AbortController();
-    void fetch('/api/kiwi-realtime', {
-      method: 'GET',
-      credentials: 'same-origin',
-      cache: 'no-store',
-      signal: controller.signal,
-    })
-      .then(async response => response.ok ? response.json() as Promise<{ authorized?: boolean }> : { authorized: false })
-      .then(result => setAccessStatus(result.authorized ? 'granted' : 'required'))
-      .catch(error => {
-        if (error instanceof DOMException && error.name === 'AbortError') return;
-        setAccessStatus('required');
-      });
-    return () => {
-      controller.abort();
-      call.current?.stop();
-    };
-  }, []);
-
-  const chooseLanguage = (next: RealtimeLanguage) => {
-    setLang(next);
-    try { window.localStorage.setItem(LANGUAGE_KEY, next); } catch { /* no-op */ }
-  };
+  useEffect(() => () => call.current?.stop(), []);
 
   const stop = () => {
     call.current?.stop();
@@ -221,20 +161,16 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
     avatar.current?.setConversation?.('idle');
   };
 
-  const start = (event?: React.SyntheticEvent) => {
-    event?.preventDefault();
-    const needsCode = accessStatus !== 'granted';
-    if (call.current || accessStatus === 'checking' || (needsCode && (!adult || !accessCode))) return;
+  const start = () => {
+    if (call.current) return;
     setError('');
     setCaption('');
     setSuggestions([]);
     setMuted(false);
     const session = new KiwiRealtime({
       phase: next => {
-        const previous = phaseRef.current;
         setPhase(next);
         phaseRef.current = next;
-        if (next === 'listening' && previous === 'connecting') setAccessStatus('granted');
         if (next !== 'speaking') deliveryRef.current = 'calm';
         avatar.current?.setConversation?.(next, deliveryRef.current);
         avatar.current?.setExpression(next === 'thinking' ? 'thinking' : 'happy');
@@ -246,15 +182,10 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
         avatar.current?.setConversation?.(phaseRef.current, deliveryRef.current);
       },
       options: setSuggestions,
-      error: code => {
-        if (code === 'unauthorized') setAccessStatus('required');
-        setError(code);
-      },
+      error: setError,
     });
     call.current = session;
-    const code = accessCode;
-    setAccessCode('');
-    void session.start(needsCode ? code : '', lang, avatar.current?.getLiveAudioSink?.() || null);
+    void session.start(lang, avatar.current?.getLiveAudioSink?.() || null);
   };
 
   const chooseSuggestion = (suggestion: string) => {
@@ -263,15 +194,13 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
 
   const errorText = error === 'not_configured'
     ? copy.errors.notConfigured
-    : error === 'unauthorized'
-      ? copy.errors.unauthorized
-      : error === 'demo_finished'
-        ? copy.errors.finished
-        : error === 'rate_limited' || error === 'temporarily_unavailable'
-          ? copy.errors.busy
-          : error === 'NotAllowedError' || /permission|denied/i.test(error)
-            ? copy.errors.permission
-            : copy.errors.generic;
+    : error === 'demo_finished'
+      ? copy.errors.finished
+      : error === 'rate_limited' || error === 'temporarily_unavailable'
+        ? copy.errors.busy
+        : error === 'NotAllowedError' || /permission|denied/i.test(error)
+          ? copy.errors.permission
+          : copy.errors.generic;
 
   return <section dir={rtl ? 'rtl' : 'ltr'} className="w-full py-3 text-center sm:py-5">
     <div className="mx-auto grid w-full max-w-6xl items-center gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,.65fr)] lg:gap-7">
@@ -300,29 +229,9 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
 
       <div className="mx-auto w-full max-w-md">
         {error && <p role="alert" className="mb-3 rounded-2xl bg-amber-50 p-3 text-amber-900 shadow-sm">{errorText}</p>}
-        {accessStatus === 'checking' && !active ? <div role="status" className="rounded-3xl bg-white/75 p-5 font-semibold text-indigo-800 shadow-md backdrop-blur-sm">{copy.checkingAccess}</div>
-          : !active && accessStatus === 'required' ? <form onSubmit={start} className="flex flex-col gap-3 rounded-3xl bg-white/85 p-4 text-start shadow-lg backdrop-blur-sm sm:p-6">
-          <label className="font-semibold">{copy.language}
-            <select
-              value={lang}
-              onChange={e => chooseLanguage(e.target.value as RealtimeLanguage)}
-              className="mt-1 block min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 py-2"
-            >
-              {LANGUAGE_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
-            </select>
-          </label>
-          <label>{copy.code}
-            <input type="password" autoComplete="off" required maxLength={200} value={accessCode} onChange={e => setAccessCode(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-300 p-3" />
-          </label>
-          <label className="flex items-start gap-2 text-sm">
-            <input type="checkbox" checked={adult} onChange={e => setAdult(e.target.checked)} required className="mt-1 h-4 w-4 shrink-0" />
-            <span>{copy.adult}</span>
-          </label>
-          <p className="text-xs text-slate-600">{copy.disclosure}</p>
-          <button disabled={!adult || !accessCode} className="min-h-12 rounded-full bg-indigo-700 px-5 py-3 font-bold text-white disabled:opacity-40">{copy.start}</button>
-        </form> : !active ? <div className="rounded-3xl bg-white/80 p-4 shadow-md backdrop-blur-sm sm:p-5">
-          <p className="mb-4 text-sm text-slate-700">{copy.rememberedAccess}</p>
-          <button type="button" onClick={start} className="min-h-12 w-full rounded-full bg-indigo-700 px-5 py-3 font-bold text-white shadow-sm hover:bg-indigo-800">{copy.start}</button>
+        {!active ? <div className="rounded-3xl bg-white/80 p-4 shadow-md backdrop-blur-sm sm:p-5">
+          <button type="button" onClick={start} className="min-h-14 w-full rounded-full bg-indigo-700 px-5 py-3 text-lg font-bold text-white shadow-sm hover:bg-indigo-800">{copy.start}</button>
+          <p className="mt-3 text-xs text-slate-600">{copy.disclosure}</p>
         </div> : <div className="rounded-3xl bg-white/75 p-4 shadow-md backdrop-blur-sm sm:p-5">
           <p className="mb-4 text-sm text-slate-700">{copy.tip}</p>
           <div className="flex flex-wrap justify-center gap-3">

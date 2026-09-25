@@ -27,7 +27,7 @@ type RealtimeServerEvent = {
   };
 };
 
-/** One disposable WebRTC call. Never retains an access code or a transcript. */
+/** One disposable WebRTC call. Never retains a transcript. */
 export class KiwiRealtime {
   private peer: RTCPeerConnection | null = null;
   private channel: RTCDataChannel | null = null;
@@ -47,7 +47,7 @@ export class KiwiRealtime {
 
   constructor(private events: VoiceEvents) {}
 
-  async start(accessCode: string, lang: RealtimeLanguage, sink: LiveAudioSink | null) {
+  async start(lang: RealtimeLanguage, sink: LiveAudioSink | null) {
     this.events.phase('connecting');
     try {
       if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === 'undefined') throw new Error('unsupported');
@@ -103,7 +103,7 @@ export class KiwiRealtime {
         method: 'POST', signal: this.abort.signal,
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sdp: offer.sdp, lang, micProfile, accessCode, adultDemo: true }),
+        body: JSON.stringify({ sdp: offer.sdp, lang, micProfile }),
       });
       if (!response.ok) {
         const error = await response.json().catch(() => ({}));
