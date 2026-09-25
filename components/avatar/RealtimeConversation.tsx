@@ -124,10 +124,12 @@ const initialLanguage = (): RealtimeLanguage => {
   } catch {
     // Storage can be unavailable in strict privacy modes; browser language is enough.
   }
+  // Hebrew by default (many Israeli phones are set to English); Arabic and
+  // Russian phones get their own language. Kiwi still follows whatever
+  // language the speaker actually uses, English included.
   const browser = (navigator.languages?.[0] || navigator.language || '').toLowerCase();
   if (browser.startsWith('ar')) return 'ar';
   if (browser.startsWith('ru')) return 'ru';
-  if (browser.startsWith('en')) return 'en';
   return 'he';
 };
 
