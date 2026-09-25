@@ -1,7 +1,8 @@
 # Kiwi natural voice: adult evaluation
 
 Open `/#realtime` on a Vercel deployment containing this change. The root
-scripted experience and legacy `/#live` route are separate. This new route uses
+URL (the hands-free showcase, also at `/#demo`), the `/#scripted` experience
+and the legacy `/#live` route are separate. This new route uses
 OpenAI Realtime over WebRTC, not the Gemini turn endpoint.
 
 ## Configure the Vercel project

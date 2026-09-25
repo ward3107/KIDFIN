@@ -10,32 +10,32 @@ const RealtimeConversation = React.lazy(() => import('./RealtimeConversation'));
  * else to figure out. This is what loads at the root URL; the rest of the app
  * lives behind "…/#app" for teachers.
  *
- * DEFAULT = the scripted, natural-voice robot: polished, reliable, and it works
- * every time (no microphone, no ambient-noise problems). This is what the
- * customer and the children see.
- *
- * LIVE voice (Gemini Live — real two-way talking) is still in BETA while we tune
- * it, so it is opt-in at "…/#live" rather than the default. If live voice can't
- * run there (no key, offline, mic denied), it falls back to the scripted robot.
- *
- * DEMO ("…/#demo") is the link to share with people who just want to see Kiwi:
- * no access code, no microphone and no typing — the robot plays a whole sample
+ * DEFAULT (root URL, also "…/#demo") = the hands-free showcase: the link to
+ * share with people who just want to see Kiwi. No access code, no language
+ * picker, no microphone and no typing — the robot plays a whole sample
  * conversation by itself, with the child's answers shown on screen.
+ *
+ * Other routes, for adults testing the real thing:
+ * - "…/#realtime": natural Realtime conversation (access code required).
+ * - "…/#scripted": the interactive scripted robot (mic or typing).
+ * - "…/#live": Gemini Live voice (BETA); falls back to the scripted robot if it
+ *   can't run (no key, offline, mic denied).
  */
 export const RobotRoom: React.FC<{ childName?: string }> = () => {
   const { i18n } = useTranslation();
   const ar = (i18n.language || 'he').startsWith('ar');
   const hash = typeof window !== 'undefined' ? window.location.hash : '';
-  // Hands-free showcase for sharing: Kiwi talks through a sample conversation.
-  const showcase = /(?:^|[#/])demo$/.test(hash);
-  // Natural Realtime conversation is now the production default. Keep the
-  // deterministic scripted flow available at #scripted as a safe fallback.
-  const realtimeDemo = !showcase && !/(?:^|[#/])scripted$/.test(hash);
+  const routeIs = (name: string) => new RegExp(`(?:^|[#/])${name}$`).test(hash);
+  // The natural Realtime conversation (access code + language) lives at
+  // #realtime, and the interactive scripted flow at #scripted / #live.
+  const realtimeDemo = routeIs('realtime');
+  // Default: the hands-free showcase, so a shared link needs no code, no
+  // microphone and no typing — Kiwi talks through a sample conversation.
+  const showcase = !realtimeDemo && !routeIs('scripted') && !routeIs('live');
 
   // Live voice is opt-in via the "#live" URL; everyone else gets the reliable
   // scripted robot. (Kept in state so a failed live start can drop to scripted.)
-  const wantsLive =
-    typeof window !== 'undefined' && /(?:^|[#/])live$/.test(hash);
+  const wantsLive = routeIs('live');
   const [mode, setMode] = React.useState<'live' | 'scripted'>(
     wantsLive ? 'live' : 'scripted',
   );
