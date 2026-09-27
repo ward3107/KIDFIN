@@ -40,6 +40,10 @@ export class KiwiRealtime {
   private timer: ReturnType<typeof setTimeout> | undefined;
   private connectionTimer: ReturnType<typeof setTimeout> | undefined;
   private playbackSettleTimer: ReturnType<typeof setTimeout> | undefined;
+  private childSpeechTimer: ReturnType<typeof setTimeout> | undefined;
+  private childSpeechActive = false;
+  private childSpeechVerified = false;
+  private speechStartedDuringPlayback = false;
   private userMuted = false;
   private assistantTurnActive = false;
   private outputPlaying = false;
@@ -131,14 +135,10 @@ export class KiwiRealtime {
         this.timer = setTimeout(() => this.fail('demo_finished'), 5 * 60_000);
         break;
       case 'input_audio_buffer.speech_started':
-        this.events.phase('listening');
-        this.caption = '';
-        this.events.caption('');
-        this.events.options([]);
+        this.onChildSpeechStarted();
         break;
       case 'input_audio_buffer.speech_stopped':
-        this.events.phase('thinking');
-        this.beginAssistantTurn();
+        this.onChildSpeechStopped();
         break;
       case 'response.created':
         this.caption = '';
@@ -203,6 +203,59 @@ export class KiwiRealtime {
     }
   }
 
+  private onChildSpeechStarted() {
+    clearTimeout(this.childSpeechTimer);
+    this.childSpeechActive = true;
+    this.childSpeechVerified = false;
+    this.speechStartedDuringPlayback = this.outputPlaying;
+
+    // When Kiwi is not audibly speaking, even a very short child turn may be a
+    // meaningful one-word answer. Accept it immediately.
+    if (!this.outputPlaying) {
+      this.childSpeechVerified = true;
+      if (this.assistantTurnActive) this.send({ type: 'response.cancel' });
+      this.events.phase('listening');
+      this.caption = '';
+      this.events.caption('');
+      this.events.options([]);
+      return;
+    }
+
+    // During Kiwi playback, do not let a cough, laugh, "um", breath or tiny
+    // vocalisation stop the sentence. Require sustained speech before barge-in.
+    this.childSpeechTimer = setTimeout(() => {
+      if (!this.childSpeechActive || this.closed) return;
+      this.childSpeechVerified = true;
+      if (this.assistantTurnActive) this.send({ type: 'response.cancel' });
+      this.send({ type: 'output_audio_buffer.clear' });
+      this.outputPlaying = false;
+      this.events.phase('listening');
+      this.caption = '';
+      this.events.caption('');
+      this.events.options([]);
+    }, 650);
+  }
+
+  private onChildSpeechStopped() {
+    clearTimeout(this.childSpeechTimer);
+    this.childSpeechActive = false;
+
+    // A short sound detected while Kiwi was speaking is intentionally ignored.
+    // Semantic VAD may still commit it as input, but no assistant response is
+    // created, so playback continues without the "every noise interrupts me" bug.
+    if (this.speechStartedDuringPlayback && !this.childSpeechVerified) {
+      this.speechStartedDuringPlayback = false;
+      return;
+    }
+
+    this.speechStartedDuringPlayback = false;
+    if (!this.childSpeechVerified) return;
+    this.childSpeechVerified = false;
+    this.events.phase('thinking');
+    this.beginAssistantTurn();
+    this.send({ type: 'response.create' });
+  }
+
   private send(event: object): boolean {
     if (this.channel?.readyState !== 'open') return false;
     this.channel.send(JSON.stringify(event));
@@ -253,11 +306,10 @@ export class KiwiRealtime {
   }
 
   private syncMicrophone() {
-    // Keep WebRTC input live while Kiwi is speaking. Server VAD uses the live
-    // track to detect a real user interruption and cancels/truncates the
-    // response automatically. Browser echo cancellation and server-side noise
-    // reduction protect against loudspeaker echo; gating here makes barge-in
-    // impossible and causes the assistant to appear deaf.
+    // Keep WebRTC input live while Kiwi is speaking. The server detects speech,
+    // while the client applies a short child-aware confirmation window before it
+    // cancels playback. Browser echo cancellation and server-side noise
+    // reduction remain enabled; gating the track would make barge-in impossible.
     const enabled = !this.userMuted;
     this.mic?.getAudioTracks().forEach(track => { track.enabled = enabled; });
   }
@@ -275,6 +327,10 @@ export class KiwiRealtime {
     clearTimeout(this.timer);
     clearTimeout(this.connectionTimer);
     clearTimeout(this.playbackSettleTimer);
+    clearTimeout(this.childSpeechTimer);
+    this.childSpeechActive = false;
+    this.childSpeechVerified = false;
+    this.speechStartedDuringPlayback = false;
     this.mic?.getTracks().forEach(t => t.stop());
     this.source?.disconnect();
     if (this.audio) { this.audio.pause(); this.audio.srcObject = null; }
