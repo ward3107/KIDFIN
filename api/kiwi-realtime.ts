@@ -87,17 +87,16 @@ export default async function handler(req: Request): Promise<Response> {
           // far-field filtering. The client sends only this two-value hint.
           noise_reduction: { type: micProfile },
           turn_detection: {
-            type: 'server_vad',
-            // Laptop/room microphones need a little more sensitivity for quiet
-            // children; close phone/headset microphones keep the safer level.
-            threshold: micProfile === 'far_field' ? 0.22 : 0.28,
-            prefix_padding_ms: 600,
-            // Preserve short hesitations while making completed turns feel fast.
-            silence_duration_ms: 800,
-            create_response: true,
-            // WebRTC manages playback truncation, so genuine user speech can
-            // stop Kiwi immediately and become the next turn.
-            interrupt_response: true,
+            type: 'semantic_vad',
+            // Young children pause, stretch sounds and restart phrases often.
+            // Low eagerness gives them room to finish the thought instead of
+            // treating every hesitation as the end of a turn.
+            eagerness: 'low',
+            // The browser decides when a detected turn is meaningful enough to
+            // interrupt Kiwi. This prevents coughs, laughs and tiny vocalisations
+            // from cancelling playback while preserving real barge-in.
+            create_response: false,
+            interrupt_response: false,
           },
         },
         output: { voice: 'marin' },
