@@ -5,20 +5,48 @@ afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 const events = () => ({ phase: vi.fn(), caption: vi.fn(), options: vi.fn(), error: vi.fn() });
 
 describe('voice lifecycle', () => {
-  it('drives speaking from playback rather than text and returns to listening on interruption', () => {
+  it('ignores tiny sounds during Kiwi playback but accepts sustained child speech', () => {
+    vi.useFakeTimers();
     const handlers = events(); const call = new KiwiRealtime(handlers);
+    const send = vi.fn(() => true);
+    Object.assign(call, { send, assistantTurnActive: true, outputPlaying: true });
+
     call.receive({ type: 'response.output_audio_transcript.delta', delta: 'שלום' });
     expect(handlers.caption).toHaveBeenLastCalledWith('שלום');
-    expect(handlers.phase).not.toHaveBeenCalled();
     call.receive({ type: 'output_audio_buffer.started' });
     expect(handlers.phase).toHaveBeenLastCalledWith('speaking');
+
+    // A cough/laugh/short vocalisation must not interrupt Kiwi.
     call.receive({ type: 'input_audio_buffer.speech_started' });
+    vi.advanceTimersByTime(300);
+    call.receive({ type: 'input_audio_buffer.speech_stopped' });
+    expect(send).not.toHaveBeenCalledWith({ type: 'response.cancel' });
+    expect(send).not.toHaveBeenCalledWith({ type: 'output_audio_buffer.clear' });
+
+    // Sustained child speech is a real barge-in.
+    call.receive({ type: 'input_audio_buffer.speech_started' });
+    vi.advanceTimersByTime(650);
+    expect(send).toHaveBeenCalledWith({ type: 'response.cancel' });
+    expect(send).toHaveBeenCalledWith({ type: 'output_audio_buffer.clear' });
     expect(handlers.phase).toHaveBeenLastCalledWith('listening');
-    expect(handlers.caption).toHaveBeenLastCalledWith('');
-    expect(handlers.options).toHaveBeenLastCalledWith([]);
+    call.receive({ type: 'input_audio_buffer.speech_stopped' });
+    expect(send).toHaveBeenCalledWith({ type: 'response.create' });
+    expect(handlers.phase).toHaveBeenLastCalledWith('thinking');
+
     call.stop();
     call.receive({ type: 'output_audio_buffer.started' });
     expect(handlers.phase).toHaveBeenLastCalledWith('idle');
+  });
+  it('accepts a short one-word child answer when Kiwi is already listening', () => {
+    const handlers = events(); const call = new KiwiRealtime(handlers);
+    const send = vi.fn(() => true);
+    Object.assign(call, { send, outputPlaying: false });
+
+    call.receive({ type: 'input_audio_buffer.speech_started' });
+    expect(handlers.phase).toHaveBeenLastCalledWith('listening');
+    call.receive({ type: 'input_audio_buffer.speech_stopped' });
+    expect(send).toHaveBeenCalledWith({ type: 'response.create' });
+    expect(handlers.phase).toHaveBeenLastCalledWith('thinking');
   });
   it('keeps the microphone live for barge-in and only disables it on explicit mute', () => {
     const track = { enabled: false };

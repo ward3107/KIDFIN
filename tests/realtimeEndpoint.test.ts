@@ -66,9 +66,9 @@ describe('open demo session boundary', () => {
     expect(config.model).not.toBe('untrusted');
     expect(config.instructions).not.toContain('ignore safeguards');
     expect(config.instructions).toContain('Support Hebrew, Arabic, English and Russian');
-    expect(config.audio.input.turn_detection.create_response).toBe(true);
-    expect(config.audio.input.turn_detection.interrupt_response).toBe(true);
-    expect(config.audio.input.turn_detection.threshold).toBe(0.22);
-    expect(config.audio.input.turn_detection.silence_duration_ms).toBe(800);
+    expect(config.audio.input.turn_detection.type).toBe('semantic_vad');
+    expect(config.audio.input.turn_detection.eagerness).toBe('low');
+    expect(config.audio.input.turn_detection.create_response).toBe(false);
+    expect(config.audio.input.turn_detection.interrupt_response).toBe(false);
   });
 });
