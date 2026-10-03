@@ -21,14 +21,90 @@ then redeploy. Never prefix secrets with `VITE_` or commit their values.
 | `UPSTASH_REDIS_REST_URL` | Existing Upstash REST endpoint |
 | `UPSTASH_REDIS_REST_TOKEN` | Existing Upstash REST token |
 
-Redis is mandatory: no paid calls are made if rate limiting is unavailable.
-There is no access code: anyone who can open the site can start a paid call.
-The only spend guard is a global limit of 10 session admission attempts per
-minute. This suits a small shared demonstration, not a public launch.
-The five-minute timer is a client UX limit, **not a hard billing cap**. Apply
-provider budget controls and monitor usage. Public launch needs per-user
-authorization, distributed concurrent-session quotas and server-controlled
-session lifetimes. Origin matching alone is not authentication.
+## Server-enforced admission budget
+
+Redis is mandatory and fail-closed. The handler validates the payload, then uses
+one atomic Lua operation **before** the paid OpenAI call to enforce:
+
+- A persistent, non-renewing number of remaining call attempts. No automatic
+  initialization, daily refill, TTL, retry or refund (even on upstream timeout).
+- At most 10 starts in a rolling minute.
+- At most `KIWI_REALTIME_DAILY_STARTS` starts in rolling 24 hours (default 10).
+- At most `KIWI_REALTIME_CONCURRENT_STARTS` starts in rolling 65 minutes (default 2).
+  These are conservative reservations, not observed active calls. Stop, failed
+  negotiation and the five-minute UX timeout do not free a reservation early.
+  This deliberately limits repeated demo restarts; size the operator allocation
+  accordingly. The 65-minute window allows margin over the provider's documented
+  60-minute session lifetime; it is **not** a guaranteed active-connection count.
+
+Optional limits must be decimal integers 1–10000. Invalid limits, Redis errors,
+unexpected responses, missing/corrupt/expiring ledger, and delayed reservations
+return 503 without calling OpenAI. Exhausted quotas return 429. The ledger is
+shared across instances/deployments using the same database; it uses Redis time.
+Only timestamps and counters are retained, never audio, transcripts or identity.
+There is still no access code. Origin matching is not authentication: an attacker
+can forge Origin and consume the shared allowance, causing denial of service.
+
+### Provision and operate
+
+**Deployment starts closed until an operator explicitly allocates calls.** In the
+Upstash console, initialize the following key once (example: 10 paid attempts,
+not 10 five-minute calls and not a dollar allowance):
+
+```redis
+SET kiwi:realtime:spend:v1 '{"version":1,"remaining":10,"starts":[]}' NX
+GET kiwi:realtime:spend:v1
+TTL kiwi:realtime:spend:v1
+```
+
+TTL must be -1. `NX` avoids resetting an existing budget. Do not automate this
+initialization or remove the key to refill it. Keep all funded deployments on
+this guard and the same Redis/policy; retire old deployment URLs with the former
+unbounded endpoint. Use a dedicated provider project/key and durable Redis with
+no eviction/data rollback. Restoring an older ledger can restore spent credits.
+
+To replenish: disable admission on **all** deployments, wait for in-flight
+creation requests to finish, inspect provider usage, read the current JSON and
+change **only** `remaining` (0–10000), preserving `version` and `starts`, then
+re-enable. This is a new explicit spending authorization. Never reset timestamps
+or replenish from a browser endpoint. Setting `KIWI_REALTIME_ENABLED=false`
+stops new calls only; it does not terminate existing ones.
+
+### Exact residual risk and architecture limit
+
+This is a hard cap on provider **creation attempts**, not dollars, tokens or
+five-minute session duration. Allocating N permits at most N calls through this
+endpoint until explicit replenishment, including ambiguous/failed attempts.
+An admitted hostile client can bypass the UX timer, send repeated responses and
+change mutable session/response settings over the direct provider data channel.
+`max_output_tokens: 420` is an initial per-response setting, not a total budget
+or immutable security boundary. Cost per admitted call remains variable.
+
+OpenAI documents a 60-minute Realtime session maximum. Do not estimate the
+allocation using five-minute calls; retained/late-negotiated sessions and changes
+to provider behavior also limit what our 65-minute reservation can guarantee.
+No client heartbeat, ephemeral-key expiry or VAD idle timeout is a billing cap.
+
+The provider supports `POST /v1/realtime/calls/{call_id}/hangup` for WebRTC.
+Thus server termination is possible, but this repository's short-lived Edge
+SDP handler has no durable worker/scheduler or proxy supervising the session
+once it returns. Adding `setTimeout` after returning is not reliable enforcement.
+A stronger design needs a durable controller that stores call IDs and registers
+termination before returning SDP, retries hangup independently of the browser,
+and handles worker/provider outages; a server-owned media/event proxy is needed
+for strict event/token authorization. A scheduled hangup alone still depends on
+provider availability and cannot promise an exact dollar cap. These components
+are not deployed by this change. Provider budget alerts are not assumed to be
+hard spending stops.
+
+### Verification
+
+`npm test` includes production Lua execution against disposable local Redis
+(`redis-server` and `redis-cli` required; CI installs them). Optional
+`REDIS_SERVER_BIN` / `REDIS_CLI_BIN` select explicit binary paths. Tests cover
+parallel reservations, budget exhaustion, rolling windows, corruption/TTL,
+provider ambiguity and fail-closed HTTP behavior, plus Child Voice v2 regression
+coverage. No paid provider calls are made by the tests.
 
 No microphone starts until Start is pressed. Stop,
 unmount, connection failures and the demo timeout release microphone tracks.
@@ -69,6 +145,9 @@ Application code does not persist audio/transcripts. Provider retention is a
 separate setting and is not disabled by this implementation.
 
 References:
+- https://developers.openai.com/api/reference/typescript/resources/realtime/subresources/calls/methods/create
+- https://developers.openai.com/api/reference/python/resources/realtime/subresources/calls/methods/hangup
+- https://upstash.com/docs/redis/features/restapi
 - https://developers.openai.com/api/docs/guides/voice-webrtc
 - https://developers.openai.com/api/docs/guides/realtime-conversations
 - https://developers.openai.com/api/docs/guides/safety-checks/under-18-api-guidance

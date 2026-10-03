@@ -1,3 +1,4 @@
+import { reserveRealtime } from '../server/realtimeAdmission';
 import { realtimeInstructions, type RealtimeLanguage } from '../services/live/realtimePersona';
 
 export const config = { runtime: 'edge' };
@@ -7,10 +8,8 @@ const json = (error: string, status: number) => new Response(JSON.stringify({ er
   headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
 });
 
-/**
- * Open demo: anyone on an allowed origin can start a call, with no access code.
- * Spend is bounded by the global per-minute admission limit below and the
- * client's five-minute call length. No transcript/audio logging or durable memory.
+/** Public demo: paid call creation requires an atomic, non-renewing server debit.
+ * The browser's five-minute timer is UX only; see docs/KIWI_REALTIME.md.
  */
 export default async function handler(req: Request): Promise<Response> {
   if (process.env.KIWI_REALTIME_ENABLED !== 'true') return json('not_configured', 503);
@@ -22,22 +21,6 @@ export default async function handler(req: Request): Promise<Response> {
   if (req.method !== 'POST') return json('method_not_allowed', 405);
   if (!origins.includes(req.headers.get('origin') || '')) return json('forbidden', 403);
   if (!req.headers.get('content-type')?.startsWith('application/json')) return json('bad_request', 400);
-  // Global, distributed admission limit: the only spend guard now that there is
-  // no access code, so it counts every attempt before any paid call.
-  // Fail closed: a Redis outage must never create unrestricted paid sessions.
-  try {
-    const limitKey = `kiwi:realtime:${Math.floor(Date.now() / 60000)}`;
-    const res = await fetch(`${redis}/pipeline`, {
-      method: 'POST', signal: AbortSignal.timeout(5000),
-      headers: { Authorization: `Bearer ${redisToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify([['INCR', limitKey], ['EXPIRE', limitKey, '120']]),
-    });
-    if (!res.ok) return json('temporarily_unavailable', 503);
-    const counts = await res.json();
-    if (!Number.isInteger(counts?.[0]?.result) || counts[0].result < 1 || counts?.[1]?.result !== 1) return json('temporarily_unavailable', 503);
-    if (counts[0].result > 10) return json('rate_limited', 429);
-  } catch { return json('temporarily_unavailable', 503); }
-
   // Bound the body while reading; do not trust Content-Length supplied by a client.
   const reader = req.body?.getReader();
   if (!reader) return json('bad_request', 400);
@@ -105,6 +88,11 @@ export default async function handler(req: Request): Promise<Response> {
     const form = new FormData();
     form.set('sdp', payload.sdp);
     form.set('session', JSON.stringify(session));
+    // Reserve only after validation, immediately before the only paid operation.
+    // No refunds or retries: a timeout may still mean the provider created a call.
+    const admission = await reserveRealtime(redis, redisToken);
+    if (admission === 'limited') return json('rate_limited', 429);
+    if (admission !== 'allowed') return json('temporarily_unavailable', 503);
     const upstream = await fetch('https://api.openai.com/v1/realtime/calls', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}` }, body: form,
       signal: AbortSignal.timeout(20_000),
