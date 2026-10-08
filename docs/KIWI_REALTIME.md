@@ -119,7 +119,7 @@ The backend never returns the provider key and sets `Cache-Control: no-store`.
 5. Interrupt a long answer; check speech stops and Kiwi answers the new turn.
 6. Mute and unmute, deny microphone permission, disconnect the network, retry.
 7. Stop while microphone permission is pending; confirm the mic stops if granted later.
-8. Switch to `/#app` mid-call; confirm the microphone indicator clears.
+8. Switch to `/#avatar` mid-call; confirm the microphone indicator clears. The retired `/#app` link now opens a fresh robot room, never a finance screen.
 9. Verify on real mobile Safari and Chrome and a device with WebGL disabled.
 
 Record measured response latency, interruption delay, contextual correctness,

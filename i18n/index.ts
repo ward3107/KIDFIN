@@ -22,7 +22,7 @@ i18n
     interpolation: { escapeValue: false },
     detection: {
       order: ['localStorage', 'navigator'],
-      lookupLocalStorage: 'save4dream.lang',
+      lookupLocalStorage: 'kiwi.lang',
       caches: ['localStorage'],
     },
     returnNull: false,

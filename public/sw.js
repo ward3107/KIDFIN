@@ -1,5 +1,5 @@
-/* Save4Dream service worker — update-safe offline support. */
-const CACHE = 'save4dream-v3';
+/* Kiwi service worker — retire the old app's cached shell and assets. */
+const CACHE = 'kiwi-v1';
 const SHELL = ['/manifest.webmanifest', '/icon-192.svg', '/icon-512.svg'];
 
 self.addEventListener('install', event => {
@@ -10,7 +10,7 @@ self.addEventListener('install', event => {
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys =>
-      Promise.all(keys.filter(key => key !== CACHE).map(key => caches.delete(key)))
+      Promise.all(keys.filter(key => key !== CACHE && /^(kiwi-v|save4dream-v)/.test(key)).map(key => caches.delete(key)))
     )
   );
   self.clients.claim();

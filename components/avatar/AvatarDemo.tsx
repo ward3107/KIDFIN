@@ -3,12 +3,7 @@ import { RobotAvatar } from './RobotAvatar';
 import type { AvatarExpression, AvatarGesture, AvatarHandle } from './avatarTypes';
 
 /**
- * Standalone demo of the 3D talking mascot (AVATAR_3D_PLAN.md — M1+M2 slice).
- *
- * Not wired into the main app navigation yet; mounted on the `#avatar` route so
- * it can be shown/shared without touching the existing tabs. Each button makes
- * the robot speak a short social-interaction line with a matching expression and
- * gesture — a preview of how Layer 4 (lessons) will drive the avatar.
+ * Robot voice, expression and gesture preview on the `#avatar` route.
  */
 
 interface DemoLine {
@@ -18,8 +13,7 @@ interface DemoLine {
   gesture: AvatarGesture;
 }
 
-// Hebrew-first sample lines (the app is he/RTL). These stand in for real
-// social-skills scenarios that will live in config/socialScenarios.ts.
+// Hebrew sample lines for trying the robot's voice and gestures.
 const LINES: DemoLine[] = [
   {
     label: 'ברכה 👋',
