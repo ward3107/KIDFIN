@@ -28,6 +28,7 @@ type UiCopy = {
   status: Record<VoicePhase, string>;
   errors: {
     notConfigured: string;
+    budgetNotConfigured: string;
     finished: string;
     permission: string;
     busy: string;
@@ -49,6 +50,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     status: { idle: 'מוכן לשיחה', connecting: 'מתחבר…', listening: 'קיווי מקשיב', thinking: 'קיווי חושב…', speaking: 'קיווי מדבר' },
     errors: {
       notConfigured: 'השיחה החיה עדיין לא הוגדרה בשרת.',
+      budgetNotConfigured: 'מכסת השיחות עדיין לא הופעלה. מנהל האתר צריך להגדיר אותה כדי שקיווי יוכל לדבר.',
       finished: 'ההדגמה הסתיימה לאחר חמש דקות.',
       permission: 'יש לאפשר גישה למיקרופון ולנסות שוב.',
       busy: 'השירות עמוס כרגע. המתינו רגע ונסו שוב.',
@@ -68,6 +70,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     status: { idle: 'جاهز للمحادثة', connecting: 'جارٍ الاتصال…', listening: 'كيوي يستمع', thinking: 'كيوي يفكّر…', speaking: 'كيوي يتحدث' },
     errors: {
       notConfigured: 'لم يتم إعداد المحادثة المباشرة بعد.',
+      budgetNotConfigured: 'لم يتم تفعيل حصة المحادثات بعد. على مسؤول الموقع إعدادها حتى يتمكن كيوي من التحدث.',
       finished: 'انتهت التجربة بعد خمس دقائق.',
       permission: 'اسمح بالميكروفون ثم حاول مجدداً.',
       busy: 'الخدمة مشغولة الآن. انتظر قليلاً ثم حاول مجدداً.',
@@ -87,6 +90,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     status: { idle: 'Ready to talk', connecting: 'Connecting…', listening: 'Kiwi is listening', thinking: 'Kiwi is thinking…', speaking: 'Kiwi is speaking' },
     errors: {
       notConfigured: 'Live conversation has not been configured on the server yet.',
+      budgetNotConfigured: 'The call allowance has not been activated yet. The site administrator needs to configure it before Kiwi can talk.',
       finished: 'The five-minute demo has ended.',
       permission: 'Allow microphone access and try again.',
       busy: 'The service is busy right now. Wait a moment and try again.',
@@ -106,6 +110,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     status: { idle: 'Готов к разговору', connecting: 'Подключение…', listening: 'Киви слушает', thinking: 'Киви думает…', speaking: 'Киви говорит' },
     errors: {
       notConfigured: 'Живой разговор ещё не настроен на сервере.',
+      budgetNotConfigured: 'Лимит разговоров ещё не настроен. Администратору сайта нужно настроить его, чтобы Киви мог говорить.',
       finished: 'Пятиминутная демонстрация завершена.',
       permission: 'Разрешите доступ к микрофону и попробуйте снова.',
       busy: 'Сервис сейчас занят. Подождите немного и попробуйте снова.',
@@ -194,6 +199,8 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
 
   const errorText = error === 'not_configured'
     ? copy.errors.notConfigured
+    : error === 'budget_not_configured'
+      ? copy.errors.budgetNotConfigured
     : error === 'demo_finished'
       ? copy.errors.finished
       : error === 'rate_limited' || error === 'temporarily_unavailable'

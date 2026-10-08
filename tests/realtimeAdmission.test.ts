@@ -49,8 +49,22 @@ afterAll(async () => {
 });
 
 describe('atomic durable admission ledger', () => {
+  it('inspects readiness without creating, decrementing or rewriting the ledger', async () => {
+    const inspect = () => command('EVAL', RESERVE_REALTIME, '1', key, '10', '2', 'inspect');
+    expect(await inspect()).toBe(-2);
+    expect(await command('EXISTS', key)).toBe(0);
+    await seed(3);
+    const original = await command('GET', key);
+    for (let i = 0; i < 5; i++) expect(await inspect()).toBe(1);
+    expect(await command('GET', key)).toBe(original);
+    expect(await command('TTL', key)).toBe(-1);
+    await seed(0);
+    expect(await inspect()).toBe(0);
+    await seed(3, [await now(), await now()]);
+    expect(await inspect()).toBe(0);
+  });
   it('fails closed on missing, corrupt, wrongly typed and expiring state', async () => {
-    expect(await reserve()).toBe(-1);
+    expect(await reserve()).toBe(-2);
     for (const value of ['bad json', '{}', '{"version":2,"remaining":1,"starts":[]}',
       '{"version":1,"remaining":-1,"starts":[]}', '{"version":1,"remaining":1.5,"starts":[]}',
       '{"version":1,"remaining":1,"starts":["bad"]}', '{"version":1,"remaining":1,"starts":{"x":1}}']) {
@@ -102,6 +116,6 @@ describe('atomic durable admission ledger', () => {
     await seed(0, [await now() - 90000]);
     expect(await reserve()).toBe(0);
     await command('DEL', key);
-    expect(await reserve()).toBe(-1);
+    expect(await reserve()).toBe(-2);
   });
 });

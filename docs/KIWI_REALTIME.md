@@ -23,6 +23,17 @@ then redeploy. Never prefix secrets with `VITE_` or commit their values.
 
 ## Server-enforced admission budget
 
+`GET /api/kiwi-realtime` checks configuration and Redis admission readiness
+without reserving a slot, modifying the ledger, or contacting OpenAI. It returns
+`200 {"ready":true}`, `429 {"error":"rate_limited"}`, or 503 with
+`not_configured`, `budget_not_configured` (missing ledger), or
+`temporarily_unavailable` (Redis/configuration failure or invalid ledger).
+This checks admission only, not provider billing, model access or microphone playback.
+POST still independently validates and atomically reserves each paid attempt.
+Missing budgets stay closed; this endpoint never initializes or replenishes them.
+Server logs use `kiwi_admission` with fixed reason codes and optional HTTP status,
+without logging credentials, request bodies, audio or transcripts.
+
 Redis is mandatory and fail-closed. The handler validates the payload, then uses
 one atomic Lua operation **before** the paid OpenAI call to enforce:
 

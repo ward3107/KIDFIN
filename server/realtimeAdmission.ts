@@ -5,7 +5,8 @@ export const REALTIME_BUDGET_KEY = 'kiwi:realtime:spend:v1';
 // Redis TIME avoids instance clock skew. No TTL, refunds, browser identity or IP.
 export const RESERVE_REALTIME = `
 local raw = redis.call('GET', KEYS[1])
-if not raw or redis.call('TTL', KEYS[1]) ~= -1 then return -1 end
+if not raw then return -2 end
+if redis.call('TTL', KEYS[1]) ~= -1 then return -1 end
 local ok, state = pcall(cjson.decode, raw)
 if not ok or type(state) ~= 'table' or state.version ~= 1 then return -1 end
 local function integer(n)
@@ -32,6 +33,7 @@ for _, started in ipairs(state.starts) do
 end
 if state.remaining == 0 then return 0 end
 if minute >= 10 or #recent >= tonumber(ARGV[1]) or active >= tonumber(ARGV[2]) then return 0 end
+if ARGV[3] == 'inspect' then return 1 end
 table.insert(recent, now)
 state.remaining = state.remaining - 1
 state.starts = recent
@@ -47,8 +49,13 @@ function limit(value: string | undefined, fallback: number): number {
   return parsed;
 }
 
-/** A debit is never refunded, including ambiguous upstream/network failures. */
-export async function reserveRealtime(redis: string, token: string): Promise<'allowed' | 'limited' | 'unavailable'> {
+type Admission = 'allowed' | 'limited' | 'unavailable' | 'unprovisioned';
+
+// Log only fixed reason codes and HTTP status; never credentials or Redis bodies.
+const diagnostic = (reason: string, status?: number) =>
+  console.error('kiwi_admission', { reason, ...(status === undefined ? {} : { status }) });
+
+async function admission(redis: string, token: string, inspect = false): Promise<Admission> {
   try {
     const daily = limit(process.env.KIWI_REALTIME_DAILY_STARTS, 10);
     const concurrent = limit(process.env.KIWI_REALTIME_CONCURRENT_STARTS, 2);
@@ -56,14 +63,23 @@ export async function reserveRealtime(redis: string, token: string): Promise<'al
     const response = await fetch(redis.replace(/\/$/, ''), {
       method: 'POST', signal: AbortSignal.timeout(5000),
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(['EVAL', RESERVE_REALTIME, '1', REALTIME_BUDGET_KEY, String(daily), String(concurrent)]),
+      body: JSON.stringify(['EVAL', RESERVE_REALTIME, '1', REALTIME_BUDGET_KEY, String(daily), String(concurrent), ...(inspect ? ['inspect'] : [])]),
     });
-    if (!response.ok) return 'unavailable';
+    if (!response.ok) { diagnostic('redis_http', response.status); return 'unavailable'; }
     const data = await response.json();
     // Do not use a delayed reservation to open a call after its window elapsed.
-    if (Date.now() - started >= 5000 || data?.error) return 'unavailable';
+    if (Date.now() - started >= 5000) { diagnostic('redis_timeout'); return 'unavailable'; }
+    if (data?.error) { diagnostic('redis_command'); return 'unavailable'; }
     if (data?.result === 1) return 'allowed';
     if (data?.result === 0) return 'limited';
+    if (data?.result === -2) return 'unprovisioned';
+    diagnostic(data?.result === -1 ? 'invalid_ledger' : 'invalid_response');
     return 'unavailable';
-  } catch { return 'unavailable'; }
+  } catch { diagnostic('configuration_or_connection'); return 'unavailable'; }
 }
+
+/** A debit is never refunded, including ambiguous upstream/network failures. */
+export const reserveRealtime = (redis: string, token: string) => admission(redis, token);
+
+/** Same validation and limits, without a debit, timestamp update or paid call. */
+export const inspectRealtime = (redis: string, token: string) => admission(redis, token, true);
