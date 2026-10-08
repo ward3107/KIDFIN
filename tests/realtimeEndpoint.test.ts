@@ -18,6 +18,32 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
 describe('open demo session boundary', () => {
+  it.each([
+    [1, 200, { ready: true }],
+    [-2, 503, { error: 'budget_not_configured' }],
+    [-1, 503, { error: 'temporarily_unavailable' }],
+    [0, 429, { error: 'rate_limited' }],
+  ])('inspects readiness (%s) without a paid operation', async (result, status, body) => {
+    const fetch = vi.fn().mockResolvedValueOnce(limiter(result as number));
+    vi.stubGlobal('fetch', fetch);
+    const response = await handler(new Request('https://demo.example/api/kiwi-realtime'));
+    expect(response.status).toBe(status);
+    expect(await response.json()).toEqual(body);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0][0]).toBe('https://redis.example');
+    const command = JSON.parse(fetch.mock.calls[0][1].body);
+    expect(command.at(-1)).toBe('inspect');
+  });
+  it('reports an unprovisioned budget on POST without calling OpenAI', async () => {
+    const fetch = vi.fn().mockResolvedValueOnce(limiter(-2));
+    vi.stubGlobal('fetch', fetch);
+    const response = await handler(request());
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: 'budget_not_configured' });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetch.mock.calls[0][1].body).at(-1)).toBe('2');
+  });
   it('makes no upstream calls when disabled or from an untrusted origin', async () => {
     const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
     expect((await handler(request({}, 'https://evil.example'))).status).toBe(403);
@@ -36,9 +62,9 @@ describe('open demo session boundary', () => {
       'https://api.openai.com/v1/realtime/calls',
     ]);
   });
-  it('rejects non-POST requests without calling any service', async () => {
+  it('rejects unsupported methods without calling any service', async () => {
     const fetch = vi.fn(); vi.stubGlobal('fetch', fetch);
-    const get = new Request('https://demo.example/api/kiwi-realtime', { headers: { origin: 'https://demo.example' } });
+    const get = new Request('https://demo.example/api/kiwi-realtime', { method: 'DELETE', headers: { origin: 'https://demo.example' } });
     expect((await handler(get)).status).toBe(405);
     expect(fetch).not.toHaveBeenCalled();
   });

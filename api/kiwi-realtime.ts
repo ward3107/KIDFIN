@@ -1,4 +1,4 @@
-import { reserveRealtime } from '../server/realtimeAdmission';
+import { inspectRealtime, reserveRealtime } from '../server/realtimeAdmission';
 import { realtimeInstructions, type RealtimeLanguage } from '../services/live/realtimePersona';
 
 export const config = { runtime: 'edge' };
@@ -18,6 +18,17 @@ export default async function handler(req: Request): Promise<Response> {
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
   const origins = (process.env.KIWI_REALTIME_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
   if (!apiKey || !redis || !redisToken || !origins.length) return json('not_configured', 503);
+  if (req.method === 'GET') {
+    const origin = req.headers.get('origin');
+    if (origin && !origins.includes(origin)) return json('forbidden', 403);
+    const readiness = await inspectRealtime(redis, redisToken);
+    if (readiness === 'unprovisioned') return json('budget_not_configured', 503);
+    if (readiness === 'limited') return json('rate_limited', 429);
+    if (readiness !== 'allowed') return json('temporarily_unavailable', 503);
+    return new Response(JSON.stringify({ ready: true }), {
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    });
+  }
   if (req.method !== 'POST') return json('method_not_allowed', 405);
   if (!origins.includes(req.headers.get('origin') || '')) return json('forbidden', 403);
   if (!req.headers.get('content-type')?.startsWith('application/json')) return json('bad_request', 400);
@@ -92,6 +103,7 @@ export default async function handler(req: Request): Promise<Response> {
     // No refunds or retries: a timeout may still mean the provider created a call.
     const admission = await reserveRealtime(redis, redisToken);
     if (admission === 'limited') return json('rate_limited', 429);
+    if (admission === 'unprovisioned') return json('budget_not_configured', 503);
     if (admission !== 'allowed') return json('temporarily_unavailable', 503);
     const upstream = await fetch('https://api.openai.com/v1/realtime/calls', {
       method: 'POST', headers: { Authorization: `Bearer ${apiKey}` }, body: form,
