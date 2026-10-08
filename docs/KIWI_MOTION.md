@@ -1,6 +1,6 @@
 # Kiwi conversational motion
 
-The adult `/#realtime` demo loads `public/models/kiwi-expressive.glb`. Existing routes keep their current avatar. Four silent preview buttons exercise listening, explanation, question and celebration poses without starting the microphone or a paid session.
+The default robot and `/#realtime` load `public/models/kiwi-expressive.glb`. The scripted and avatar preview routes keep their original robot. The realtime UI starts voice only after an explicit Start tap.
 
 The model contains independent shoulder and head pivots, eyebrow meshes, eyelid morphs and mouth morphs. Live playback amplitude drives mouth opening and asymmetric hand beats. Conversation phases select listening, thinking and speaking poses. Moving out of `speaking` clears stale mouth energy and gestures so an interruption eases back to a listening pose.
 

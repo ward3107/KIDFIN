@@ -7,8 +7,8 @@
  * (captions + fallback) and per-language keyword intents for matching what the
  * child says by voice.
  *
- * This is the safe "Hybrid" half (AVATAR_3D_PLAN.md — Layer 4, scripted).
- * The AI free-chat engine will implement the same TurnResult contract later.
+ * This dialogue powers the scripted and hands-free robot demos. The default
+ * free conversation uses the separate realtime transport and persona.
  */
 
 import type { AvatarExpression, AvatarGesture } from '../../components/avatar/avatarTypes';

@@ -1,7 +1,7 @@
 {
-  "name": "Save4Dream",
-  "short_name": "Save4Dream",
-  "description": "אפליקציה חינוכית לחיסכון וניהול כסף לילדים",
+  "name": "קיווי | Kiwi",
+  "short_name": "Kiwi",
+  "description": "קיווי — רובוט תלת־ממד לשיחה קולית טבעית",
   "lang": "he",
   "dir": "rtl",
   "start_url": "/",
@@ -10,7 +10,7 @@
   "orientation": "portrait",
   "background_color": "#f8fafc",
   "theme_color": "#4f46e5",
-  "categories": ["education", "finance", "kids"],
+  "categories": ["education"],
   "icons": [
     {
       "src": "/icon-192.svg",

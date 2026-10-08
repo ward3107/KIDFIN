@@ -1,91 +1,24 @@
-# AI Voice (Gemini Live) — Setup
+# Kiwi voice setup
 
-Kiwi's front page is a real, two-way spoken conversation powered by **Gemini
-Live**. Kiwi opens the chat by itself and understands and speaks **Hebrew and
-everyday spoken Arabic**. If no Gemini key is set (or the browser can't
-connect), the page **falls back automatically** to the scripted conversation —
-so the app always works.
+The default robot at `/` and `/#realtime` uses **OpenAI Realtime**. Follow [docs/KIWI_REALTIME.md](docs/KIWI_REALTIME.md) for its required environment, Redis admission ledger and explicit call allocation. It does not automatically fall back to Gemini.
 
-## Push-to-talk (why there's a button)
-The child taps **"לחצו כדי לדבר" / "اضغط لتتكلّم"** to talk, then **"שלח" /
-"أرسل"** to send it to Kiwi. Gemini's automatic voice detection is deliberately
-**disabled**: in a classroom, background chatter would otherwise keep the mic
-open and feed other children's voices into the conversation. With push-to-talk
-the mic is streamed **only** between those two taps, so Kiwi hears one child, on
-purpose. Tapping "talk" while Kiwi is speaking also interrupts it, so a child
-never has to wait for Kiwi to finish.
+## Alternate Gemini route
 
-The API key lives **only on the server**. The browser never sees it: a
-serverless endpoint mints a short-lived, single-use **ephemeral token** locked
-to Kiwi's model and kid-safe instructions, and the browser opens the Live
-connection with that token.
+`/#live` records one WAV utterance at a time and sends it to `POST /api/kiwi-turn`. The server asks Gemini for JSON `{ heard, reply }`. Playback uses the browser voice. This is a batch audio-turn route, not a Gemini Live WebSocket or token-minting flow.
 
-## 1. Get a Gemini API key (free)
-- Go to **https://aistudio.google.com/apikey** and sign in with any Google
-  account (a normal Gmail works — no credit card needed to start).
-- Click **Create API key** → **Create API key in new project**.
-- Copy the key (starts with `AIza…`). Keep it private — never paste it in code
-  or the browser.
+Server-only configuration:
 
-## 2. Add it to your host (production)
+| Variable | Purpose |
+| --- | --- |
+| `GEMINI_API_KEY` | Gemini credential |
+| `GEMINI_MODEL` | Optional model override; see the endpoint for the current default |
+| `ALLOWED_ORIGINS` | Additional allowed origins, comma-separated |
+| `UPSTASH_REDIS_REST_URL` | Optional rate limiter endpoint |
+| `UPSTASH_REDIS_REST_TOKEN` | Optional rate limiter credential |
+| `LIVE_RATE_LIMIT` | Optional per-IP requests per minute; default 30 |
 
-**Vercel** → Project **kidfin** → Settings → **Environment Variables** → Add:
+Vercel uses `api/kiwi-turn.ts`; Netlify has a separate handler at `netlify/functions/kiwi-turn.mjs`. The default OpenAI realtime handler is only implemented for Vercel in this repository.
 
-| Key | Value |
-|-----|-------|
-| `GEMINI_API_KEY` | *your key* |
-| `GEMINI_LIVE_MODEL` *(optional)* | a Live model id (default: native-audio 2.5 Flash) |
-| `GEMINI_LIVE_VOICE` *(optional)* | a prebuilt voice name (default `Aoede`) |
+The alternate route's limiter currently fails open when Redis is missing or unavailable. Origin checks are not authentication. This route does not share the durable call budget used by OpenAI Realtime; account for that when enabling it.
 
-**Netlify** (if used) → **Environment variables** → add the same.
-
-Then **redeploy** (or push a commit) so the function picks up the variable.
-
-> Do **not** put the key in the app code, a committed `.env`, or the client.
-
-## 3. That's it
-- The client asks `POST /api/gemini-token` → the serverless function mints an
-  ephemeral token → the browser opens the Gemini Live WebSocket with it.
-- Until a key is set, the token endpoint returns `503` and the front page quietly
-  runs the scripted conversation instead.
-
-## Abuse protection (the endpoint is public)
-1. **Google spend — free tier is the backstop.** The free tier has hard rate
-   limits, so you can't overspend unless you deliberately enable paid billing.
-   If you go paid, set a budget/quota in Google Cloud.
-2. **Same-origin check (built in).** The token endpoint only answers requests
-   from your own site (a random `curl` or another website is rejected, 403).
-   Custom domains: set `ALLOWED_ORIGINS` (comma-separated) if needed.
-3. **Per-IP rate limit (optional, recommended).** Uses **Upstash Redis** (free
-   tier). Create a database at upstash.com, then add its two REST values:
-
-   | Key | Value |
-   |-----|-------|
-   | `UPSTASH_REDIS_REST_URL` | *from the Upstash database page* |
-   | `UPSTASH_REDIS_REST_TOKEN` | *from the Upstash database page* |
-   | `LIVE_RATE_LIMIT` *(optional)* | token requests per minute per IP (default `10`) |
-
-   **If Upstash isn't configured or is unreachable, the limit fails open**
-   (allows the request) — it can never lock out a real student.
-
-## Safety (built in)
-- Strict, kid-safe **system instruction**: a kind tutor for young kids, simple
-  words, only friendly/educational topics, steers away from unsafe subjects,
-  never asks for personal data. Locked into the ephemeral token so the browser
-  can't change it.
-- Gemini's built-in safety filters.
-- The mic uses echo cancellation / noise suppression; audio never leaves the
-  child's device except as the live stream to Google.
-
-## Cost
-Roughly a few cents per 5-minute child session — and $0 while you stay on the
-free tier. Monitor usage in Google AI Studio / Google Cloud.
-
-## If Kiwi's live voice doesn't start
-- **"model not found" / connect fails:** Gemini preview model ids rotate. Set
-  `GEMINI_LIVE_MODEL` to the current Live model id from
-  https://ai.google.dev/gemini-api/docs/models — no code change needed.
-- **No mic permission:** the child's browser must allow the microphone; Kiwi
-  shows a gentle "allow the microphone" note.
-- **No key yet:** the page quietly runs the scripted conversation until
-  `GEMINI_API_KEY` is set.
+Use `/#scripted` for the recorded bilingual conversation or `/#demo` for a hands-free sample without microphone access. Microphone permission, available browser voices and network access affect live playback. Never put API keys in client code or commit their values.
