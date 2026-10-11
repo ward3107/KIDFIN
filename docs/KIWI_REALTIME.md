@@ -7,6 +7,15 @@ hands-free showcase (`/#demo`), the `/#scripted` experience and the legacy
 `/#live` route are separate. This route uses OpenAI Realtime over WebRTC, not
 the Gemini turn endpoint.
 
+The realtime room fits the dynamic viewport. On wide screens illustrated reply
+cards sit beside Kiwi; on portrait phones they form a two-column board above the
+compact mute/end controls. Speech detection still changes listening/speaking
+automatically, and starting the microphone still requires an explicit tap.
+`show_reply_options` returns 2–4 `{label, picture}` choices using a local SVG
+vocabulary; unknown pictures fall back safely and older string-only choices
+remain supported. Labels are kept brief. Unusually long labels are visually
+limited to three lines with their full text retained as the accessible name.
+
 ## Configure the Vercel project
 
 Set these **server-only** environment variables for the intended deployment,

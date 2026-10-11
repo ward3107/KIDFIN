@@ -1,0 +1,73 @@
+.kiwi-room-root { height: 100dvh; width: 100%; overflow: hidden; background: #eef0ff; color: #302d52; }
+.kiwi-room-mount { height: 100%; }
+.kiwi-room, .kiwi-room * { box-sizing: border-box; }
+.kiwi-room { height: 100%; max-width: 1440px; margin: auto; padding: max(12px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); display: grid; grid-template-rows: auto minmax(0, 1fr) 52px; gap: 12px; text-align: center; }
+.kiwi-room p { margin: 0; }
+.kiwi-room-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; font-weight: 500; min-height: 32px; }
+.kiwi-status { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.kiwi-status > span { width: 8px; height: 8px; border-radius: 50%; background: #9c9bb2; flex-shrink: 0; }
+.kiwi-status[data-phase="listening"] > span { background: #38846f; box-shadow: 0 0 0 5px #d4e8df; }
+.kiwi-status[data-phase="speaking"] > span { background: #6b60b9; }
+.kiwi-status[data-phase="muted"] > span { background: #b2465c; }
+.kiwi-room-body { min-height: 0; display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(300px, 1fr); gap: clamp(16px, 4vw, 64px); align-items: stretch; }
+.kiwi-stage { min-height: 0; min-width: 0; display: grid; grid-template-rows: minmax(0, 1fr) 76px; }
+.kiwi-avatar-space { min-height: 0; min-width: 0; }
+.kiwi-avatar-fallback { height: 100%; display: grid; place-items: center; font-size: clamp(80px, 20vh, 180px); }
+.kiwi-caption { align-self: center; font-size: clamp(16px, 1.3vw, 20px); line-height: 1.55; max-width: 650px; width: 100%; margin-inline: auto !important; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.kiwi-choice-space { display: flex; min-height: 0; min-width: 0; flex-direction: column; justify-content: center; gap: 14px; }
+.kiwi-choice-heading { font-size: 15px; font-weight: 500; }
+.kiwi-choices { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: 14px; max-height: calc(100% - 40px); }
+.kiwi-room button { font: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.kiwi-choice { min-width: 0; min-height: 0; height: clamp(142px, 25vh, 220px); border: 2px solid transparent; border-radius: 26px; background: #fff; padding: 14px 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; box-shadow: 0 4px 0 #d9dbea; color: #302d52; transition: transform 140ms, border-color 140ms; }
+.kiwi-choice:nth-child(4n+2) { background: #fff9eb; }
+.kiwi-choice:nth-child(4n+3) { background: #eff8f3; }
+.kiwi-choice:nth-child(4n+4) { background: #fcf0f2; }
+.kiwi-choice-picture { width: clamp(64px, 8vw, 108px); height: clamp(64px, 8vw, 108px); flex-shrink: 1; min-height: 32px; }
+.kiwi-choice > span { font-size: clamp(14px, 1.3vw, 19px); font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; flex-shrink: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+.kiwi-choice:hover:not(:disabled) { border-color: #8279c3; transform: translateY(-3px); }
+.kiwi-choice:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+.kiwi-room button:focus-visible { outline: 3px solid #5145a5; outline-offset: 3px; }
+.kiwi-room button:disabled { cursor: wait; opacity: .65; }
+.kiwi-start-panel { max-width: 370px; margin-inline: auto; display: grid; gap: 14px; }
+.kiwi-start { display: flex; gap: 10px; align-items: center; justify-content: center; width: 100%; min-height: 58px; border: 0; border-radius: 20px; background: #5753a8; color: white; padding: 12px 20px; font-weight: 700 !important; }
+.kiwi-disclosure { font-size: 12px; line-height: 1.7; color: #66627a; }
+.kiwi-talk-hint { display: flex; flex-direction: column; align-items: center; gap: 16px; color: #68637c; font-size: 15px; line-height: 1.8; max-width: 280px; margin-inline: auto !important; }
+.kiwi-error { font-size: 14px; padding: 12px; border-radius: 12px; background: #fff1d1; color: #744723; }
+.kiwi-controls { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.kiwi-controls button { min-height: 44px; border-radius: 16px; display: inline-flex; justify-content: center; align-items: center; gap: 8px; border: 1px solid #d5d3e8; background: #fff; padding: 8px 14px; font-size: 13px; }
+.kiwi-controls .kiwi-mic-control { width: 46px; padding: 0; }
+.kiwi-mic-control[aria-pressed="true"] { background: #f9dfe4; color: #98364a; border-color: #dba3b0; }
+.kiwi-controls .kiwi-end-control { color: #99314b; }
+@media (max-width: 700px) and (orientation: portrait) {
+  .kiwi-room { padding: max(10px, env(safe-area-inset-top)) 12px max(8px, env(safe-area-inset-bottom)); gap: 6px; grid-template-rows: 32px minmax(0, 1fr) 48px; }
+  .kiwi-room-header { font-size: 11px; gap: 8px; }
+  .kiwi-status { font-size: 11px; gap: 6px; }
+  .kiwi-room-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(0, 1fr) auto; gap: 8px; }
+  .kiwi-stage { grid-template-rows: minmax(0, 1fr) 52px; }
+  .kiwi-caption { font-size: 15px; line-height: 1.5; }
+  .kiwi-choice-space { gap: 6px; }
+  .kiwi-choice-heading { font-size: 12px; }
+  .kiwi-choices { gap: 8px; max-height: none; }
+  .kiwi-choice { height: clamp(104px, 17dvh, 148px); border-radius: 20px; padding: 7px 9px; gap: 3px; }
+  .kiwi-choice-picture { width: 64px; height: 64px; }
+  .kiwi-choice > span { font-size: 14px; }
+  .kiwi-talk-hint { flex-direction: row; font-size: 12px; gap: 8px; line-height: 1.5; max-width: 360px; }
+  .kiwi-talk-hint svg { flex-shrink: 0; width: 20px; }
+  .kiwi-start-panel { gap: 8px; }
+  .kiwi-start { min-height: 48px; font-size: 16px !important; }
+  .kiwi-disclosure { font-size: 11px; }
+}
+@media (max-height: 560px) and (orientation: landscape) {
+  .kiwi-room { padding: 8px 16px; gap: 4px; grid-template-rows: 28px minmax(0, 1fr) 44px; }
+  .kiwi-room-body { grid-template-columns: minmax(0, 1fr) minmax(250px, .9fr); gap: 12px; }
+  .kiwi-stage { grid-template-rows: minmax(0, 1fr) 44px; }
+  .kiwi-caption, .kiwi-choice > span { font-size: 13px; line-height: 1.3; }
+  .kiwi-choice-space { gap: 5px; }
+  .kiwi-choice-heading { font-size: 12px; }
+  .kiwi-choices { gap: 8px; flex: 1; max-height: 280px; }
+  .kiwi-choice { height: 100%; padding: 5px 8px; gap: 2px; border-radius: 16px; }
+  .kiwi-choice-picture { width: 52px; height: 52px; min-height: 22px; }
+  .kiwi-talk-hint { font-size: 13px; line-height: 1.5; }
+  .kiwi-disclosure { line-height: 1.4; }
+}
+@media (prefers-reduced-motion: reduce) { .kiwi-choice { transition: none; } }
