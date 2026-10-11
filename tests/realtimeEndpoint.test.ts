@@ -146,9 +146,8 @@ describe('paid-call fail-closed boundary', () => {
     expect(session.max_output_tokens).toBe(420);
     expect(session.tools[0].name).toBe('show_reply_options');
     const choice = session.tools[0].parameters.properties.options.items;
-    expect(choice.required).toEqual(['label', 'picture']);
-    expect(choice.properties.picture.enum).toContain('story');
-    expect(choice.properties.picture.enum).toContain('friends');
+    expect(choice.required).toEqual(['label']);
+    expect(choice.properties.picture).toBeUndefined();
     expect(choice.additionalProperties).toBe(false);
     const command = JSON.parse(fetch.mock.calls[0][1].body);
     expect(command.slice(2)).toEqual(['1', 'kiwi:realtime:spend:v1', '10', '2']);

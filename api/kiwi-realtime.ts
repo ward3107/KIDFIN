@@ -1,5 +1,4 @@
 import { inspectRealtime, reserveRealtime } from '../server/realtimeAdmission';
-import { REPLY_PICTURES } from '../services/live/replyOptions';
 import { realtimeInstructions, type RealtimeLanguage } from '../services/live/realtimePersona';
 
 export const config = { runtime: 'edge' };
@@ -60,7 +59,7 @@ export default async function handler(req: Request): Promise<Response> {
       tools: [{
         type: 'function',
         name: 'show_reply_options',
-        description: 'Show two to four short, age-appropriate reply choices in the speaker\'s current language. Use when choices would help the student continue, and always use it when offering explicit alternatives. Include a normal spoken reply in the same response before calling this tool.',
+        description: 'Show two to four short reply choices in the speaker\'s current language. Speak every exact choice label aloud, in the same order, in the spoken reply before calling this tool.',
         parameters: {
           type: 'object',
           properties: {
@@ -72,9 +71,8 @@ export default async function handler(req: Request): Promise<Response> {
                 type: 'object',
                 properties: {
                   label: { type: 'string', maxLength: 80, description: 'A brief answer in the current spoken language, ideally 2–5 words.' },
-                  picture: { type: 'string', enum: REPLY_PICTURES, description: 'Choose the closest literal picture for this answer. Use chat if none fits; never use an unrelated object.' },
                 },
-                required: ['label', 'picture'],
+                required: ['label'],
                 additionalProperties: false,
               },
             },

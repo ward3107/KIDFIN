@@ -3,6 +3,15 @@ import type { ReplyPicture } from '../../services/live/replyOptions';
 
 /** Friendly object drawings shared by all languages; the label remains the accessible name. */
 export function ReplyIllustration({ picture }: { picture: ReplyPicture }) {
+  const swatches: Partial<Record<ReplyPicture, string>> = {
+    red: '#e84753', blue: '#3575dc', green: '#36a873', yellow: '#ffd447',
+    orange: '#f48b36', purple: '#8c62c8', pink: '#ec81b6', black: '#282831',
+    white: '#fffef8', brown: '#99633f', gray: '#9aa2ae',
+  };
+  if (picture in swatches) return <svg viewBox="0 0 96 96" aria-hidden="true" focusable="false" className="kiwi-choice-picture">
+    <circle cx="48" cy="48" r="35" fill={swatches[picture]} stroke="#625b65" strokeWidth="3" />
+    <path d="M30 48c4-8 11-12 18-12" fill="none" stroke={picture === 'white' ? '#b8b2bd' : '#fff'} strokeOpacity=".65" strokeWidth="5" strokeLinecap="round" />
+  </svg>;
   const drawings: Record<ReplyPicture, React.ReactNode> = {
     story: <><path fill="#fff7d7" d="M48 25Q28 13 12 25v49q20-8 36 2 16-10 36-2V25Q67 13 48 25Z"/><path d="M48 26v49M23 35l14 1m-14 11 14 1m22-12 14-1m-14 13 14-1"/><path fill="#efab6e" stroke="none" d="m61 18 10-2v23l-5-4-5 5Z"/></>,
     words: <><rect x="10" y="18" width="48" height="55" rx="10" fill="#b3dfd4" transform="rotate(-9 34 45)"/><rect x="41" y="29" width="44" height="52" rx="10" fill="#ffe199" transform="rotate(10 63 55)"/><path d="m24 55 9-23 9 23m-15-7h12M54 47h15l-15 20h15"/></>,
@@ -23,6 +32,8 @@ export function ReplyIllustration({ picture }: { picture: ReplyPicture }) {
     no: <><circle cx="48" cy="48" r="33" fill="#f2b6b4"/><path d="m35 35 26 26m0-26L35 61" strokeWidth="8"/></>,
     idea: <><path fill="#ffe09a" d="M34 66c0-13-13-16-13-33 0-30 54-30 54 0 0 17-13 20-13 33Z"/><path d="M36 74h24m-19 8h14M48 64V43l-10-8m10 8 10-8"/><path d="M6 32h6m72 0h6M15 9l5 6m56 0 5-6"/></>,
     chat: <><path fill="#c8dfd9" d="M12 18h72v50H46L27 82V68H12Z" strokeLinejoin="round"/><circle cx="30" cy="43" r="4" fill="#5a5677" stroke="none"/><circle cx="48" cy="43" r="4" fill="#5a5677" stroke="none"/><circle cx="66" cy="43" r="4" fill="#5a5677" stroke="none"/></>,
+    red: null, blue: null, green: null, yellow: null, orange: null, purple: null,
+    pink: null, black: null, white: null, brown: null, gray: null,
   };
   return <svg viewBox="0 0 96 96" aria-hidden="true" focusable="false" className="kiwi-choice-picture" stroke="#625b65" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">{drawings[picture]}</svg>;
 }

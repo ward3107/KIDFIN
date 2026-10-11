@@ -1,6 +1,6 @@
 import type { LiveAudioSink } from '../../components/avatar/avatarTypes';
 import type { RealtimeLanguage } from './realtimePersona';
-import { parseReplyOptions, type ReplyOption } from './replyOptions';
+import { parseReplyOptions, wereChoicesSpoken, type ReplyOption } from './replyOptions';
 
 export type { RealtimeLanguage };
 export type VoicePhase = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking';
@@ -49,6 +49,7 @@ export class KiwiRealtime {
   private assistantTurnActive = false;
   private outputPlaying = false;
   private handledCalls = new Set<string>();
+  private pendingChoiceReadout: ReplyOption[] | null = null;
 
   constructor(private events: VoiceEvents) {}
 
@@ -159,7 +160,10 @@ export class KiwiRealtime {
         this.events.caption(this.caption);
         break;
       case 'response.output_audio_transcript.done':
-        if (event.transcript) this.events.caption(event.transcript);
+        if (event.transcript) {
+          this.caption = event.transcript;
+          this.events.caption(event.transcript);
+        }
         break;
       case 'response.done':
         if (event.response?.status === 'failed') this.fail('voice_service_unavailable');
@@ -167,7 +171,10 @@ export class KiwiRealtime {
           this.assistantTurnActive = false;
           this.handleFunctionCalls(event.response?.output || []);
           this.syncMicrophone();
-          if (!this.outputPlaying) this.events.phase('listening');
+          if (!this.outputPlaying) {
+            this.speakPendingChoices();
+            if (!this.assistantTurnActive) this.events.phase('listening');
+          }
         }
         break;
       case 'error': this.fail('voice_service_unavailable'); break;
@@ -188,6 +195,7 @@ export class KiwiRealtime {
       }
       const shown = options.length >= 2;
       this.events.options(shown ? options : []);
+      if (shown && !wereChoicesSpoken(this.caption, options)) this.pendingChoiceReadout = options;
       this.send({
         type: 'conversation.item.create',
         item: {
@@ -197,6 +205,24 @@ export class KiwiRealtime {
         },
       });
     }
+  }
+
+  /** Read the actual labels if the spoken response omitted or changed them. */
+  private speakPendingChoices() {
+    if (!this.pendingChoiceReadout || this.outputPlaying || this.childSpeechActive || this.closed) return;
+    const labels = this.pendingChoiceReadout.map(option => option.label);
+    this.pendingChoiceReadout = null;
+    this.beginAssistantTurn();
+    this.events.phase('thinking');
+    this.send({
+      type: 'response.create',
+      response: {
+        instructions: `Say only these reply choices aloud, naturally, in their language and in this exact order. Do not add, translate, paraphrase or ask a new question: ${JSON.stringify(labels)}.`,
+        output_modalities: ['audio'],
+        tool_choice: 'none',
+        max_output_tokens: 420,
+      },
+    });
   }
 
   private onChildSpeechStarted() {
@@ -209,6 +235,7 @@ export class KiwiRealtime {
     // meaningful one-word answer. Accept it immediately.
     if (!this.outputPlaying) {
       this.childSpeechVerified = true;
+      this.pendingChoiceReadout = null;
       if (this.assistantTurnActive) this.send({ type: 'response.cancel' });
       this.events.phase('listening');
       this.caption = '';
@@ -222,6 +249,7 @@ export class KiwiRealtime {
     this.childSpeechTimer = setTimeout(() => {
       if (!this.childSpeechActive || this.closed) return;
       this.childSpeechVerified = true;
+      this.pendingChoiceReadout = null;
       if (this.assistantTurnActive) this.send({ type: 'response.cancel' });
       this.send({ type: 'output_audio_buffer.clear' });
       this.outputPlaying = false;
@@ -241,12 +269,14 @@ export class KiwiRealtime {
     // created, so playback continues without the "every noise interrupts me" bug.
     if (this.speechStartedDuringPlayback && !this.childSpeechVerified) {
       this.speechStartedDuringPlayback = false;
+      this.speakPendingChoices();
       return;
     }
 
     this.speechStartedDuringPlayback = false;
     if (!this.childSpeechVerified) return;
     this.childSpeechVerified = false;
+    this.pendingChoiceReadout = null;
     this.events.phase('thinking');
     this.beginAssistantTurn();
     this.send({ type: 'response.create' });
@@ -263,6 +293,7 @@ export class KiwiRealtime {
     if (!clean || this.channel?.readyState !== 'open' || this.outputPlaying) return false;
     this.events.options([]);
     this.caption = '';
+    this.pendingChoiceReadout = null;
     this.events.caption('');
     this.events.phase('thinking');
     this.beginAssistantTurn();
@@ -297,6 +328,7 @@ export class KiwiRealtime {
     this.playbackSettleTimer = setTimeout(() => {
       this.outputPlaying = false;
       this.syncMicrophone();
+      this.speakPendingChoices();
       if (!this.assistantTurnActive) this.events.phase('listening');
     }, 220);
   }
@@ -319,6 +351,7 @@ export class KiwiRealtime {
   stop() {
     if (this.closed) return;
     this.closed = true;
+    this.pendingChoiceReadout = null;
     this.abort.abort();
     clearTimeout(this.timer);
     clearTimeout(this.connectionTimer);
