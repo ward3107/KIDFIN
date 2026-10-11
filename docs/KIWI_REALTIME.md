@@ -11,9 +11,13 @@ The realtime room fits the dynamic viewport. On wide screens illustrated reply
 cards sit beside Kiwi; on portrait phones they form a two-column board above the
 compact mute/end controls. Speech detection still changes listening/speaking
 automatically, and starting the microphone still requires an explicit tap.
-`show_reply_options` returns 2–4 `{label, picture}` choices using a local SVG
-vocabulary; unknown pictures fall back safely and older string-only choices
-remain supported. Labels are kept brief. Unusually long labels are visually
+`show_reply_options` returns 2–4 short labels. Kiwi must say those exact labels
+aloud before displaying them. If its audio transcript omitted or changed a label,
+the client asks the same Realtime voice to read the displayed labels after the
+original audio finishes. Pictures come from the visible labels, not model-selected
+picture codes: known colors show matching swatches and unrecognized concepts use
+a neutral speech illustration. Older string-only choices remain supported.
+Unusually long labels are visually
 limited to three lines with their full text retained as the accessible name.
 
 ## Configure the Vercel project

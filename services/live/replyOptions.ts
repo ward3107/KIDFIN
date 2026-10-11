@@ -1,9 +1,23 @@
 /** A small, local picture vocabulary: no remote images or image-generation delay. */
-export const REPLY_PICTURES = ['story', 'words', 'friends', 'play', 'art', 'music', 'numbers', 'cat', 'dog', 'nature', 'food', 'sun', 'moon', 'happy', 'sad', 'yes', 'no', 'idea', 'chat'] as const;
+export const REPLY_PICTURES = ['story', 'words', 'friends', 'play', 'art', 'music', 'numbers', 'cat', 'dog', 'nature', 'food', 'sun', 'moon', 'happy', 'sad', 'yes', 'no', 'idea', 'chat', 'red', 'blue', 'green', 'yellow', 'orange', 'purple', 'pink', 'black', 'white', 'brown', 'gray'] as const;
 export type ReplyPicture = typeof REPLY_PICTURES[number];
 export type ReplyOption = { label: string; picture: ReplyPicture };
 
-const legacyPictures: [ReplyPicture, RegExp][] = [
+const colorWords: [ReplyPicture, RegExp][] = [
+  ['red', /(?<![\p{L}\p{N}])(?:red|אדום|אדומה|האדום|האדומה|أحمر|احمر|الأحمر|الاحمر|حمراء|красн\p{L}*)(?![\p{L}\p{N}])/iu],
+  ['blue', /(?<![\p{L}\p{N}])(?:blue|כחול|כחולה|הכחול|הכחולה|أزرق|ازرق|الأزرق|الازرق|زرقاء|син\p{L}*|голуб\p{L}*)(?![\p{L}\p{N}])/iu],
+  ['green', /(?<![\p{L}\p{N}])(?:green|ירוק|ירוקה|הירוק|أخضر|اخضر|الأخضر|الاخضر|خضراء|зелен\p{L}*|зелён\p{L}*)(?![\p{L}\p{N}])/iu],
+  ['yellow', /(?<![\p{L}\p{N}])(?:yellow|צהוב|צהובה|הצהוב|أصفر|اصفر|الأصفر|الاصفر|صفراء|жёлт\p{L}*|желт\p{L}*)(?![\p{L}\p{N}])/iu],
+  ['orange', /(?<![\p{L}\p{N}])(?:orange|כתום|כתומה|البرتقالي|برتقالي|оранжев\p{L}*)(?![\p{L}\p{N}])/iu],
+  ['purple', /(?<![\p{L}\p{N}])(?:purple|סגול|סגולה|بنفسجي|البنفسجي|фиолетов\p{L}*)(?![\p{L}\p{N}])/iu],
+  ['pink', /(?<![\p{L}\p{N}])(?:pink|ורוד|ורודה|زهري|وردي|розов\p{L}*)(?![\p{L}\p{N}])/iu],
+  ['black', /(?<![\p{L}\p{N}])(?:black|שחור|שחורה|أسود|اسود|الأسود|الاسود|черн\p{L}*|чёрн\p{L}*)(?![\p{L}\p{N}])/iu],
+  ['white', /(?<![\p{L}\p{N}])(?:white|לבן|לבנה|أبيض|ابيض|الأبيض|الابيض|бел\p{L}*)(?![\p{L}\p{N}])/iu],
+  ['brown', /(?<![\p{L}\p{N}])(?:brown|חום|חומה|بني|البني|коричнев\p{L}*)(?![\p{L}\p{N}])/iu],
+  ['gray', /(?<![\p{L}\p{N}])(?:gr[ae]y|אפור|אפורה|رمادي|الرمادي|сер\p{L}*)(?![\p{L}\p{N}])/iu],
+];
+
+const semanticPictures: [ReplyPicture, RegExp][] = [
   ['story', /story|book|סיפור|ספר|قصة|قصه|كتاب|حكاية|حكي|сказ|книг/iu],
   ['words', /word|letter|מיל|אות|كلم|حرف|слов|букв/iu],
   ['friends', /friend|חבר|صديق|أصدقاء|اصدقاء|друг|друз/iu],
@@ -18,7 +32,26 @@ const legacyPictures: [ReplyPicture, RegExp][] = [
   ['numbers', /number|count|מספר|לספור|عدد|نعد|числ|счит/iu],
   ['yes', /^(yes|כן|نعم|آه|да)[! .]*$/iu], ['no', /^(no|לא|لا|нет)[! .]*$/iu],
 ];
-export const inferReplyPicture = (label: string): ReplyPicture => legacyPictures.find(([, pattern]) => pattern.test(label))?.[0] || 'chat';
+export const inferReplyPicture = (label: string): ReplyPicture => {
+  const readable = label.normalize('NFKC').replace(/\p{M}/gu, '');
+  const colors = colorWords.filter(([, pattern]) => pattern.test(readable));
+  if (colors.length === 1) return colors[0][0];
+  if (colors.length > 1) return 'art';
+  return semanticPictures.find(([, pattern]) => pattern.test(readable))?.[0] || 'chat';
+};
+
+const spokenWords = (text: string): string => text.normalize('NFKC')
+  .replace(/\p{M}/gu, '').toLocaleLowerCase()
+  .replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
+
+/** Check that every visible label occurred as whole words in Kiwi's audio transcript. */
+export const wereChoicesSpoken = (caption: string, options: ReplyOption[]): boolean => {
+  const spoken = ` ${spokenWords(caption)} `;
+  return options.length > 0 && options.every(option => {
+    const label = spokenWords(option.label);
+    return label.length > 0 && spoken.includes(` ${label} `);
+  });
+};
 
 export function parseReplyOptions(value: unknown): ReplyOption[] {
   if (!Array.isArray(value)) return [];
@@ -28,7 +61,9 @@ export function parseReplyOptions(value: unknown): ReplyOption[] {
     if (!raw || typeof raw !== 'object' || typeof raw.label !== 'string') continue;
     const label = raw.label.replace(/\s+/g, ' ').trim().slice(0, 80);
     if (!label || options.some(option => option.label === label)) continue;
-    const picture = REPLY_PICTURES.includes(raw.picture) ? raw.picture as ReplyPicture : inferReplyPicture(label);
+    // Match what the child actually sees. Model-supplied picture codes can be
+    // unrelated to the label (e.g. a palette for "red"), so never trust them.
+    const picture = inferReplyPicture(label);
     options.push({ label, picture });
     if (options.length === 4) break;
   }
