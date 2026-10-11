@@ -1,4 +1,5 @@
 import React from 'react';
+import VasiaSignature from './VasiaSignature';
 import { useTranslation } from 'react-i18next';
 import { MascotConversation } from './MascotConversation';
 import { TalkConversation } from './TalkConversation';
@@ -77,6 +78,7 @@ export const RobotRoom: React.FC = () => {
           <MascotConversation height={avatarHeight} autoStart bare />
         )}
       </div>
+      <VasiaSignature />
     </div>
   );
 };
