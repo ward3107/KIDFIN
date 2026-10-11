@@ -1,4 +1,8 @@
 import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { Mic, MicOff, PhoneOff } from 'lucide-react';
+import { ReplyIllustration } from './ReplyIllustration';
+import type { ReplyOption } from '../../services/live/replyOptions';
+import './realtimeRoom.css';
 import type { AvatarHandle } from './avatarTypes';
 import { deliveryFromText, type Delivery } from './conversationMotion';
 import {
@@ -12,7 +16,7 @@ const RobotAvatar = React.lazy(() => import('./RobotAvatar').then(m => ({ defaul
 class AvatarBoundary extends React.Component<{ children: React.ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
-  render() { return this.state.failed ? <div className="flex h-72 items-center justify-center text-9xl" role="img" aria-label="Kiwi">🤖</div> : this.props.children; }
+  render() { return this.state.failed ? <div className="kiwi-avatar-fallback" role="img" aria-label="Kiwi">🤖</div> : this.props.children; }
 }
 
 type UiCopy = {
@@ -138,7 +142,7 @@ const initialLanguage = (): RealtimeLanguage => {
   return 'he';
 };
 
-export default function RealtimeConversation({ height = 420 }: { height?: number }) {
+export default function RealtimeConversation() {
   const avatar = useRef<AvatarHandle>(null);
   const phaseRef = useRef<VoicePhase>('idle');
   const deliveryRef = useRef<Delivery>('calm');
@@ -148,7 +152,7 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
   const [lang] = useState<RealtimeLanguage>(initialLanguage);
   const [phase, setPhase] = useState<VoicePhase>('idle');
   const [caption, setCaption] = useState('');
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<ReplyOption[]>([]);
   const [error, setError] = useState('');
   const [muted, setMuted] = useState(false);
   const copy = COPY[lang];
@@ -209,44 +213,53 @@ export default function RealtimeConversation({ height = 420 }: { height?: number
           ? copy.errors.permission
           : copy.errors.generic;
 
-  return <section dir={rtl ? 'rtl' : 'ltr'} className="w-full py-3 text-center sm:py-5">
-    <div className="mx-auto grid w-full max-w-6xl items-center gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(320px,.65fr)] lg:gap-7">
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-indigo-800">{copy.eyebrow}</p>
-        <AvatarBoundary>
-          <Suspense fallback={<div style={{ height }} className="grid place-items-center text-7xl">🤖</div>}>
-            <RobotAvatar expressive ref={avatar} height={height} interactive />
-          </Suspense>
-        </AvatarBoundary>
-        <p role="status" className="min-h-7 font-bold text-indigo-800">{muted ? copy.muted : copy.status[phase]}</p>
-        <p aria-live="polite" className="mx-auto min-h-12 max-w-2xl px-3 text-base text-slate-800 sm:text-lg">{caption}</p>
-        {active && suggestions.length > 0 && <div className="mx-auto mt-2 max-w-2xl px-3" aria-label={copy.suggestions}>
-          <p className="mb-2 text-sm font-semibold text-indigo-800">{copy.suggestions}</p>
-          <div className="flex flex-wrap justify-center gap-2">
-            {suggestions.map((suggestion, index) => <button
-              key={`${index}-${suggestion}`}
-              type="button"
-              disabled={phase !== 'listening'}
-              onClick={() => chooseSuggestion(suggestion)}
-              className="min-h-12 rounded-full border-2 border-indigo-300 bg-white px-5 py-2.5 font-semibold text-indigo-900 shadow-sm transition hover:border-indigo-500 hover:bg-indigo-50 disabled:cursor-wait disabled:opacity-50"
-            >{suggestion}</button>)}
-          </div>
-        </div>}
+  const hasChoices = active && suggestions.length > 0;
+  return <section dir={rtl ? 'rtl' : 'ltr'} className="kiwi-room" data-active={active} data-choices={hasChoices}>
+    <header className="kiwi-room-header">
+      <p>{copy.eyebrow}</p>
+      <p role="status" className="kiwi-status" data-phase={muted ? 'muted' : phase}>
+        <span aria-hidden="true" />{muted ? copy.muted : copy.status[phase]}
+      </p>
+    </header>
+    <div className="kiwi-room-body">
+      <div className="kiwi-stage">
+        <div className="kiwi-avatar-space">
+          <AvatarBoundary>
+            <Suspense fallback={<div className="kiwi-avatar-fallback" aria-hidden="true">🤖</div>}>
+              <RobotAvatar expressive ref={avatar} height="100%" interactive />
+            </Suspense>
+          </AvatarBoundary>
+        </div>
+        <p aria-live="polite" className="kiwi-caption" dir="auto" title={caption}>{caption}</p>
       </div>
-
-      <div className="mx-auto w-full max-w-md">
-        {error && <p role="alert" className="mb-3 rounded-2xl bg-amber-50 p-3 text-amber-900 shadow-sm">{errorText}</p>}
-        {!active ? <div className="rounded-3xl bg-white/80 p-4 shadow-md backdrop-blur-sm sm:p-5">
-          <button type="button" onClick={start} className="min-h-14 w-full rounded-full bg-indigo-700 px-5 py-3 text-lg font-bold text-white shadow-sm hover:bg-indigo-800">{copy.start}</button>
-          <p className="mt-3 text-xs text-slate-600">{copy.disclosure}</p>
-        </div> : <div className="rounded-3xl bg-white/75 p-4 shadow-md backdrop-blur-sm sm:p-5">
-          <p className="mb-4 text-sm text-slate-700">{copy.tip}</p>
-          <div className="flex flex-wrap justify-center gap-3">
-            <button disabled={phase === 'connecting'} onClick={() => { call.current?.setMuted(!muted); setMuted(!muted); }} className="min-h-12 rounded-full border border-indigo-300 bg-white px-5 disabled:opacity-40">{muted ? copy.unmute : copy.mute}</button>
-            <button onClick={stop} className="min-h-12 rounded-full bg-rose-700 px-5 font-bold text-white">{copy.end}</button>
+      <aside className="kiwi-choice-space" aria-label={hasChoices ? copy.suggestions : copy.eyebrow}>
+        {hasChoices ? <>
+          <p className="kiwi-choice-heading">{copy.suggestions}</p>
+          <div className="kiwi-choices">
+            {suggestions.map(suggestion => <button
+              key={suggestion.label} type="button" className="kiwi-choice" aria-label={suggestion.label} title={suggestion.label}
+              disabled={phase !== 'listening'} onClick={() => chooseSuggestion(suggestion.label)}
+            >
+              <ReplyIllustration picture={suggestion.picture} />
+              <span dir="auto">{suggestion.label}</span>
+            </button>)}
           </div>
-        </div>}
-      </div>
+        </> : !active ? <div className="kiwi-start-panel">
+          {error && <p role="alert" className="kiwi-error">{errorText}</p>}
+          <button type="button" onClick={start} className="kiwi-start"><Mic aria-hidden="true" size={22} />{copy.start}</button>
+          <p className="kiwi-disclosure">{copy.disclosure}</p>
+        </div> : <p className="kiwi-talk-hint"><Mic aria-hidden="true" size={28} />{copy.tip}</p>}
+      </aside>
     </div>
+    <footer className="kiwi-controls">
+      {active && <>
+        <button type="button" disabled={phase === 'connecting'} aria-label={muted ? copy.unmute : copy.mute}
+          title={muted ? copy.unmute : copy.mute} aria-pressed={muted} className="kiwi-mic-control"
+          onClick={() => { call.current?.setMuted(!muted); setMuted(!muted); }}>
+          {muted ? <MicOff aria-hidden="true" size={21} /> : <Mic aria-hidden="true" size={21} />}
+        </button>
+        <button type="button" onClick={stop} className="kiwi-end-control"><PhoneOff aria-hidden="true" size={18} />{copy.end}</button>
+      </>}
+    </footer>
   </section>;
 }

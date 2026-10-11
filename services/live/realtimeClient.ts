@@ -1,12 +1,13 @@
 import type { LiveAudioSink } from '../../components/avatar/avatarTypes';
 import type { RealtimeLanguage } from './realtimePersona';
+import { parseReplyOptions, type ReplyOption } from './replyOptions';
 
 export type { RealtimeLanguage };
 export type VoicePhase = 'idle' | 'connecting' | 'listening' | 'thinking' | 'speaking';
 export interface VoiceEvents {
   phase: (phase: VoicePhase) => void;
   caption: (text: string) => void;
-  options: (options: string[]) => void;
+  options: (options: ReplyOption[]) => void;
   error: (code: string) => void;
 }
 
@@ -178,15 +179,10 @@ export class KiwiRealtime {
       if (item.type !== 'function_call' || item.name !== 'show_reply_options' || !item.call_id) continue;
       if (this.handledCalls.has(item.call_id)) continue;
       this.handledCalls.add(item.call_id);
-      let options: string[] = [];
+      let options: ReplyOption[];
       try {
         const parsed = JSON.parse(item.arguments || '{}') as { options?: unknown };
-        if (Array.isArray(parsed.options)) {
-          options = [...new Set(parsed.options
-            .filter((value): value is string => typeof value === 'string')
-            .map(value => value.replace(/\s+/g, ' ').trim().slice(0, 80))
-            .filter(Boolean))].slice(0, 4);
-        }
+        options = parseReplyOptions(parsed.options);
       } catch {
         options = [];
       }

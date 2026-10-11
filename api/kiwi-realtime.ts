@@ -1,4 +1,5 @@
 import { inspectRealtime, reserveRealtime } from '../server/realtimeAdmission';
+import { REPLY_PICTURES } from '../services/live/replyOptions';
 import { realtimeInstructions, type RealtimeLanguage } from '../services/live/realtimePersona';
 
 export const config = { runtime: 'edge' };
@@ -67,7 +68,15 @@ export default async function handler(req: Request): Promise<Response> {
               type: 'array',
               minItems: 2,
               maxItems: 4,
-              items: { type: 'string', maxLength: 80 },
+              items: {
+                type: 'object',
+                properties: {
+                  label: { type: 'string', maxLength: 80, description: 'A brief answer in the current spoken language, ideally 2–5 words.' },
+                  picture: { type: 'string', enum: REPLY_PICTURES, description: 'Choose the closest literal picture for this answer. Use chat if none fits; never use an unrelated object.' },
+                },
+                required: ['label', 'picture'],
+                additionalProperties: false,
+              },
             },
           },
           required: ['options'],

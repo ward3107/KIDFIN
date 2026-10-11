@@ -55,7 +55,7 @@ export const RobotRoom: React.FC = () => {
   return (
     <div
       dir="rtl"
-      className="relative flex min-h-dvh w-full flex-col items-center justify-start overflow-x-hidden overflow-y-auto bg-gradient-to-b from-indigo-100 via-indigo-50 to-purple-100 px-3 py-2 lg:justify-center lg:px-5"
+      className={realtimeDemo ? 'kiwi-room-root' : 'relative flex min-h-dvh w-full flex-col items-center justify-start overflow-x-hidden overflow-y-auto bg-gradient-to-b from-indigo-100 via-indigo-50 to-purple-100 px-3 py-2 lg:justify-center lg:px-5'}
     >
       {mode === 'live' && (
         <div className="absolute top-2 left-1/2 z-10 -translate-x-1/2 rounded-full bg-amber-400/90 px-3 py-1 text-xs font-bold text-amber-950 shadow">
@@ -63,10 +63,10 @@ export const RobotRoom: React.FC = () => {
         </div>
       )}
 
-      <div className={`mx-auto w-full ${realtimeDemo ? 'max-w-6xl' : 'max-w-md'}`}>
+      <div className={realtimeDemo ? 'kiwi-room-mount' : 'mx-auto w-full max-w-md'}>
         {showcase ? (
           <MascotConversation height={avatarHeight} autoStart bare demo />
-        ) : realtimeDemo ? <RealtimeConversation height={avatarHeight} /> : mode === 'live' ? (
+        ) : realtimeDemo ? <RealtimeConversation /> : mode === 'live' ? (
           <TalkConversation
             height={avatarHeight}
             autoStart
