@@ -58,6 +58,16 @@ export class KiwiRealtime {
     try {
       if (!navigator.mediaDevices?.getUserMedia || typeof RTCPeerConnection === 'undefined') throw new Error('unsupported');
       this.connectionTimer = setTimeout(() => this.fail('connection_timeout'), 35_000);
+      const readiness = await fetch('/api/kiwi-realtime', {
+        method: 'GET', signal: this.abort.signal, credentials: 'same-origin', cache: 'no-store',
+      });
+      if (!readiness.ok) {
+        const body = await readiness.json().catch(() => ({}));
+        throw new Error(body.error || 'session_failed');
+      }
+      const state = await readiness.json().catch(() => ({}));
+      if (state.ready !== true) throw new Error('session_failed');
+      if (this.closed) return;
       const stream = await navigator.mediaDevices.getUserMedia({ audio: {
         echoCancellation: true,
         noiseSuppression: true,

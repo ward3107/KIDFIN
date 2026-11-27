@@ -70,15 +70,27 @@ describe('voice lifecycle', () => {
   it('releases a microphone granted after the user already cancelled', async () => {
     let grant!: (stream: MediaStream) => void;
     const track = { stop: vi.fn() };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ready: true }) }));
     vi.stubGlobal('navigator', { mediaDevices: { getUserMedia: () => new Promise<MediaStream>(r => { grant = r; }) } });
     vi.stubGlobal('RTCPeerConnection', vi.fn());
     const call = new KiwiRealtime(events());
     const starting = call.start('he', null);
+    await vi.waitFor(() => expect(grant).toBeTypeOf('function'));
     call.stop();
     grant({ getTracks: () => [track] } as unknown as MediaStream);
     await starting;
     expect(track.stop).toHaveBeenCalledOnce();
     expect(RTCPeerConnection).not.toHaveBeenCalled();
+  });
+  it('does not request microphone access when the funded route is exhausted', async () => {
+    const getUserMedia = vi.fn();
+    const handlers = events();
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, json: async () => ({ error: 'budget_exhausted' }) }));
+    vi.stubGlobal('navigator', { mediaDevices: { getUserMedia } });
+    vi.stubGlobal('RTCPeerConnection', vi.fn());
+    await new KiwiRealtime(handlers).start('he', null);
+    expect(getUserMedia).not.toHaveBeenCalled();
+    expect(handlers.error).toHaveBeenCalledWith('budget_exhausted');
   });
   it('ends the demo and ignores late events', () => {
     vi.useFakeTimers();

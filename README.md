@@ -7,7 +7,7 @@ Kiwi is a standalone conversational 3D robot with voice, captions, facial expres
 - `/`, `/#robot`, `/#realtime`: natural conversation using OpenAI Realtime. Start explicitly to request microphone access. Supports Hebrew, Arabic, English and Russian.
 - `/#scripted`: the Hebrew/Arabic scripted conversation, with recorded speech and text input.
 - `/#demo`: a hands-free sample conversation, without microphone access.
-- `/#live`: the alternate Gemini audio-turn experience, with fallback to the scripted robot.
+- `/#live`: the alternate Gemini audio-turn adult evaluation, with fallback to the scripted robot when unavailable. It requires explicit server enablement and a funded turn ledger.
 - `/#avatar`: voice, gesture and expression preview.
 
 Old bookmarks such as `/#app` now open Kiwi. The app no longer reads or resets the retired game's saved progress.
@@ -32,11 +32,11 @@ npm test
 npm run build
 ```
 
-The admission tests require `redis-server` and `redis-cli` (CI installs both). Set `REDIS_SERVER_BIN` and `REDIS_CLI_BIN` for nonstandard locations. For frontend and endpoint unit tests on a machine without Redis, run `npm test -- --exclude tests/realtimeAdmission.test.ts` and report that exclusion.
+The Realtime and Gemini ledger tests require `redis-server` and `redis-cli` (CI installs both). Set `REDIS_SERVER_BIN` and `REDIS_CLI_BIN` for nonstandard locations. For frontend and endpoint unit tests on a machine without Redis, run `npm test -- --exclude tests/realtimeAdmission.test.ts` and report that exclusion.
 
 ## Voice configuration
 
-The production realtime endpoint is hosted by Vercel. Follow [Kiwi Realtime](docs/KIWI_REALTIME.md) for server environment variables, explicit call allocation and spend limits. [Voice setup](AI_SETUP.md) explains the alternate Gemini route. Never expose provider keys in the browser or commit credentials.
+The production realtime endpoint is hosted by Vercel. Follow [Kiwi Realtime](docs/KIWI_REALTIME.md) for server environment variables, explicit call allocation and spend limits. [Voice setup](AI_SETUP.md) explains the separately funded Gemini route. Never expose provider keys in the browser or commit credentials. Both voice routes are adult evaluations, not child-ready releases.
 
 A successful build or mocked voice test does not verify microphone permissions, live speech understanding or audible playback. Check these on a real device before treating the voice experience as validated.
 

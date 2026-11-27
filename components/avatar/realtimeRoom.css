@@ -33,6 +33,8 @@
 .kiwi-disclosure { font-size: 12px; line-height: 1.7; color: #66627a; }
 .kiwi-talk-hint { display: flex; flex-direction: column; align-items: center; gap: 16px; color: #68637c; font-size: 15px; line-height: 1.8; max-width: 280px; margin-inline: auto !important; }
 .kiwi-error { font-size: 14px; padding: 12px; border-radius: 12px; background: #fff1d1; color: #744723; }
+.kiwi-scripted-link { display: inline-flex; justify-content: center; color: #4338a6; font-weight: 700; text-decoration: underline; text-underline-offset: 3px; }
+.kiwi-scripted-link:focus-visible { outline: 3px solid #4338a6; outline-offset: 3px; border-radius: 4px; }
 .kiwi-controls { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .kiwi-controls button { min-height: 44px; border-radius: 16px; display: inline-flex; justify-content: center; align-items: center; gap: 8px; border: 1px solid #d5d3e8; background: #fff; padding: 8px 14px; font-size: 13px; }
 .kiwi-controls .kiwi-mic-control { width: 46px; padding: 0; }

@@ -23,6 +23,7 @@ describe('open demo session boundary', () => {
     [-2, 503, { error: 'budget_not_configured' }],
     [-1, 503, { error: 'temporarily_unavailable' }],
     [0, 429, { error: 'rate_limited' }],
+    [-3, 429, { error: 'budget_exhausted' }],
   ])('inspects readiness (%s) without a paid operation', async (result, status, body) => {
     const fetch = vi.fn().mockResolvedValueOnce(limiter(result as number));
     vi.stubGlobal('fetch', fetch);
@@ -69,10 +70,12 @@ describe('open demo session boundary', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
   it('fails closed on limiter failure and exhaustion', async () => {
-    const fetch = vi.fn().mockResolvedValueOnce(new Response('', { status: 500 })).mockResolvedValueOnce(limiter(0));
+    const fetch = vi.fn().mockResolvedValueOnce(new Response('', { status: 500 })).mockResolvedValueOnce(limiter(-3));
     vi.stubGlobal('fetch', fetch);
     expect((await handler(request())).status).toBe(503);
-    expect((await handler(request())).status).toBe(429);
+    const response = await handler(request());
+    expect(response.status).toBe(429);
+    expect(await response.json()).toEqual({ error: 'budget_exhausted' });
     expect(fetch).toHaveBeenCalledTimes(2);
   });
   it('bounds payloads even without Content-Length', async () => {

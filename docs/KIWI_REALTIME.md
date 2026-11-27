@@ -38,7 +38,8 @@ then redeploy. Never prefix secrets with `VITE_` or commit their values.
 
 `GET /api/kiwi-realtime` checks configuration and Redis admission readiness
 without reserving a slot, modifying the ledger, or contacting OpenAI. It returns
-`200 {"ready":true}`, `429 {"error":"rate_limited"}`, or 503 with
+`200 {"ready":true}`, `429 {"error":"rate_limited"}` for a rolling limit,
+`429 {"error":"budget_exhausted"}` for a spent allocation, or 503 with
 `not_configured`, `budget_not_configured` (missing ledger), or
 `temporarily_unavailable` (Redis/configuration failure or invalid ledger).
 This checks admission only, not provider billing, model access or microphone playback.

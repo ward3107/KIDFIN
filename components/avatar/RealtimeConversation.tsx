@@ -23,6 +23,7 @@ type UiCopy = {
   eyebrow: string;
   disclosure: string;
   start: string;
+  scripted: string;
   suggestions: string;
   muted: string;
   mute: string;
@@ -33,6 +34,7 @@ type UiCopy = {
   errors: {
     notConfigured: string;
     budgetNotConfigured: string;
+    budgetExhausted: string;
     finished: string;
     permission: string;
     busy: string;
@@ -43,8 +45,9 @@ type UiCopy = {
 const COPY: Record<RealtimeLanguage, UiCopy> = {
   he: {
     eyebrow: 'שיחה חופשית עם קיווי',
-    disclosure: 'קיווי הוא דמות בינה מלאכותית. הקול יישלח ל־OpenAI לעיבוד. משך ההדגמה עד חמש דקות.',
+    disclosure: 'הדגמה למבוגרים בלבד. קיווי הוא דמות בינה מלאכותית. הקול יישלח ל־OpenAI לעיבוד. משך ההדגמה עד חמש דקות.',
     start: 'התחלת שיחה',
+    scripted: 'המשך לשיחה הכתובה',
     suggestions: 'אפשר לענות בקול או לבחור:',
     muted: 'המיקרופון מושתק',
     mute: 'השתקת מיקרופון',
@@ -55,6 +58,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     errors: {
       notConfigured: 'השיחה החיה עדיין לא הוגדרה בשרת.',
       budgetNotConfigured: 'מכסת השיחות עדיין לא הופעלה. מנהל האתר צריך להגדיר אותה כדי שקיווי יוכל לדבר.',
+      budgetExhausted: 'מכסת השיחות הסתיימה. מנהל האתר צריך לחדש אותה לפני שיחה נוספת.',
       finished: 'ההדגמה הסתיימה לאחר חמש דקות.',
       permission: 'יש לאפשר גישה למיקרופון ולנסות שוב.',
       busy: 'השירות עמוס כרגע. המתינו רגע ונסו שוב.',
@@ -63,8 +67,9 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
   },
   ar: {
     eyebrow: 'محادثة حرة مع كيوي',
-    disclosure: 'كيوي شخصية ذكاء اصطناعي. سيُرسل الصوت إلى OpenAI للمعالجة. مدة العرض حتى خمس دقائق.',
+    disclosure: 'تجربة للبالغين فقط. كيوي شخصية ذكاء اصطناعي. سيُرسل الصوت إلى OpenAI للمعالجة. مدة العرض حتى خمس دقائق.',
     start: 'ابدأ المحادثة',
+    scripted: 'انتقل إلى المحادثة المكتوبة',
     suggestions: 'أجب بصوتك أو اختر:',
     muted: 'الميكروفون مغلق',
     mute: 'كتم الميكروفون',
@@ -75,6 +80,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     errors: {
       notConfigured: 'لم يتم إعداد المحادثة المباشرة بعد.',
       budgetNotConfigured: 'لم يتم تفعيل حصة المحادثات بعد. على مسؤول الموقع إعدادها حتى يتمكن كيوي من التحدث.',
+      budgetExhausted: 'انتهت حصة المحادثات. على مسؤول الموقع تجديدها قبل محادثة أخرى.',
       finished: 'انتهت التجربة بعد خمس دقائق.',
       permission: 'اسمح بالميكروفون ثم حاول مجدداً.',
       busy: 'الخدمة مشغولة الآن. انتظر قليلاً ثم حاول مجدداً.',
@@ -83,8 +89,9 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
   },
   en: {
     eyebrow: 'Free conversation with Kiwi',
-    disclosure: 'Kiwi is an AI character. Audio is sent to OpenAI for processing. The demo lasts up to five minutes.',
+    disclosure: 'Adult evaluation only. Kiwi is an AI character. Audio is sent to OpenAI for processing. The demo lasts up to five minutes.',
     start: 'Start conversation',
+    scripted: 'Continue with scripted chat',
     suggestions: 'Answer aloud or choose:',
     muted: 'Microphone muted',
     mute: 'Mute microphone',
@@ -95,6 +102,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     errors: {
       notConfigured: 'Live conversation has not been configured on the server yet.',
       budgetNotConfigured: 'The call allowance has not been activated yet. The site administrator needs to configure it before Kiwi can talk.',
+      budgetExhausted: 'The call allowance has been used. The site administrator must renew it before another conversation.',
       finished: 'The five-minute demo has ended.',
       permission: 'Allow microphone access and try again.',
       busy: 'The service is busy right now. Wait a moment and try again.',
@@ -103,8 +111,9 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
   },
   ru: {
     eyebrow: 'Свободный разговор с Киви',
-    disclosure: 'Киви — персонаж с искусственным интеллектом. Аудио отправляется в OpenAI для обработки. Демонстрация длится до пяти минут.',
+    disclosure: 'Только для тестирования взрослыми. Киви — персонаж с искусственным интеллектом. Аудио отправляется в OpenAI для обработки. Демонстрация длится до пяти минут.',
     start: 'Начать разговор',
+    scripted: 'Перейти к готовому диалогу',
     suggestions: 'Ответьте голосом или выберите:',
     muted: 'Микрофон выключен',
     mute: 'Выключить микрофон',
@@ -115,6 +124,7 @@ const COPY: Record<RealtimeLanguage, UiCopy> = {
     errors: {
       notConfigured: 'Живой разговор ещё не настроен на сервере.',
       budgetNotConfigured: 'Лимит разговоров ещё не настроен. Администратору сайта нужно настроить его, чтобы Киви мог говорить.',
+      budgetExhausted: 'Лимит разговоров исчерпан. Администратору сайта нужно обновить его перед следующим разговором.',
       finished: 'Пятиминутная демонстрация завершена.',
       permission: 'Разрешите доступ к микрофону и попробуйте снова.',
       busy: 'Сервис сейчас занят. Подождите немного и попробуйте снова.',
@@ -205,6 +215,8 @@ export default function RealtimeConversation() {
     ? copy.errors.notConfigured
     : error === 'budget_not_configured'
       ? copy.errors.budgetNotConfigured
+    : error === 'budget_exhausted'
+      ? copy.errors.budgetExhausted
     : error === 'demo_finished'
       ? copy.errors.finished
       : error === 'rate_limited' || error === 'temporarily_unavailable'
@@ -245,7 +257,10 @@ export default function RealtimeConversation() {
             </button>)}
           </div>
         </> : !active ? <div className="kiwi-start-panel">
-          {error && <p role="alert" className="kiwi-error">{errorText}</p>}
+          {error && <>
+            <p role="alert" className="kiwi-error">{errorText}</p>
+            <a className="kiwi-scripted-link" href="/#scripted">{copy.scripted}</a>
+          </>}
           <button type="button" onClick={start} className="kiwi-start"><Mic aria-hidden="true" size={22} />{copy.start}</button>
           <p className="kiwi-disclosure">{copy.disclosure}</p>
         </div> : <p className="kiwi-talk-hint"><Mic aria-hidden="true" size={28} />{copy.tip}</p>}

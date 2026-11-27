@@ -27,3 +27,4 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y redis-server redis-tools
       - run: npm test
       - run: npm run build
+      - run: npx esbuild netlify/functions/kiwi-turn.mjs --bundle --platform=node --format=esm --target=node22 --outfile="$RUNNER_TEMP/kiwi-turn.mjs"
