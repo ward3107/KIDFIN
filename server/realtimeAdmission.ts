@@ -31,7 +31,7 @@ for _, started in ipairs(state.starts) do
   if started > now - 3900 then active = active + 1 end
   if started > now - 60 then minute = minute + 1 end
 end
-if state.remaining == 0 then return 0 end
+if state.remaining == 0 then return -3 end
 if minute >= 10 or #recent >= tonumber(ARGV[1]) or active >= tonumber(ARGV[2]) then return 0 end
 if ARGV[3] == 'inspect' then return 1 end
 table.insert(recent, now)
@@ -49,7 +49,7 @@ function limit(value: string | undefined, fallback: number): number {
   return parsed;
 }
 
-type Admission = 'allowed' | 'limited' | 'unavailable' | 'unprovisioned';
+type Admission = 'allowed' | 'limited' | 'exhausted' | 'unavailable' | 'unprovisioned';
 
 // Log only fixed reason codes and HTTP status; never credentials or Redis bodies.
 const diagnostic = (reason: string, status?: number) =>
@@ -72,6 +72,7 @@ async function admission(redis: string, token: string, inspect = false): Promise
     if (data?.error) { diagnostic('redis_command'); return 'unavailable'; }
     if (data?.result === 1) return 'allowed';
     if (data?.result === 0) return 'limited';
+    if (data?.result === -3) return 'exhausted';
     if (data?.result === -2) return 'unprovisioned';
     diagnostic(data?.result === -1 ? 'invalid_ledger' : 'invalid_response');
     return 'unavailable';

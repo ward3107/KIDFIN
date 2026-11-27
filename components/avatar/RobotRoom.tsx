@@ -9,7 +9,7 @@ const RealtimeConversation = React.lazy(() => import('./RealtimeConversation'));
  * Kiwi's standalone room. The root opens the realtime robot; the other routes
  * retain the scripted conversation, hands-free demo and avatar preview.
  *
- * DEFAULT (root URL) = the free, natural Realtime conversation with Kiwi.
+ * DEFAULT (root URL) = the funded Realtime adult evaluation with Kiwi.
  * No access code and no language picker: one tap on "start" (needed for the
  * microphone) and Kiwi talks and responds freely in the speaker's language.
  *
@@ -17,8 +17,8 @@ const RealtimeConversation = React.lazy(() => import('./RealtimeConversation'));
  * - "…/#demo": hands-free showcase — Kiwi plays a sample conversation by itself,
  *   with the child's answers shown on screen (no microphone needed).
  * - "…/#scripted": the interactive scripted robot (mic or typing).
- * - "…/#live": Gemini Live voice (BETA); falls back to the scripted robot if it
- *   can't run (no key, offline, mic denied).
+ * - "…/#live": Gemini audio turns (BETA); falls back to the scripted robot if
+ *   unavailable.
  */
 export const RobotRoom: React.FC = () => {
   const { i18n } = useTranslation();
@@ -27,7 +27,7 @@ export const RobotRoom: React.FC = () => {
   const routeIs = (name: string) => new RegExp(`(?:^|[#/])${name}$`).test(hash);
   // Hands-free showcase: Kiwi talks through a sample conversation by itself.
   const showcase = routeIs('demo');
-  // Default (and "#realtime"): the free Realtime conversation. The interactive
+  // Default (and "#realtime"): the funded Realtime conversation. The interactive
   // scripted flow stays at #scripted / #live.
   const realtimeDemo = !showcase && !routeIs('scripted') && !routeIs('live');
 
@@ -70,7 +70,6 @@ export const RobotRoom: React.FC = () => {
         ) : realtimeDemo ? <RealtimeConversation /> : mode === 'live' ? (
           <TalkConversation
             height={avatarHeight}
-            autoStart
             bare
             onFallback={() => setMode('scripted')}
           />

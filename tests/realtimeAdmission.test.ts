@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { REALTIME_BUDGET_KEY as key, RESERVE_REALTIME } from '../server/realtimeAdmission';
+import { TURN_BUDGET_KEY as turnKey, RESERVE_TURN } from '../server/turnAdmission';
 
 const exec = promisify(execFile);
 let directory: string;
@@ -59,7 +60,7 @@ describe('atomic durable admission ledger', () => {
     expect(await command('GET', key)).toBe(original);
     expect(await command('TTL', key)).toBe(-1);
     await seed(0);
-    expect(await inspect()).toBe(0);
+    expect(await inspect()).toBe(-3);
     await seed(3, [await now(), await now()]);
     expect(await inspect()).toBe(0);
   });
@@ -84,7 +85,7 @@ describe('atomic durable admission ledger', () => {
     await seed(3);
     const results = await Promise.all(Array.from({ length: 30 }, () => reserve(100, 100)));
     expect(results.filter(value => value === 1)).toHaveLength(3);
-    expect(results.filter(value => value === 0)).toHaveLength(27);
+    expect(results.filter(value => value === -3)).toHaveLength(27);
     const state = JSON.parse(await command('GET', key) as string);
     expect(state.remaining).toBe(0);
     expect(state.starts).toHaveLength(3);
@@ -114,8 +115,50 @@ describe('atomic durable admission ledger', () => {
   });
   it('never replenishes the lifetime budget as windows expire or state disappears', async () => {
     await seed(0, [await now() - 90000]);
-    expect(await reserve()).toBe(0);
+    expect(await reserve()).toBe(-3);
     await command('DEL', key);
     expect(await reserve()).toBe(-2);
+  });
+});
+
+describe('Gemini turn ledger', () => {
+  const turn = (minute = 30, daily = 100, inspect = false) =>
+    command('EVAL', RESERVE_TURN, '1', turnKey, String(minute), String(daily), ...(inspect ? ['inspect'] : []));
+  const seedTurn = (remaining: number, turns: number[] = []) =>
+    command('SET', turnKey, JSON.stringify({ version: 1, remaining, turns }));
+
+  it('requires an explicit non-expiring allocation and inspects without a debit', async () => {
+    expect(await turn()).toBe(-2);
+    await seedTurn(2);
+    const original = await command('GET', turnKey);
+    expect(await turn(30, 100, true)).toBe(1);
+    expect(await command('GET', turnKey)).toBe(original);
+    expect(await command('TTL', turnKey)).toBe(-1);
+    await command('EXPIRE', turnKey, '60');
+    expect(await turn()).toBe(-1);
+  });
+
+  it('permanently spends at most the funded number under parallel requests', async () => {
+    await seedTurn(3);
+    const results = await Promise.all(Array.from({ length: 30 }, () => turn()));
+    expect(results.filter(value => value === 1)).toHaveLength(3);
+    expect(results.filter(value => value === -3)).toHaveLength(27);
+    const state = JSON.parse(await command('GET', turnKey) as string);
+    expect(state.remaining).toBe(0);
+    expect(state.turns).toHaveLength(3);
+  });
+
+  it('enforces rolling minute and day limits and rejects corrupt state', async () => {
+    const time = await now();
+    await seedTurn(20, [time, time]);
+    expect(await turn(2, 100)).toBe(0);
+    await seedTurn(20, [time - 61, time - 61]);
+    expect(await turn(30, 2)).toBe(0);
+    await seedTurn(20, [time - 86401]);
+    expect(await turn(30, 2)).toBe(1);
+    for (const value of ['bad', '{}', '{"version":1,"remaining":2,"turns":["bad"]}']) {
+      await command('SET', turnKey, value);
+      expect(await turn()).toBe(-1);
+    }
   });
 });

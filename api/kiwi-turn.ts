@@ -1,174 +1,80 @@
-/**
- * Kiwi voice turn (Route B — the reliable "ears") — Vercel.
- *
- * The browser records the child's whole sentence and posts it here as one WAV
- * clip. We ask Gemini to (1) transcribe it accurately and (2) reply as Kiwi,
- * returning JSON { heard, reply }. Batch transcription of a complete clip is far
- * more accurate for young children in Hebrew/Arabic than live streaming.
- *
- * The GEMINI_API_KEY lives ONLY here. Same abuse protection as the other
- * endpoints (same-origin + per-IP rate limit, both fail-open).
- *
- * Vercel Edge Function, reachable at /api/kiwi-turn.
- */
+/** Alternate Gemini audio-turn endpoint. Adult evaluation only. */
 import { GoogleGenAI } from '@google/genai';
 import { kiwiSystemInstruction } from '../services/live/persona';
+import { inspectTurn, reserveTurn } from '../server/turnAdmission';
+import { allowedTurnOrigin, configuredTurnOrigins, parseTurnRequest } from '../server/turnRequest';
 
 export const config = { runtime: 'edge' };
 
 type Lang = 'he' | 'ar';
-interface HistoryTurn {
-  role?: string;
-  text?: string;
-}
 
-const json = (obj: unknown, status = 200, headers: Record<string, string> = {}): Response =>
+const json = (obj: unknown, status = 200): Response =>
   new Response(JSON.stringify(obj), {
     status,
-    headers: { 'content-type': 'application/json', ...headers },
+    headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
   });
-
-const sameOrigin = (req: Request): boolean => {
-  const origin = req.headers.get('origin');
-  if (!origin) return false;
-  let originHost: string;
-  try {
-    originHost = new URL(origin).host;
-  } catch {
-    return false;
-  }
-  const host = req.headers.get('x-forwarded-host') || req.headers.get('host') || '';
-  if (originHost && originHost === host) return true;
-  const allow = (process.env.ALLOWED_ORIGINS || '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  return allow.some((a) => {
-    try {
-      return new URL(a.includes('://') ? a : `https://${a}`).host === originHost;
-    } catch {
-      return a === originHost;
-    }
-  });
-};
-
-const clientIp = (req: Request): string => {
-  const xff = req.headers.get('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  return req.headers.get('x-real-ip') || 'unknown';
-};
-
-const rateLimited = async (ip: string): Promise<boolean> => {
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!url || !token) return false;
-  const limit = Number(process.env.LIVE_RATE_LIMIT || '30');
-  const key = `turn:rl:${ip}:${Math.floor(Date.now() / 60000)}`;
-  try {
-    const res = await fetch(`${url}/pipeline`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-      body: JSON.stringify([
-        ['INCR', key],
-        ['EXPIRE', key, '120'],
-      ]),
-    });
-    if (!res.ok) return false;
-    const data = (await res.json()) as Array<{ result?: number }>;
-    const count = Array.isArray(data) ? Number(data[0]?.result ?? 0) : 0;
-    return count > limit;
-  } catch {
-    return false;
-  }
-};
 
 const safeGreeting = (lang: Lang): string =>
-  lang === 'ar' ? 'مرحبا! أنا كيوي. شو اسمك؟ 😊' : 'שלום! אני קיווי. איך קוראים לך? 😊';
+  lang === 'ar' ? 'مرحبا! أنا كيوي. كيف كان يومك؟ 😊' : 'שלום! אני קיווי. איך עבר היום? 😊';
 
 const safeReply = (lang: Lang): string =>
-  lang === 'ar'
-    ? 'ما سمعت منيح، ممكن تعيد؟ 😊'
-    : 'לא שמעתי טוב, אפשר להגיד שוב? 😊';
+  lang === 'ar' ? 'ما سمعت منيح، ممكن تعيد؟ 😊' : 'לא שמעתי טוב, אפשר להגיד שוב? 😊';
 
-/** Pull the first {...} JSON object out of a model text response. */
+/** Accept the model's JSON object, but never trust its shape or length. */
 const parseJson = (text: string): { heard?: string; reply?: string } => {
   try {
-    return JSON.parse(text);
-  } catch {
-    const a = text.indexOf('{');
-    const b = text.lastIndexOf('}');
-    if (a >= 0 && b > a) {
-      try {
-        return JSON.parse(text.slice(a, b + 1));
-      } catch {
-        /* fall through */
-      }
-    }
-    return {};
-  }
+    const parsed: unknown = JSON.parse(text);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch { return {}; }
 };
 
 export default async function handler(req: Request): Promise<Response> {
-  if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
-  if (!sameOrigin(req)) return json({ error: 'forbidden' }, 403);
-
+  if (process.env.KIWI_GEMINI_ENABLED !== 'true') return json({ error: 'not_configured' }, 503);
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return json({ error: 'not_configured' }, 503);
+  const redis = process.env.UPSTASH_REDIS_REST_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const origins = configuredTurnOrigins(process.env.KIWI_GEMINI_ORIGINS);
+  if (!apiKey || !redis || !redisToken || !origins.length) return json({ error: 'not_configured' }, 503);
 
-  if (await rateLimited(clientIp(req))) {
-    return json({ error: 'rate_limited' }, 429, { 'retry-after': '30' });
+  if (req.method === 'GET') {
+    const origin = req.headers.get('origin');
+    if (origin && !allowedTurnOrigin(req, origins)) return json({ error: 'forbidden' }, 403);
+    const readiness = await inspectTurn(redis, redisToken);
+    if (readiness === 'unprovisioned') return json({ error: 'budget_not_configured' }, 503);
+    if (readiness === 'exhausted') return json({ error: 'budget_exhausted' }, 429);
+    if (readiness === 'limited') return json({ error: 'rate_limited' }, 429);
+    if (readiness !== 'allowed') return json({ error: 'temporarily_unavailable' }, 503);
+    return json({ ready: true });
   }
+  if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
+  if (!allowedTurnOrigin(req, origins)) return json({ error: 'forbidden' }, 403);
+  const parsed = await parseTurnRequest(req);
+  if ('error' in parsed) return json({ error: parsed.error }, parsed.status);
+  const { lang, greeting, audio, history } = parsed.payload;
 
-  let payload: {
-    audio?: unknown;
-    lang?: unknown;
-    history?: unknown;
-    greeting?: unknown;
-  };
-  try {
-    payload = await req.json();
-  } catch {
-    return json({ error: 'bad_request' }, 400);
-  }
-
-  const lang: Lang = payload?.lang === 'ar' ? 'ar' : 'he';
-  const isGreeting = payload?.greeting === true;
-  const audio = typeof payload?.audio === 'string' ? payload.audio : '';
-  if (!isGreeting && !audio) return json({ error: 'empty' }, 400);
-
-  const history: HistoryTurn[] = Array.isArray(payload?.history)
-    ? (payload.history as HistoryTurn[]).slice(-8)
-    : [];
-
-  const model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
-
-  const priorTurns = history
-    .filter((h) => h && h.text)
-    .map((h) => ({
-      role: h.role === 'model' || h.role === 'assistant' ? ('model' as const) : ('user' as const),
-      parts: [{ text: String(h.text).slice(0, 800) }],
-    }));
-
-  const finalParts = isGreeting
-    ? [
-        {
-          text: 'Begin the conversation now: greet the child warmly and ask their name in one short sentence. Respond ONLY as JSON: {"heard":"","reply":"<your greeting>"}.',
-        },
-      ]
+  const priorTurns = history.map(turn => ({
+    role: turn.role,
+    parts: [{ text: turn.text }],
+  }));
+  const finalParts = greeting
+    ? [{ text: 'Begin a short conversation. Greet warmly without requesting a name or other personal information. Respond ONLY as JSON: {"heard":"","reply":"<your greeting>"}.' }]
     : [
         { inlineData: { mimeType: 'audio/wav', data: audio } },
-        {
-          text: 'The child just said this (audio). First transcribe exactly what they said, verbatim, into "heard" (empty string if you truly heard nothing). Then give Kiwi\'s short spoken reply in "reply". Respond ONLY as JSON: {"heard":"...","reply":"..."}.',
-        },
+        { text: 'Transcribe the audio verbatim into "heard" (empty if inaudible), then give a short safe reply in "reply". Respond ONLY as JSON: {"heard":"...","reply":"..."}.' },
       ];
 
-  const contents = [...priorTurns, { role: 'user' as const, parts: finalParts }];
+  // Reserve one funded attempt before the only paid operation. Never refund or retry.
+  const admission = await reserveTurn(redis, redisToken);
+  if (admission === 'limited') return json({ error: 'rate_limited' }, 429);
+  if (admission === 'exhausted') return json({ error: 'budget_exhausted' }, 429);
+  if (admission === 'unprovisioned') return json({ error: 'budget_not_configured' }, 503);
+  if (admission !== 'allowed') return json({ error: 'temporarily_unavailable' }, 503);
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const res = await ai.models.generateContent({
-      model,
-      contents,
+    const result = await ai.models.generateContent({
+      model: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+      contents: [...priorTurns, { role: 'user' as const, parts: finalParts }],
       config: {
         systemInstruction: kiwiSystemInstruction(lang),
         responseMimeType: 'application/json',
@@ -176,13 +82,13 @@ export default async function handler(req: Request): Promise<Response> {
         maxOutputTokens: 400,
       },
     });
-    const parsed = parseJson(res.text ?? '');
-    const reply = (parsed.reply ?? '').trim() || (isGreeting ? safeGreeting(lang) : safeReply(lang));
-    const heard = (parsed.heard ?? '').trim();
+    const model = parseJson(result.text ?? '');
+    const reply = typeof model.reply === 'string' && model.reply.trim()
+      ? model.reply.trim().slice(0, 800) : greeting ? safeGreeting(lang) : safeReply(lang);
+    const heard = typeof model.heard === 'string' ? model.heard.trim().slice(0, 800) : '';
     return json({ heard, reply });
-  } catch (err) {
-    const status = (err as { status?: number })?.status ?? 502;
-    if (status === 401 || status === 403) return json({ error: 'bad_key' }, 502);
-    return json({ error: 'upstream' }, 502);
+  } catch (error) {
+    const status = (error as { status?: number })?.status;
+    return json({ error: status === 401 || status === 403 ? 'bad_key' : 'upstream' }, 502);
   }
 }

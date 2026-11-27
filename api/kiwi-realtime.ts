@@ -23,6 +23,7 @@ export default async function handler(req: Request): Promise<Response> {
     if (origin && !origins.includes(origin)) return json('forbidden', 403);
     const readiness = await inspectRealtime(redis, redisToken);
     if (readiness === 'unprovisioned') return json('budget_not_configured', 503);
+    if (readiness === 'exhausted') return json('budget_exhausted', 429);
     if (readiness === 'limited') return json('rate_limited', 429);
     if (readiness !== 'allowed') return json('temporarily_unavailable', 503);
     return new Response(JSON.stringify({ ready: true }), {
@@ -110,6 +111,7 @@ export default async function handler(req: Request): Promise<Response> {
     // No refunds or retries: a timeout may still mean the provider created a call.
     const admission = await reserveRealtime(redis, redisToken);
     if (admission === 'limited') return json('rate_limited', 429);
+    if (admission === 'exhausted') return json('budget_exhausted', 429);
     if (admission === 'unprovisioned') return json('budget_not_configured', 503);
     if (admission !== 'allowed') return json('temporarily_unavailable', 503);
     const upstream = await fetch('https://api.openai.com/v1/realtime/calls', {

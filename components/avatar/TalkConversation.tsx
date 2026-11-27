@@ -4,55 +4,39 @@ import { Mic, MicOff, Send } from 'lucide-react';
 import type { AvatarHandle } from './avatarTypes';
 import type { Lang } from '../../services/dialogue/conversation';
 import type { TalkRecorder, TurnHistory } from '../../services/live/turnClient';
+import { MAX_TURN_SECONDS } from '../../services/live/turnLimits';
 
 // Lazy-load the 3D avatar so three.js stays code-split.
 const RobotAvatar = React.lazy(() =>
   import('./RobotAvatar').then((m) => ({ default: m.RobotAvatar })),
 );
 
-const SILENT_WAV =
-  'data:audio/wav;base64,UklGRkwAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSgAAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICA';
-
-const canAutoplay = async (): Promise<boolean> => {
-  try {
-    const a = new Audio(SILENT_WAV);
-    a.volume = 0;
-    const p = a.play();
-    if (p && typeof p.then === 'function') await p;
-    a.pause();
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 type Phase = 'idle' | 'greeting' | 'ready' | 'recording' | 'thinking' | 'speaking';
 
-const FATAL = new Set(['not_configured', 'network', 'turn_failed', 'greeting_failed', 'no_audio']);
+const FATAL = new Set(['not_configured', 'budget_not_configured', 'temporarily_unavailable', 'rate_limited', 'bad_key', 'upstream', 'too_large', 'bad_request', 'network', 'turn_failed', 'greeting_failed', 'no_audio']);
 
 /**
- * Kiwi voice — Route B ("the reliable ears"). Push-to-talk: the child taps to
- * talk, taps to send; we record the whole sentence, send it to Gemini for
- * accurate transcription + a reply, then Kiwi speaks the reply. Understands kids
- * far better than live streaming. Falls back to scripted mode if unavailable.
+ * Kiwi voice — Route B. An adult taps to record, taps to send, and Gemini
+ * transcribes and replies. Falls back to scripted mode if unavailable.
  */
 export const TalkConversation: React.FC<{
   height?: number;
   bare?: boolean;
-  autoStart?: boolean;
   onFallback?: (reason: string) => void;
-}> = ({ height = 300, bare = false, autoStart = true, onFallback }) => {
+}> = ({ height = 300, bare = false, onFallback }) => {
   const { i18n } = useTranslation();
   const lang: Lang = (i18n.language || 'he').startsWith('ar') ? 'ar' : 'he';
   const speechLang = lang === 'ar' ? 'ar' : 'he-IL';
 
   const avatar = useRef<AvatarHandle>(null);
   const recorder = useRef<TalkRecorder | null>(null);
+  const mounted = useRef(true);
+  const recordingTimer = useRef<number | null>(null);
   const history = useRef<TurnHistory[]>([]);
   const startedRef = useRef(false);
 
   const [phase, setPhase] = useState<Phase>('idle');
-  const [awaitingTap, setAwaitingTap] = useState(false);
+  const [awaitingTap, setAwaitingTap] = useState(true);
   const [kiwiText, setKiwiText] = useState('');
   const [heard, setHeard] = useState('');
   const [micDenied, setMicDenied] = useState(false);
@@ -81,47 +65,50 @@ export const TalkConversation: React.FC<{
     setAwaitingTap(false);
     setMicDenied(false);
 
-    const { TalkRecorder, postKiwiGreeting } = await import('../../services/live/turnClient');
+    const { TalkRecorder, postKiwiGreeting, checkKiwiTurnReady } = await import('../../services/live/turnClient');
+    try {
+      await checkKiwiTurnReady();
+    } catch {
+      if (mounted.current) onFallback?.('not_configured');
+      return;
+    }
+    if (!mounted.current) return;
     const rec = new TalkRecorder();
+    recorder.current = rec;
     try {
       await rec.init();
     } catch {
+      rec.dispose();
+      if (!mounted.current || recorder.current !== rec) return;
       setMicDenied(true);
       // Mic is required for the voice chat; drop to scripted so the app still works.
       onFallback?.('mic_denied');
       return;
     }
-    recorder.current = rec;
-
+    if (!mounted.current || recorder.current !== rec) { rec.dispose(); return; }
     setPhase('greeting');
     try {
       const reply = await postKiwiGreeting(lang);
+      if (!mounted.current) return;
       history.current.push({ role: 'model', text: reply });
       speak(reply);
     } catch (e) {
+      if (!mounted.current) return;
       const code = e instanceof Error ? e.message : 'greeting_failed';
       if (FATAL.has(code)) onFallback?.(code);
       else setPhase('ready');
     }
   }, [lang, onFallback, speak]);
 
-  useEffect(() => {
-    if (!autoStart) return;
-    let cancelled = false;
-    void canAutoplay().then((ok) => {
-      if (cancelled) return;
-      if (ok) void start();
-      else setAwaitingTap(true);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [autoStart, start]);
-
   useEffect(
-    () => () => {
-      recorder.current?.dispose();
-      recorder.current = null;
+    () => {
+      mounted.current = true;
+      return () => {
+        mounted.current = false;
+        if (recordingTimer.current !== null) window.clearTimeout(recordingTimer.current);
+        recorder.current?.dispose();
+        recorder.current = null;
+      };
     },
     [],
   );
@@ -131,11 +118,16 @@ export const TalkConversation: React.FC<{
     if (!rec) return;
     avatar.current?.stopSpeaking();
     rec.start();
+    recordingTimer.current = window.setTimeout(() => void onSend(), MAX_TURN_SECONDS * 1000);
     setHeard('');
     setPhase('recording');
   };
 
   const onSend = async () => {
+    if (recordingTimer.current !== null) {
+      window.clearTimeout(recordingTimer.current);
+      recordingTimer.current = null;
+    }
     const rec = recorder.current;
     if (!rec) return;
     const secs = rec.seconds;
@@ -175,10 +167,9 @@ export const TalkConversation: React.FC<{
       }
     >
       {awaitingTap && (
-        <div
-          onPointerDown={() => void start()}
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
+          onClick={() => void start()}
           aria-label={lang === 'ar' ? 'المس الشاشة لتتحدث مع كيوي' : 'געו במסך כדי לדבר עם קיווי'}
           className="fixed inset-0 z-50 flex cursor-pointer flex-col items-center justify-center gap-5 bg-indigo-950/45 text-white backdrop-blur-sm"
         >
@@ -186,7 +177,12 @@ export const TalkConversation: React.FC<{
           <div className="px-6 text-center text-2xl font-black drop-shadow">
             {lang === 'ar' ? 'المس الشاشة لتتحدث مع كيوي' : 'געו במסך כדי לדבר עם קיווי'}
           </div>
-        </div>
+          <div className="max-w-sm px-6 text-center text-sm">
+            {lang === 'ar'
+              ? 'تجربة للبالغين فقط. كيوي شخصية ذكاء اصطناعي، وسيُرسل الصوت إلى Gemini للمعالجة.'
+              : 'הדגמה למבוגרים בלבד. קיווי הוא דמות בינה מלאכותית, והקול יישלח ל־Gemini לעיבוד.'}
+          </div>
+        </button>
       )}
 
       <div className={bare ? '' : 'overflow-hidden rounded-2xl bg-white/60'}>
@@ -250,7 +246,7 @@ export const TalkConversation: React.FC<{
         )}
         {recording && (
           <div className="text-xs text-rose-500 animate-pulse">
-            {lang === 'ar' ? '🔴 أنا أسجّل… اضغط "أرسل" عند الانتهاء' : '🔴 מקליט… לחצו "שלח" בסיום'}
+            {lang === 'ar' ? '🔴 أنا أسجّل… اضغط "أرسل" عند الانتهاء (15 ثانية كحد أقصى)' : '🔴 מקליט… לחצו "שלח" בסיום (עד 15 שניות)'}
           </div>
         )}
 
